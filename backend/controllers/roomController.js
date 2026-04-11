@@ -1,0 +1,226 @@
+const mongoose = require('mongoose');
+const Room = require('../models/Room');
+const Transaction = require('../models/Transaction');
+const User = require('../models/User');
+const { matchRoom, getTournamentBracket } = require('../services/tournamentService');
+
+exports.listRooms = async (req, res) => {
+  try {
+    const rooms = await Room.find().populate('players', 'username wallet online').sort({ createdAt: -1 });
+    res.json(rooms);
+  } catch (err) {
+    console.error('[room] listRooms error', err);
+    res.status(500).json({ message: 'Failed to fetch rooms' });
+  }
+};
+
+exports.createRoom = async (req, res) => {
+  try {
+    const { roomId, name, maxPlayers, entryFee, prizeDistribution, startTime, endTime } = req.body;
+    if (!roomId) return res.status(400).json({ message: 'roomId required' });
+
+    const existing = await Room.findOne({ roomId });
+    if (existing) return res.status(400).json({ message: 'Room exists' });
+
+    const room = await Room.create({
+      roomId,
+      name: name || `Contest #${roomId}`,
+      maxPlayers: maxPlayers || 2,
+      entryFee: entryFee !== undefined ? entryFee : 49,
+      prizeDistribution: prizeDistribution || 'winner_takes_all',
+      startTime: startTime ? new Date(startTime) : null,
+      endTime: endTime ? new Date(endTime) : null,
+      status: 'waiting',
+      currentRound: 1,
+    });
+
+    console.log('[room] created', { roomId: room.roomId, maxPlayers: room.maxPlayers, entryFee: room.entryFee });
+    res.status(201).json(room);
+  } catch (err) {
+    console.error('[room] createRoom error', err);
+    res.status(500).json({ message: 'Failed to create room' });
+  }
+};
+
+exports.joinRoom = async (req, res) => {
+  try {
+    const { roomId } = req.body;
+    
+    // BUG 5 FIX: Prevent CastError by checking if roomId is a valid ObjectId first, or fallback to findOne
+    let room = null;
+    if (mongoose.Types.ObjectId.isValid(roomId)) {
+      room = await Room.findById(roomId);
+    }
+    if (!room) {
+      room = await Room.findOne({ roomId });
+    }
+
+    if (!room) return res.status(404).json({ message: 'Room not found' });
+    if (room.status !== 'waiting') return res.status(400).json({ message: 'Cannot join this room' });
+    if (room.players.includes(req.user._id)) return res.status(400).json({ message: 'Already joined' });
+    if (room.players.length >= room.maxPlayers) return res.status(400).json({ message: 'Room is full' });
+
+    // Wallet balance check and deduction
+    const user = await User.findById(req.user._id);
+    if (user.wallet < room.entryFee) {
+      return res.status(400).json({ message: 'Insufficient wallet balance', required: room.entryFee, current: user.wallet });
+    }
+
+    user.wallet -= room.entryFee;
+    await user.save();
+
+    await Transaction.create({
+      userId: req.user._id,
+      amount: room.entryFee,
+      type: 'debit',
+      reason: 'entry fee',
+      roomId: room.roomId,
+      status: 'completed',
+    });
+
+    room.players.push(req.user._id);
+    if (room.players.length === room.maxPlayers) {
+      room.status = 'ongoing';
+      room.currentRound = 1;
+    }
+    await room.save();
+
+    const updatedRoom = await Room.findById(room._id).populate('players', 'username wallet online');
+    res.json(updatedRoom);
+  } catch (err) {
+    console.error('[room] joinRoom error', err);
+    res.status(500).json({ message: 'Failed to join room' });
+  }
+};
+
+exports.getRoomDetails = async (req, res) => {
+  try {
+    const { roomId } = req.params;
+    const room = await Room.findOne({ roomId })
+      .populate('players', 'username wallet stats online')
+      .populate('matches.player1 matches.player2 matches.winner', 'username online');
+    if (!room) return res.status(404).json({ message: 'Room not found' });
+    res.json(room);
+  } catch (err) {
+    console.error('[room] getRoomDetails error', err);
+    res.status(500).json({ message: 'Failed to fetch room details' });
+  }
+};
+
+exports.getMyContests = async (req, res) => {
+  try {
+    const rooms = await Room.find({ players: req.user._id })
+      .populate('players', 'username wallet online')
+      .sort({ createdAt: -1 });
+    res.json(rooms);
+  } catch (err) {
+    console.error('[room] getMyContests error', err);
+    res.status(500).json({ message: 'Failed to fetch contests' });
+  }
+};
+
+exports.getLiveContests = async (req, res) => {
+  try {
+    const rooms = await Room.find({ status: 'ongoing' })
+      .populate('players', 'username wallet online')
+      .sort({ createdAt: -1 });
+    res.json(rooms);
+  } catch (err) {
+    console.error('[room] getLiveContests error', err);
+    res.status(500).json({ message: 'Failed to fetch live contests' });
+  }
+};
+
+exports.getBracket = async (req, res) => {
+  try {
+    const { roomId } = req.params;
+    const bracket = await getTournamentBracket(roomId);
+    if (!bracket) return res.status(404).json({ message: 'Room not found' });
+    res.json(bracket);
+  } catch (err) {
+    console.error('[room] getBracket error', err);
+    res.status(500).json({ message: 'Failed to fetch bracket' });
+  }
+};
+
+exports.getLeaderboard = async (req, res) => {
+  try {
+    const { period } = req.query; // 'all' or 'weekly'
+
+    // All-time leaderboard — sorted by ELO rating
+    const allTimePlayers = await User.find({ role: 'user' })
+      .select('username stats wallet online elo')
+      .sort({ elo: -1 })
+      .limit(50);
+
+    // Weekly leaderboard — wins in last 7 days from transactions
+    let weeklyPlayers = [];
+    if (period === 'weekly') {
+      const weekAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
+      const weeklyStats = await Transaction.aggregate([
+        {
+          $match: {
+            type: 'credit',
+            reason: { $regex: /prize/ },
+            status: 'completed',
+            createdAt: { $gte: weekAgo },
+          },
+        },
+        {
+          $group: {
+            _id: '$userId',
+            totalEarnings: { $sum: '$amount' },
+            contestsWon: { $sum: 1 },
+          },
+        },
+        { $sort: { totalEarnings: -1 } },
+        { $limit: 50 },
+      ]);
+
+      const userIds = weeklyStats.map((s) => s._id);
+      const users = await User.find({ _id: { $in: userIds } }).select('username stats online elo');
+      const userMap = {};
+      users.forEach((u) => { userMap[u._id.toString()] = u; });
+
+      weeklyPlayers = weeklyStats.map((s) => ({
+        user: userMap[s._id.toString()],
+        totalEarnings: s.totalEarnings,
+        contestsWon: s.contestsWon,
+      }));
+    }
+
+    res.json({ allTime: allTimePlayers, weekly: weeklyPlayers });
+  } catch (err) {
+    console.error('[room] getLeaderboard error', err);
+    res.status(500).json({ message: 'Failed to fetch leaderboard' });
+  }
+};
+
+exports.deleteRoom = async (req, res) => {
+  try {
+    const { roomId } = req.params;
+    const room = await Room.findOne({ roomId });
+    if (!room) return res.status(404).json({ message: 'Room not found' });
+
+    // Refund players if room is still waiting
+    if (room.status === 'waiting') {
+      for (const playerId of room.players) {
+        await User.findByIdAndUpdate(playerId, { $inc: { wallet: room.entryFee } });
+        await Transaction.create({
+          userId: playerId,
+          amount: room.entryFee,
+          type: 'credit',
+          reason: `refund - room ${roomId} deleted`,
+          roomId,
+          status: 'completed',
+        });
+      }
+    }
+
+    await Room.deleteOne({ roomId });
+    res.json({ message: 'Room deleted', roomId });
+  } catch (err) {
+    console.error('[room] deleteRoom error', err);
+    res.status(500).json({ message: 'Failed to delete room' });
+  }
+};
