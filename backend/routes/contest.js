@@ -12,4 +12,7 @@ router.get('/my-history', protect, contestController.getMyHistory);
 // GET /api/contests/active — User's active/playing contests
 router.get('/active', protect, contestController.getActiveContests);
 
+// GET /api/contests/:id — Single contest details
+router.get('/:id', protect, contestController.getContestDetails);
+
 module.exports = router;

@@ -73,3 +73,18 @@ exports.getActiveContests = async (req, res) => {
     res.status(500).json({ message: 'Failed to load active contests' });
   }
 };
+
+exports.getContestDetails = async (req, res) => {
+  try {
+    const contestId = req.params.id;
+    const contest = await Contest.findById(contestId)
+      .populate('contestType')
+      .populate('players', 'username elo')
+      .lean();
+    if (!contest) return res.status(404).json({ message: 'Contest not found' });
+    res.json(contest);
+  } catch (err) {
+    console.error('[contests] get details error:', err);
+    res.status(500).json({ message: 'Failed to load contest' });
+  }
+};

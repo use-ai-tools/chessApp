@@ -35,7 +35,7 @@ export default function RoomPage() {
   const [drawOfferReceived, setDrawOfferReceived] = useState(false);
   const [floatingEmoji, setFloatingEmoji] = useState(null);
   const [previewIndex, setPreviewIndex] = useState(-1);
-  const [lastMove, setLastMove] = useState(null); // BUG 5 FIX: Never cleared on game end
+  const [lastMove, setLastMove] = useState(null);
   const [showGameReview, setShowGameReview] = useState(false);
   const [reviewData, setReviewData] = useState(null);
   const [showSettings, setShowSettings] = useState(false);
@@ -64,20 +64,17 @@ export default function RoomPage() {
     if (!contestId) return;
     const userId = user?.id;
 
-    // Helper to setup match state
     const setupMatch = (data) => {
-      const rId = data.roomId || data.contestId;
+      const rId = data.roomId || data.contestId || data._id;
       if (rId && rId !== contestId) return;
 
       matchDataRef.current = data;
       if (data.contestType) setContestType(data.contestType);
       setFen(data.fen || 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1');
       
-      // If reconnecting with existing moves, replay them
       if (data.moves && data.moves.length > 0) {
         setMoveHistory(data.moves);
         moveSansRef.current = [...data.moves];
-        // Compute last move from the moves array
         try {
           const game = new Chess();
           let lastMoveData = null;
@@ -99,10 +96,13 @@ export default function RoomPage() {
       setResultData(null);
       setReviewData(null);
 
-      if (userId && data.whitePlayer?.id === userId) {
+      let wId = typeof data.whitePlayer === 'object' ? data.whitePlayer?.id || data.whitePlayer?._id : data.whitePlayer;
+      let bId = typeof data.blackPlayer === 'object' ? data.blackPlayer?.id || data.blackPlayer?._id : data.blackPlayer;
+
+      if (userId && wId === userId) {
         setCurrentPlayerColor('white');
         setBoardOrientation('white');
-      } else if (userId && data.blackPlayer?.id === userId) {
+      } else if (userId && bId === userId) {
         setCurrentPlayerColor('black');
         setBoardOrientation('black');
       } else {
@@ -115,40 +115,77 @@ export default function RoomPage() {
       setStatus('Match in progress');
     };
 
-    // 1. Initial REST API check
     const checkRoomState = async () => {
+      if (matchDataRef.current) return;
       try {
-        const res = await fetch(`${API_URL}/api/rooms/${contestId}`, {
+        const res = await fetch(`${API_URL}/api/contests/${contestId}`, {
           headers: { Authorization: `Bearer ${localStorage.getItem('token') || ''}` }
         });
         if (res.ok) {
           const roomData = await res.json();
-          if (roomData.status === 'ongoing' && roomData.players?.length >= 2) {
-             const [p1, p2] = roomData.players;
+          if ((roomData.status === 'playing' || roomData.status === 'completed') && roomData.players?.length >= 2) {
+             const wId = roomData.whitePlayer?._id || roomData.whitePlayer;
+             const bId = roomData.blackPlayer?._id || roomData.blackPlayer;
+             
+             let wp = roomData.players.find(p => p._id === wId) || roomData.players[0];
+             let bp = roomData.players.find(p => p._id === bId) || roomData.players[1];
+             
              setupMatch({
-               roomId: roomData.roomId || roomData._id,
-               fen: 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1',
-               whitePlayer: { id: p1._id || p1, username: p1.username || 'Player1' },
-               blackPlayer: { id: p2._id || p2, username: p2.username || 'Player2' },
+               contestId: roomData._id,
+               fen: roomData.fen || 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1',
+               whitePlayer: { id: wp._id, username: wp.username, elo: wp.elo?.free || 1200 },
+               blackPlayer: { id: bp._id, username: bp.username, elo: bp.elo?.free || 1200 },
+               contestType: roomData.contestType,
+               moves: (roomData.moves || []).map(m => m.san).filter(Boolean)
              });
+
+             if (roomData.status === 'completed') {
+                setGameStatus('finished');
+                setResultData({
+                  isWinner: roomData.winner === userId,
+                  isDraw: roomData.result === 'draw',
+                  reason: roomData.reason,
+                  playerColor: wId === userId ? 'w' : 'b',
+                  review: roomData.review
+                });
+             }
           }
         }
       } catch (err) { }
     };
     checkRoomState();
 
-    // 2. Socket logic
-    if (!socketRef.current) socketRef.current = io(SOCKET_URL);
+    if (!socketRef.current || !socketRef.current.connected) {
+      socketRef.current = io(SOCKET_URL, { reconnection: true, reconnectionAttempts: Infinity, reconnectionDelay: 1000 });
+    }
     const socket = socketRef.current;
-    socket.removeAllListeners();
+    
+    // Clear previously attached listeners to avoid duplicates
+    socket.off('matchStarted');
+    socket.off('gameReady');
+    socket.off('timerStart');
+    socket.off('moveMade');
+    socket.off('matchEnded');
+    socket.off('drawOffer');
+    socket.off('drawDeclined');
+    socket.off('emojiReaction');
+    socket.off('matchChat');
+    socket.off('forceLogout');
+    socket.off('connect');
 
-    if (userId) {
+    socket.on('connect', () => {
+       if (userId) {
+         socket.emit('identify', { userId });
+         socket.emit('joinRoom', { roomId: contestId, userId });
+       }
+    });
+
+    if (socket.connected && userId) {
       socket.emit('identify', { userId });
       socket.emit('joinRoom', { roomId: contestId, userId });
     }
 
     socket.on('matchStarted', (data) => {
-      if (matchDataRef.current) return;
       setupMatch(data);
     });
 
@@ -160,7 +197,6 @@ export default function RoomPage() {
       if (data.contestId === contestId) setTimerData(data);
     });
 
-    // BUG 5 FIX: Always update lastMove including checkmate
     socket.on('moveMade', ({ contestId: cid, fen: newFen, san, from, to, isCheckmate }) => {
       if (cid !== contestId) return;
       setFen(newFen);
@@ -169,7 +205,6 @@ export default function RoomPage() {
         moveSansRef.current.push(san);
       }
       setPreviewIndex(-1);
-      // BUG 5: Always set lastMove — never clear it even on checkmate
       if (from && to) setLastMove({ from, to });
     });
 
@@ -179,7 +214,6 @@ export default function RoomPage() {
       setTimerData(null);
       setDrawOfferPending(false);
       setDrawOfferReceived(false);
-      // BUG 5: Do NOT clear lastMove here — keep it highlighted
 
       setReviewData(data.review || null);
       setResultData({
@@ -215,7 +249,7 @@ export default function RoomPage() {
     socket.on('forceLogout', () => navigate('/login'));
 
     return () => {};
-  }, [contestId]);
+  }, [contestId, user?.id]);
 
   useEffect(() => {
     return () => {
@@ -258,13 +292,10 @@ export default function RoomPage() {
 
   const handleFlipBoard = () => setBoardOrientation(p => p === 'white' ? 'black' : 'white');
 
-  // FEATURE 4: Open game review from either MatchOptions or ResultModal
   const handleOpenGameReview = () => {
-    if (gameStatus === 'playing') return; // Locked during game
-    // Request review data from server if we don't have it
+    if (gameStatus === 'playing') return; 
     if (!reviewData) {
       socketRef.current?.emit('getReview', { contestId });
-      // Listen for review response
       socketRef.current?.once('reviewData', (data) => {
         if (data.contestId === contestId) {
           setReviewData(data.review);
@@ -284,7 +315,6 @@ export default function RoomPage() {
   return (
     <div className="min-h-[calc(100vh-64px)] bg-hero px-4 py-6">
       <div className="max-w-7xl mx-auto">
-        {/* Header */}
         <div className="flex items-center justify-between gap-4 mb-6 animate-fade-in">
           <div>
             <div className="flex items-center gap-3 mb-1">
@@ -303,7 +333,6 @@ export default function RoomPage() {
           <button onClick={() => navigate('/')} className="btn-secondary btn-sm">← Lobby</button>
         </div>
 
-        {/* Draw offer modal */}
         {drawOfferReceived && (
           <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm animate-fade-in">
             <div className="bg-navy-800 border border-navy-700/50 rounded-2xl shadow-2xl p-6 max-w-sm w-full animate-scale-in">
@@ -321,7 +350,6 @@ export default function RoomPage() {
         )}
 
         <div className="grid lg:grid-cols-12 gap-6">
-          {/* Left: Move History + Options */}
           <div className="lg:col-span-3 hidden lg:block">
             {matchDataRef.current && <MoveHistory moves={moveHistory} currentIndex={previewIndex} onClickMove={setPreviewIndex} />}
             {currentPlayerColor && (
@@ -346,7 +374,6 @@ export default function RoomPage() {
             )}
           </div>
 
-          {/* Center: Board */}
           <div className="lg:col-span-6">
             <div className="card">
               {matchDataRef.current ? (
@@ -386,7 +413,6 @@ export default function RoomPage() {
               )}
             </div>
 
-            {/* Mobile options */}
             {currentPlayerColor && (
               <div className="lg:hidden mt-4">
                 <MoveHistory moves={moveHistory} currentIndex={previewIndex} onClickMove={setPreviewIndex} />
@@ -412,9 +438,7 @@ export default function RoomPage() {
             )}
           </div>
 
-          {/* Right: Match Info */}
           <div className="lg:col-span-3 hidden lg:block space-y-4">
-            {/* Players */}
             {(whitePlayer || blackPlayer) && (
               <div className="card">
                 <h3 className="text-sm font-bold text-slate-300 mb-3">Players</h3>
@@ -433,7 +457,6 @@ export default function RoomPage() {
               </div>
             )}
 
-            {/* Contest Info */}
             {contestType && (
               <div className="card">
                 <h3 className="text-sm font-bold text-slate-300 mb-3">Contest Info</h3>
@@ -445,7 +468,6 @@ export default function RoomPage() {
               </div>
             )}
 
-            {/* Quick Chat */}
             {gameStatus === 'playing' && (
               <div className="card flex flex-col h-64">
                 <h3 className="text-sm font-bold text-slate-300 mb-2">Quick Chat</h3>
@@ -484,7 +506,6 @@ export default function RoomPage() {
         </div>
       </div>
 
-      {/* Result Modal */}
       {resultData && (
         <ResultModal
           result={resultData}
