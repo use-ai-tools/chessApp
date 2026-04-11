@@ -12,7 +12,6 @@ import Header from './components/Header';
 import Profile from './pages/Profile';
 import Referrals from './pages/Referrals';
 import Tournaments from './pages/Tournaments';
-import ChatBot from './components/ChatBot';
 
 const Protected = ({ children }) => {
   const { user } = useContext(AuthContext);
@@ -46,7 +45,6 @@ function App() {
           <Route path="/room" element={<Navigate to="/" />} />
           <Route path="*" element={<Navigate to="/" />} />
         </Routes>
-        <ChatBot />
       </div>
     </Router>
   );

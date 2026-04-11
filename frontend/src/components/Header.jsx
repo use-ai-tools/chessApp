@@ -2,10 +2,12 @@ import React, { useContext, useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { AuthContext } from '../contexts/AuthContext';
 import WalletModal from './WalletModal';
+import ChatBot from './ChatBot';
 
 export default function Header() {
   const { user, logout } = useContext(AuthContext);
   const [walletOpen, setWalletOpen] = useState(false);
+  const [supportOpen, setSupportOpen] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const location = useLocation();
 
@@ -17,6 +19,7 @@ export default function Header() {
     { to: '/referrals', label: 'Refer & Earn', icon: '🤝' },
     { to: '/leaderboard', label: 'Rankings', icon: '🏅' },
     { to: '/transactions', label: 'History', icon: '📋' },
+    { action: () => setSupportOpen(true), label: 'Help & Support', icon: '💬' },
     ...(user.role === 'admin' ? [{ to: '/admin', label: 'Admin', icon: '⚙️' }] : []),
   ];
 
@@ -39,20 +42,34 @@ export default function Header() {
 
           {/* Desktop Nav */}
           <nav className="hidden md:flex items-center gap-1">
-            {navLinks.map((link) => (
-              <Link
-                key={link.to}
-                to={link.to}
-                className={`px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
-                  isActive(link.to)
-                    ? 'bg-chess-green/15 text-chess-green border border-chess-green/20'
-                    : 'text-slate-400 hover:text-white hover:bg-white/5'
-                }`}
-              >
-                <span className="mr-1.5">{link.icon}</span>
-                {link.label}
-              </Link>
-            ))}
+            {navLinks.map((link, idx) => {
+              if (link.action) {
+                return (
+                  <button
+                    key={idx}
+                    onClick={link.action}
+                    className="px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 text-slate-400 hover:text-white hover:bg-white/5"
+                  >
+                    <span className="mr-1.5">{link.icon}</span>
+                    {link.label}
+                  </button>
+                );
+              }
+              return (
+                <Link
+                  key={link.to}
+                  to={link.to}
+                  className={`px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
+                    isActive(link.to)
+                      ? 'bg-chess-green/15 text-chess-green border border-chess-green/20'
+                      : 'text-slate-400 hover:text-white hover:bg-white/5'
+                  }`}
+                >
+                  <span className="mr-1.5">{link.icon}</span>
+                  {link.label}
+                </Link>
+              );
+            })}
           </nav>
 
           {/* Right Section */}
@@ -124,21 +141,35 @@ export default function Header() {
         {menuOpen && (
           <div className="md:hidden border-t border-navy-700/50 bg-navy-900/95 backdrop-blur-xl animate-slide-down">
             <div className="px-4 py-3 space-y-1">
-              {navLinks.map((link) => (
-                <Link
-                  key={link.to}
-                  to={link.to}
-                  onClick={() => setMenuOpen(false)}
-                  className={`block px-4 py-2.5 rounded-lg text-sm font-medium transition-all ${
-                    isActive(link.to)
-                      ? 'bg-chess-green/15 text-chess-green'
-                      : 'text-slate-400 hover:text-white hover:bg-white/5'
-                  }`}
-                >
-                  <span className="mr-2">{link.icon}</span>
-                  {link.label}
-                </Link>
-              ))}
+              {navLinks.map((link, idx) => {
+                if (link.action) {
+                  return (
+                    <button
+                      key={idx}
+                      onClick={() => { link.action(); setMenuOpen(false); }}
+                      className="block w-full text-left px-4 py-2.5 rounded-lg text-sm font-medium transition-all text-slate-400 hover:text-white hover:bg-white/5"
+                    >
+                      <span className="mr-2">{link.icon}</span>
+                      {link.label}
+                    </button>
+                  );
+                }
+                return (
+                  <Link
+                    key={link.to}
+                    to={link.to}
+                    onClick={() => setMenuOpen(false)}
+                    className={`block px-4 py-2.5 rounded-lg text-sm font-medium transition-all ${
+                      isActive(link.to)
+                        ? 'bg-chess-green/15 text-chess-green'
+                        : 'text-slate-400 hover:text-white hover:bg-white/5'
+                    }`}
+                  >
+                    <span className="mr-2">{link.icon}</span>
+                    {link.label}
+                  </Link>
+                );
+              })}
               <div className="pt-2 border-t border-navy-700/50">
                 <button
                   onClick={() => { logout(); setMenuOpen(false); }}
@@ -154,6 +185,9 @@ export default function Header() {
 
       {/* Wallet Modal */}
       {walletOpen && <WalletModal onClose={() => setWalletOpen(false)} />}
+      
+      {/* Help Modal */}
+      <ChatBot isOpen={supportOpen} onClose={() => setSupportOpen(false)} />
     </>
   );
 }
