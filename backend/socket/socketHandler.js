@@ -1,11 +1,10 @@
 const Room = require('../models/Room');
 
 module.exports = (io) => {
-  // Chess Arena: Start match when room is full (wait for DB update)
   io.on('connection', (socket) => {
+    // Simple joinRoom event
     socket.on('joinRoom', async ({ roomId, userId }) => {
       socket.join(roomId);
-      // Wait 1 second for DB to update then check
       setTimeout(async () => {
         const room = await Room.findById(roomId).populate('players');
         if (!room) return;
@@ -23,7 +22,13 @@ module.exports = (io) => {
         }
       }, 1000);
     });
+
+    // Simple makeMove event (stub, implement as needed)
+    socket.on('makeMove', async (data) => {
+      // Implement move logic here or call your existing handler
+    });
   });
+};
 const Contest = require('../models/Contest');
 const ContestType = require('../models/ContestType');
 const User = require('../models/User');
