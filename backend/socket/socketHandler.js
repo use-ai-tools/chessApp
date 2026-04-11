@@ -1,4 +1,3 @@
-// ...existing code...
 const Room = require('../models/Room');
 
   // Chess Arena: Start match when room is full (wait for DB update)
