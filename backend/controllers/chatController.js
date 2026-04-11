@@ -7,34 +7,41 @@ exports.processChat = async (req, res) => {
     return res.status(400).json({ error: "Message is required" });
   }
 
-  const systemPrompt = "You are Chess Arena support assistant. Help users with: how to join contests, wallet, rules, prizes, how chess moves work. App has contests from ₹7 to ₹100, winner gets prize. Be helpful and concise.";
+  const systemPrompt = "You are Chess Arena support bot. Help with contests, wallet, prizes, chess rules.";
+  const apiKey = process.env.GEMINI_API_KEY;
+
+  if (!apiKey) {
+    return res.status(500).json({ error: "GEMINI_API_KEY is not configured on the server." });
+  }
 
   try {
-    const response = await fetch('https://api.anthropic.com/v1/messages', {
+    const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`, {
       method: 'POST',
       headers: {
-        'Content-Type': 'application/json',
-        'x-api-key': process.env.ANTHROPIC_API_KEY,
-        'anthropic-version': '2023-06-01'
+        'Content-Type': 'application/json'
       },
       body: JSON.stringify({
-        model: 'claude-3-haiku-20240307',
-        max_tokens: 500,
-        system: systemPrompt,
-        messages: [
-          { role: 'user', content: message }
+        systemInstruction: {
+          parts: [{ text: systemPrompt }]
+        },
+        contents: [
+          {
+            role: "user",
+            parts: [{ text: message }]
+          }
         ]
       })
     });
 
     if (!response.ok) {
       const errText = await response.text();
-      console.error('Anthropic API error:', errText);
+      console.error('Gemini API error:', errText);
       return res.status(500).json({ error: "Failed to connect to chat interface." });
     }
 
     const data = await response.json();
-    const reply = data.content[0].text;
+    const reply = data.candidates?.[0]?.content?.parts?.[0]?.text || "Sorry, I couldn't generate a response.";
+    
     res.json({ reply });
   } catch (error) {
     console.error('Chat controller error:', error);
