@@ -8,7 +8,10 @@ const { seedContests } = require('./scripts/seedContests');
 const setupSockets = require('./socket/socketHandler');
 
 const app = express();
-app.use(cors());
+app.use(cors({
+  origin: process.env.FRONTEND_URL || 'http://localhost:3000',
+  credentials: true
+}));
 app.use(express.json());
 
 // Routes
@@ -42,7 +45,15 @@ mongoose.connect(MONGO_URI, {
   });
 
 const server = http.createServer(app);
-const io = new Server(server, { cors: { origin: '*' } });
+const io = new Server(server, {
+  cors: {
+    origin: process.env.FRONTEND_URL || 'http://localhost:3000',
+    credentials: true
+  },
+  transports: ['websocket', 'polling'],
+  pingTimeout: 60000,
+  pingInterval: 25000
+});
 
 // Attach socket handlers
 setupSockets(io);
