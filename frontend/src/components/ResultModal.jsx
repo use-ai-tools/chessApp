@@ -69,6 +69,7 @@ export default function ResultModal({ result, onClose, onBackToLobby, onPlayAgai
             {result.reason === 'draw' && 'Draw by agreement'}
             {result.reason === 'repetition' && 'Draw by repetition'}
             {result.reason === 'insufficient' && 'Draw — insufficient material'}
+            {result.reason === 'disconnect' && (isWinner ? 'Opponent disconnected' : 'You disconnected')}
           </p>
 
           {/* AI Coach Comment */}
@@ -125,9 +126,10 @@ export default function ResultModal({ result, onClose, onBackToLobby, onPlayAgai
 
           {/* Actions */}
           <div className="space-y-2 mt-4">
-            {onGameReview && review && (
-              <button onClick={onGameReview} className="w-full py-2.5 rounded-xl bg-purple-600/15 border border-purple-500/20 text-purple-400 text-sm font-bold hover:bg-purple-600/25 transition-all">
-                📊 Game Review
+            {/* FEATURE 4: Game Review button — always shown after match if review data exists */}
+            {onGameReview && (
+              <button onClick={onGameReview} className="w-full py-2.5 rounded-xl bg-purple-600/15 border border-purple-500/20 text-purple-400 text-sm font-bold hover:bg-purple-600/25 transition-all flex items-center justify-center gap-2">
+                <span>📊</span> Game Review
               </button>
             )}
             <div className="flex gap-2">

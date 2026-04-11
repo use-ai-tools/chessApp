@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect, useRef } from 'react';
 import { Chess } from 'chess.js';
 import { Chessboard } from 'react-chessboard';
 import WinProbabilityBar from './WinProbabilityBar';
@@ -15,6 +15,7 @@ const CLASS_CONFIG = {
 
 export default function GameReview({ moves, review, playerColor, onClose }) {
   const [currentIndex, setCurrentIndex] = useState(-1); // -1 = start position
+  const moveListRef = useRef(null);
 
   const classifications = review?.classifications || [];
 
@@ -31,15 +32,42 @@ export default function GameReview({ moves, review, playerColor, onClose }) {
     return fens;
   }, [moves]);
 
+  // Compute last move {from, to} for each position
+  const moveDetails = useMemo(() => {
+    const details = [null]; // no last move for starting position
+    const game = new Chess();
+    for (const san of moves) {
+      try {
+        const move = game.move(san);
+        details.push({ from: move.from, to: move.to });
+      } catch { break; }
+    }
+    return details;
+  }, [moves]);
+
   const currentFen = positions[currentIndex + 1] || positions[0];
+  const currentLastMove = moveDetails[currentIndex + 1] || null;
   const currentClassification = currentIndex >= 0 ? classifications[currentIndex] : null;
   const config = currentClassification ? CLASS_CONFIG[currentClassification.classification] : null;
 
+  // Auto-scroll move list to active move
+  useEffect(() => {
+    if (moveListRef.current) {
+      const activeBtn = moveListRef.current.querySelector('.move-active');
+      if (activeBtn) activeBtn.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+    }
+  }, [currentIndex]);
+
   // Keyboard navigation
-  const handleKeyDown = (e) => {
-    if (e.key === 'ArrowLeft') setCurrentIndex((i) => Math.max(-1, i - 1));
-    if (e.key === 'ArrowRight') setCurrentIndex((i) => Math.min(moves.length - 1, i + 1));
-  };
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if (e.key === 'ArrowLeft') setCurrentIndex((i) => Math.max(-1, i - 1));
+      if (e.key === 'ArrowRight') setCurrentIndex((i) => Math.min(moves.length - 1, i + 1));
+      if (e.key === 'Escape') onClose();
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [moves.length, onClose]);
 
   // Pair moves for display
   const pairs = [];
@@ -55,8 +83,15 @@ export default function GameReview({ moves, review, playerColor, onClose }) {
   const blackSummary = review?.black || {};
   const mySummary = playerColor === 'w' ? whiteSummary : blackSummary;
 
+  // Square styles: highlight last move + classification
+  const squareStyles = {};
+  if (currentLastMove) {
+    squareStyles[currentLastMove.from] = { backgroundColor: 'rgba(246,246,105,0.5)' };
+    squareStyles[currentLastMove.to] = { backgroundColor: 'rgba(246,246,105,0.5)' };
+  }
+
   return (
-    <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-2" onKeyDown={handleKeyDown} tabIndex={0}>
+    <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-2" tabIndex={0}>
       <div className="bg-navy-900 border border-navy-700/50 rounded-2xl shadow-2xl max-w-5xl w-full max-h-[95vh] overflow-hidden flex flex-col animate-scale-in">
         {/* Header */}
         <div className="flex items-center justify-between p-4 border-b border-navy-700/30">
@@ -66,9 +101,10 @@ export default function GameReview({ moves, review, playerColor, onClose }) {
           <button onClick={onClose} className="btn-ghost btn-sm text-slate-400 hover:text-white">✕</button>
         </div>
 
-        <div className="flex flex-1 overflow-hidden">
+        <div className="flex flex-1 overflow-hidden flex-col md:flex-row">
           {/* Board + Win Bar */}
-          <div className="flex items-center gap-2 p-4">
+          <div className="flex items-center gap-2 p-4 justify-center">
+            {/* FEATURE 4: Win probability bar visible in review */}
             <WinProbabilityBar fen={currentFen} height={380} />
             <div>
               <Chessboard
@@ -79,10 +115,7 @@ export default function GameReview({ moves, review, playerColor, onClose }) {
                 customBoardStyle={{ borderRadius: '12px' }}
                 customDarkSquareStyle={{ backgroundColor: '#b58863' }}
                 customLightSquareStyle={{ backgroundColor: '#f0d9b5' }}
-                customSquareStyles={currentClassification ? {
-                  [currentClassification.from]: { backgroundColor: 'rgba(246,246,105,0.5)' },
-                  [currentClassification.to]: { backgroundColor: 'rgba(246,246,105,0.5)' },
-                } : {}}
+                customSquareStyles={squareStyles}
                 animationDuration={150}
               />
               {/* Current move classification banner */}
@@ -97,7 +130,7 @@ export default function GameReview({ moves, review, playerColor, onClose }) {
           </div>
 
           {/* Right panel */}
-          <div className="flex-1 flex flex-col border-l border-navy-700/30 min-w-0">
+          <div className="flex-1 flex flex-col border-t md:border-t-0 md:border-l border-navy-700/30 min-w-0">
             {/* Summary cards */}
             <div className="p-3 border-b border-navy-700/30">
               <h4 className="text-xs text-slate-500 font-bold uppercase mb-2">Your Move Quality</h4>
@@ -120,7 +153,7 @@ export default function GameReview({ moves, review, playerColor, onClose }) {
             </div>
 
             {/* Move list */}
-            <div className="flex-1 overflow-y-auto p-3">
+            <div ref={moveListRef} className="flex-1 overflow-y-auto p-3">
               {pairs.map((pair) => (
                 <div key={pair.number} className="flex items-center gap-1 text-sm font-mono py-0.5">
                   <span className="text-slate-500 w-7 text-right text-xs mr-1 flex-shrink-0">{pair.number}.</span>
@@ -169,7 +202,7 @@ function MoveBtn({ san, cls, isActive, onClick, isWhite }) {
   return (
     <button
       onClick={onClick}
-      className={`px-2 py-1 rounded text-xs transition-all flex items-center gap-0.5 ${
+      className={`px-2 py-1 rounded text-xs transition-all flex items-center gap-0.5 ${isActive ? 'move-active' : ''} ${
         isActive
           ? 'bg-chess-green/20 text-chess-green ring-1 ring-chess-green/30'
           : isWhite ? 'text-sky-300 hover:bg-white/10' : 'text-purple-300 hover:bg-white/10'

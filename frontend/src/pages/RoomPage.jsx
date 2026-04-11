@@ -35,7 +35,7 @@ export default function RoomPage() {
   const [drawOfferReceived, setDrawOfferReceived] = useState(false);
   const [floatingEmoji, setFloatingEmoji] = useState(null);
   const [previewIndex, setPreviewIndex] = useState(-1);
-  const [lastMove, setLastMove] = useState(null);
+  const [lastMove, setLastMove] = useState(null); // BUG 5 FIX: Never cleared on game end
   const [showGameReview, setShowGameReview] = useState(false);
   const [reviewData, setReviewData] = useState(null);
   const [showSettings, setShowSettings] = useState(false);
@@ -66,16 +66,33 @@ export default function RoomPage() {
 
     // Helper to setup match state
     const setupMatch = (data) => {
-      // Support both new socket format (roomId) and old format (contestId)
       const rId = data.roomId || data.contestId;
       if (rId && rId !== contestId) return;
 
       matchDataRef.current = data;
       if (data.contestType) setContestType(data.contestType);
       setFen(data.fen || 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1');
-      setMoveHistory([]);
-      moveSansRef.current = [];
-      setLastMove(null);
+      
+      // If reconnecting with existing moves, replay them
+      if (data.moves && data.moves.length > 0) {
+        setMoveHistory(data.moves);
+        moveSansRef.current = [...data.moves];
+        // Compute last move from the moves array
+        try {
+          const game = new Chess();
+          let lastMoveData = null;
+          for (const san of data.moves) {
+            const m = game.move(san);
+            if (m) lastMoveData = { from: m.from, to: m.to };
+          }
+          if (lastMoveData) setLastMove(lastMoveData);
+        } catch {}
+      } else {
+        setMoveHistory([]);
+        moveSansRef.current = [];
+        setLastMove(null);
+      }
+      
       setPreviewIndex(-1);
       setDrawOfferPending(false);
       setDrawOfferReceived(false);
@@ -106,7 +123,6 @@ export default function RoomPage() {
         });
         if (res.ok) {
           const roomData = await res.json();
-          // If room is ongoing, trigger matchStarted logic manually
           if (roomData.status === 'ongoing' && roomData.players?.length >= 2) {
              const [p1, p2] = roomData.players;
              setupMatch({
@@ -132,7 +148,7 @@ export default function RoomPage() {
     }
 
     socket.on('matchStarted', (data) => {
-      if (matchDataRef.current) return; // Use ref check to avoid stale multiple triggers
+      if (matchDataRef.current) return;
       setupMatch(data);
     });
 
@@ -144,7 +160,8 @@ export default function RoomPage() {
       if (data.contestId === contestId) setTimerData(data);
     });
 
-    socket.on('moveMade', ({ contestId: cid, fen: newFen, san, from, to }) => {
+    // BUG 5 FIX: Always update lastMove including checkmate
+    socket.on('moveMade', ({ contestId: cid, fen: newFen, san, from, to, isCheckmate }) => {
       if (cid !== contestId) return;
       setFen(newFen);
       if (san) {
@@ -152,6 +169,7 @@ export default function RoomPage() {
         moveSansRef.current.push(san);
       }
       setPreviewIndex(-1);
+      // BUG 5: Always set lastMove — never clear it even on checkmate
       if (from && to) setLastMove({ from, to });
     });
 
@@ -161,6 +179,7 @@ export default function RoomPage() {
       setTimerData(null);
       setDrawOfferPending(false);
       setDrawOfferReceived(false);
+      // BUG 5: Do NOT clear lastMove here — keep it highlighted
 
       setReviewData(data.review || null);
       setResultData({
@@ -194,9 +213,6 @@ export default function RoomPage() {
     });
     socket.on('errorMsg', (msg) => console.error('Socket error:', msg));
     socket.on('forceLogout', () => navigate('/login'));
-
-    // On mount, emit playerReady (the ChessBoard also does this, but double-sure)
-    // Actually let ChessBoard handle it
 
     return () => {};
   }, [contestId]);
@@ -241,6 +257,26 @@ export default function RoomPage() {
   };
 
   const handleFlipBoard = () => setBoardOrientation(p => p === 'white' ? 'black' : 'white');
+
+  // FEATURE 4: Open game review from either MatchOptions or ResultModal
+  const handleOpenGameReview = () => {
+    if (gameStatus === 'playing') return; // Locked during game
+    // Request review data from server if we don't have it
+    if (!reviewData) {
+      socketRef.current?.emit('getReview', { contestId });
+      // Listen for review response
+      socketRef.current?.once('reviewData', (data) => {
+        if (data.contestId === contestId) {
+          setReviewData(data.review);
+          setResultData(null);
+          setShowGameReview(true);
+        }
+      });
+    } else {
+      setResultData(null);
+      setShowGameReview(true);
+    }
+  };
 
   const isSpectator = currentPlayerColor === null && matchDataRef.current !== null;
   const currentPlayer = currentPlayerColor ? { color: currentPlayerColor, ...(currentPlayerColor === 'white' ? whitePlayer : blackPlayer) } : null;
@@ -288,7 +324,7 @@ export default function RoomPage() {
           {/* Left: Move History + Options */}
           <div className="lg:col-span-3 hidden lg:block">
             {matchDataRef.current && <MoveHistory moves={moveHistory} currentIndex={previewIndex} onClickMove={setPreviewIndex} />}
-            {gameStatus === 'playing' && currentPlayerColor && (
+            {currentPlayerColor && (
               <div className="mt-4">
                 <MatchOptions
                   onResign={handleResign}
@@ -303,6 +339,8 @@ export default function RoomPage() {
                   onOpenSettings={() => setShowSettings(true)}
                   soundEnabled={settings.moveSound !== false}
                   drawOfferPending={drawOfferPending}
+                  gameStatus={gameStatus}
+                  onGameReview={handleOpenGameReview}
                 />
               </div>
             )}
@@ -322,12 +360,14 @@ export default function RoomPage() {
                   whitePlayer={whitePlayer}
                   blackPlayer={blackPlayer}
                   isSpectator={isSpectator || previewIndex !== -1}
+                  isReview={false}
                   gameStatus={previewIndex !== -1 ? 'preview' : gameStatus}
                   boardOrientation={boardOrientation}
                   timerData={timerData}
                   floatingEmoji={floatingEmoji}
                   lastMove={lastMove}
                   settings={settings}
+                  username={user?.username}
                 />
               ) : (
                 <div className="flex flex-col items-center justify-center gap-4 py-20">
@@ -347,7 +387,7 @@ export default function RoomPage() {
             </div>
 
             {/* Mobile options */}
-            {gameStatus === 'playing' && currentPlayerColor && (
+            {currentPlayerColor && (
               <div className="lg:hidden mt-4">
                 <MoveHistory moves={moveHistory} currentIndex={previewIndex} onClickMove={setPreviewIndex} />
                 <div className="mt-3">
@@ -364,6 +404,8 @@ export default function RoomPage() {
                     onOpenSettings={() => setShowSettings(true)}
                     soundEnabled={settings.moveSound !== false}
                     drawOfferPending={drawOfferPending}
+                    gameStatus={gameStatus}
+                    onGameReview={handleOpenGameReview}
                   />
                 </div>
               </div>
@@ -449,7 +491,7 @@ export default function RoomPage() {
           onClose={() => setResultData(null)}
           onBackToLobby={() => navigate('/')}
           onPlayAgain={() => navigate('/')}
-          onGameReview={reviewData ? () => { setResultData(null); setShowGameReview(true); } : null}
+          onGameReview={handleOpenGameReview}
         />
       )}
 

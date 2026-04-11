@@ -7,12 +7,16 @@ export default function PlayerTimer({
   color,
   captured,
   materialAdvantage,
+  gameStatus, // BUG 6: needed to show waiting state
 }) {
   const formatTime = (seconds) => {
     const m = Math.floor(seconds / 60);
     const s = seconds % 60;
     return `${m}:${s.toString().padStart(2, '0')}`;
   };
+
+  // BUG 6 FIX: Show waiting indicator before timer starts
+  const isWaitingFirstMove = gameStatus === 'playing' && time >= 30 && !isActive;
 
   return (
     <div
@@ -26,7 +30,7 @@ export default function PlayerTimer({
         {/* Avatar */}
         <div className="relative">
           <div
-            className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold ${
+            className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold transition-all duration-300 ${
               color === 'white'
                 ? 'bg-slate-200 text-slate-800'
                 : 'bg-slate-800 text-slate-200 border border-slate-600'
@@ -35,7 +39,7 @@ export default function PlayerTimer({
             {player?.username?.charAt(0)?.toUpperCase() || '?'}
           </div>
           {isActive && (
-            <span className="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 bg-emerald-500 border-2 border-slate-900 rounded-full" />
+            <span className="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 bg-emerald-500 border-2 border-slate-900 rounded-full animate-pulse" />
           )}
         </div>
         <div>
@@ -44,7 +48,7 @@ export default function PlayerTimer({
           {captured && captured.length > 0 && (
             <div className="captured-pieces">
               {captured.map((p, i) => (
-                <span key={i} className="text-sm opacity-80">{p}</span>
+                <span key={i} className="text-sm opacity-80 piece-capture-in">{p}</span>
               ))}
               {materialAdvantage > 0 && (
                 <span className="material-advantage">+{materialAdvantage}</span>
@@ -59,7 +63,7 @@ export default function PlayerTimer({
 
       {/* Timer */}
       <div
-        className={`px-3 py-1.5 rounded-lg font-mono text-sm font-bold flex items-center gap-2 ${
+        className={`px-3 py-1.5 rounded-lg font-mono text-sm font-bold flex items-center gap-2 transition-all duration-300 ${
           isActive
             ? time <= 5
               ? 'bg-red-500/20 text-red-400 animate-pulse'

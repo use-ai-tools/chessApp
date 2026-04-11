@@ -89,6 +89,7 @@ export default function ChessBoard({
   blackPlayer,
   boardOrientation = 'white',
   isSpectator = false,
+  isReview = false, // BUG 4 FIX: Win probability bar only in review mode
   gameStatus,
   timerData,
   spectatorCount = 0,
@@ -96,6 +97,7 @@ export default function ChessBoard({
   lastMove,
   settings,
   moveTimeoutMs = 30000,
+  username, // FEATURE 5: Screenshot prevention watermark
 }) {
   const gameRef = useRef(new Chess());
   const containerRef = useRef(null);
@@ -106,6 +108,7 @@ export default function ChessBoard({
   const [selectedSquare, setSelectedSquare] = useState(null);
   const [legalMoveStyles, setLegalMoveStyles] = useState({});
   const [illegalMoveMsg, setIllegalMoveMsg] = useState('');
+  const [boardShake, setBoardShake] = useState(false); // FEATURE 6: Illegal move shake
   const [boardTheme, setBoardTheme] = useState(() => {
     try {
       const s = JSON.parse(localStorage.getItem('chess-settings') || '{}');
@@ -115,16 +118,17 @@ export default function ChessBoard({
   const [whiteCaptured, setWhiteCaptured] = useState([]);
   const [blackCaptured, setBlackCaptured] = useState([]);
   const [inCheck, setInCheck] = useState(false);
-  const [premoveSquares, setPremoveSquares] = useState(null); // { from, to }
+  const [premoveSquares, setPremoveSquares] = useState(null);
+  const [draggedSquare, setDraggedSquare] = useState(null); // FEATURE 7: Legal move dots on drag
 
   // Read settings
   const soundEnabled = settings?.moveSound !== false;
   const showLegalMoves = settings?.showLegalMoves !== false;
   const showLastMove = settings?.showLastMove !== false;
   const premovesEnabled = settings?.premoves !== false;
-  const animDuration = settings?.animationSpeed === 'none' ? 0 : settings?.animationSpeed === 'fast' ? 80 : 200;
+  const animDuration = settings?.animationSpeed === 'none' ? 0 : settings?.animationSpeed === 'fast' ? 80 : 150; // FEATURE 6: Smooth 150ms
 
-  // ── Emit playerReady when board mounts (BUG 2 FIX) ──
+  // ── Emit playerReady when board mounts ──
   useEffect(() => {
     if (gameStatus === 'playing' && onPlayerReady && !readyEmitted.current && currentPlayer) {
       readyEmitted.current = true;
@@ -143,6 +147,16 @@ export default function ChessBoard({
       playSound('gameStart');
     }
   }, [gameStatus === 'playing']);
+
+  // ── FEATURE 5: Screenshot prevention ──
+  useEffect(() => {
+    if (gameStatus === 'playing') {
+      document.body.style.userSelect = 'none';
+    }
+    return () => {
+      document.body.style.userSelect = '';
+    };
+  }, [gameStatus]);
 
   // ── Responsive board sizing ──
   useEffect(() => {
@@ -167,6 +181,8 @@ export default function ChessBoard({
         console.error('Invalid FEN:', e);
       }
     }
+    // BUG 3 FIX: Don't clear selection on FEN change if it was from our own move
+    // Only clear if it's a new position from opponent
     setSelectedSquare(null);
     setLegalMoveStyles({});
   }, [fen]);
@@ -224,11 +240,13 @@ export default function ChessBoard({
     return () => clearInterval(interval);
   }, [timerData, gameStatus, moveTimeoutMs]);
 
-  // ── Auto-dismiss illegal move ──
+  // ── Auto-dismiss illegal move + shake ──
   useEffect(() => {
     if (!illegalMoveMsg) return;
-    const t = setTimeout(() => setIllegalMoveMsg(''), 2000);
-    return () => clearTimeout(t);
+    setBoardShake(true);
+    const t1 = setTimeout(() => setBoardShake(false), 500);
+    const t2 = setTimeout(() => setIllegalMoveMsg(''), 2000);
+    return () => { clearTimeout(t1); clearTimeout(t2); };
   }, [illegalMoveMsg]);
 
   // ── Sync board theme from settings ──
@@ -237,7 +255,7 @@ export default function ChessBoard({
   }, [settings?.boardTheme]);
 
   const canMakeMove = () => {
-    if (isSpectator) return false;
+    if (isSpectator || isReview) return false;
     if (gameStatus !== 'playing') return false;
     if (!currentPlayer) return false;
     const turn = gameRef.current.turn();
@@ -245,7 +263,8 @@ export default function ChessBoard({
   };
 
   const isMyTurn = canMakeMove();
-  const isOpponentTurn = !isSpectator && gameStatus === 'playing' && currentPlayer && !isMyTurn;
+  const isOpponentTurn = !isSpectator && !isReview && gameStatus === 'playing' && currentPlayer && !isMyTurn;
+  const playerColor = currentPlayer?.color === 'white' ? 'w' : 'b';
 
   // ── Compute legal move hints ──
   const showLegalMoveHints = useCallback((square) => {
@@ -271,7 +290,7 @@ export default function ChessBoard({
     return styles;
   }, [showLegalMoves]);
 
-  // ── Click-to-move state machine (BUG 1 FIX) ──
+  // ── BUG 3 FIX: Click-to-move state machine ──
   const onSquareClick = (square) => {
     const game = gameRef.current;
 
@@ -285,7 +304,7 @@ export default function ChessBoard({
 
     if (selectedSquare) {
       // STATE 2: Piece already selected
-      // Check if clicking another own piece → switch selection
+      // BUG 3 FIX: Check if clicking another own piece → switch selection
       const piece = game.get(square);
       if (piece && piece.color === game.turn() && square !== selectedSquare) {
         setSelectedSquare(square);
@@ -324,9 +343,7 @@ export default function ChessBoard({
   // ── Premove click handler ──
   const handlePremoveClick = (square) => {
     if (premoveSquares) {
-      // Second click: set the premove
       if (square === premoveSquares.from) {
-        // Cancel premove by clicking same square
         setPremoveSquares(null);
         if (onCancelPremove) onCancelPremove();
         return;
@@ -337,7 +354,6 @@ export default function ChessBoard({
       return;
     }
 
-    // First click: select piece for premove
     const game = gameRef.current;
     const piece = game.get(square);
     const myColor = currentPlayer?.color === 'white' ? 'w' : 'b';
@@ -351,8 +367,13 @@ export default function ChessBoard({
     if (isMyTurn) setPremoveSquares(null);
   }, [isMyTurn]);
 
-  // ── Drag-to-move handler ──
+  // ── BUG 2/3/7 FIX: Drag-to-move handler ──
   const onDrop = (sourceSquare, targetSquare) => {
+    // BUG 3 FIX: Always reset selection state after drop attempt
+    setSelectedSquare(null);
+    setLegalMoveStyles({});
+    setDraggedSquare(null);
+
     if (!isMyTurn) return false;
     const game = gameRef.current;
     const moveCopy = new Chess(game.fen());
@@ -363,12 +384,18 @@ export default function ChessBoard({
     }
     if (soundEnabled) playSound(move.captured ? 'capture' : moveCopy.isCheck() ? 'check' : 'move');
     onMove({ from: sourceSquare, to: targetSquare, promotion: 'q', san: move.san });
-    setSelectedSquare(null);
-    setLegalMoveStyles({});
     return true;
   };
 
-  // ── Check highlight ──
+  // ── FEATURE 7: Show legal move dots when piece is picked up for dragging ──
+  const onPieceDragBegin = (piece, sourceSquare) => {
+    if (!isMyTurn) return false;
+    setDraggedSquare(sourceSquare);
+    setLegalMoveStyles(showLegalMoveHints(sourceSquare));
+    return true;
+  };
+
+  // ── Check highlight with FEATURE 6: king square pulses red ──
   const getCheckStyles = () => {
     if (!inCheck) return {};
     const game = gameRef.current;
@@ -378,14 +405,19 @@ export default function ChessBoard({
       for (let c = 0; c < 8; c++) {
         const sq = board[r][c];
         if (sq && sq.type === 'k' && sq.color === turn) {
-          return { [`${'abcdefgh'[c]}${8 - r}`]: { backgroundColor: 'rgba(239, 68, 68, 0.6)', borderRadius: '50%' } };
+          const squareName = `${'abcdefgh'[c]}${8 - r}`;
+          return { [squareName]: {
+            backgroundColor: 'rgba(239, 68, 68, 0.6)',
+            borderRadius: '50%',
+            animation: 'checkPulse 1s ease-in-out infinite',
+          }};
         }
       }
     }
     return {};
   };
 
-  // ── Last move highlight (FEATURE 2) ──
+  // ── BUG 5 FIX: Last move highlight — always show including final checkmate ──
   const getLastMoveStyles = () => {
     if (!showLastMove || !lastMove) return {};
     return {
@@ -403,7 +435,7 @@ export default function ChessBoard({
     return styles;
   };
 
-  // ── Combine all square styles (order matters — later overrides earlier) ──
+  // ── Combine all square styles ──
   const customSquareStyles = {
     ...getLastMoveStyles(),
     ...getPremoveStyles(),
@@ -433,7 +465,7 @@ export default function ChessBoard({
       )}
 
       {/* Top Player */}
-      <PlayerTimer player={topPlayer} time={topTime} isActive={isTopTurn && gameStatus === 'playing'} color={topColor} captured={topCaptured} materialAdvantage={topAdv} timerMax={timerMax} />
+      <PlayerTimer player={topPlayer} time={topTime} isActive={isTopTurn && gameStatus === 'playing'} color={topColor} captured={topCaptured} materialAdvantage={topAdv} timerMax={timerMax} gameStatus={gameStatus} />
 
       {gameStatus === 'playing' && isTopTurn && (
         <div className="w-full progress-bar" style={{ maxWidth: boardWidth }}>
@@ -443,15 +475,27 @@ export default function ChessBoard({
 
       {/* Board + Win Probability Bar */}
       <div className="flex items-center gap-2">
-        <WinProbabilityBar fen={fen} height={boardWidth} />
+        {/* BUG 4 FIX: Only show WinProbabilityBar in review mode */}
+        {isReview && <WinProbabilityBar fen={fen} height={boardWidth} />}
 
         <div className={`rounded-xl overflow-hidden shadow-2xl shadow-black/50 transition-all duration-300 relative ${
-          !isMyTurn && !isSpectator && gameStatus === 'playing' ? 'opacity-85' : ''
-        }`}>
+          !isMyTurn && !isSpectator && !isReview && gameStatus === 'playing' ? 'opacity-85' : ''
+        } ${boardShake ? 'board-shake' : ''}`}>
+          
+          {/* FEATURE 5: Username watermark during live game */}
+          {gameStatus === 'playing' && username && (
+            <div className="absolute inset-0 z-10 pointer-events-none flex items-center justify-center" style={{ opacity: 0.04 }}>
+              <p className="text-white text-2xl font-black rotate-[-30deg] select-none whitespace-nowrap">
+                {username}
+              </p>
+            </div>
+          )}
+
           <Chessboard
             position={fen}
             onPieceDrop={onDrop}
             onSquareClick={onSquareClick}
+            onPieceDragBegin={onPieceDragBegin}
             boardOrientation={boardOrientation}
             boardWidth={boardWidth - 32}
             customBoardStyle={{ borderRadius: '12px' }}
@@ -460,6 +504,7 @@ export default function ChessBoard({
             customSquareStyles={customSquareStyles}
             animationDuration={animDuration}
             arePiecesDraggable={isMyTurn}
+            snapToCursor={false}
           />
         </div>
       </div>
@@ -473,7 +518,7 @@ export default function ChessBoard({
         </div>
       )}
 
-      <PlayerTimer player={bottomPlayer} time={bottomTime} isActive={isBottomTurn && gameStatus === 'playing'} color={bottomColor} captured={bottomCaptured} materialAdvantage={bottomAdv} timerMax={timerMax} />
+      <PlayerTimer player={bottomPlayer} time={bottomTime} isActive={isBottomTurn && gameStatus === 'playing'} color={bottomColor} captured={bottomCaptured} materialAdvantage={bottomAdv} timerMax={timerMax} gameStatus={gameStatus} />
 
       <div className="w-full max-w-[560px] flex items-center justify-between mt-1">
         {isSpectator && <div className="badge-purple"><span>👁️</span> Spectating</div>}

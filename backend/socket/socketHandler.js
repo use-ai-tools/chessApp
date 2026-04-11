@@ -8,19 +8,8 @@ const { distributePrize } = require('../services/prizeService');
 const { analyzeGame } = require('../services/gameReviewService');
 const { replenishContests } = require('../scripts/seedContests');
 
-// ─────────────────────────────────────────────────────────────
-// OLD MATCHMAKING SERVICE — COMMENTED OUT (was causing bugs)
-// const {
-//   joinContestQueue,
-//   leaveContestQueue,
-//   leaveAllQueues,
-//   checkQueuesForMatches,
-//   getQueueStatus,
-// } = require('../services/matchmakingService');
-// ─────────────────────────────────────────────────────────────
-
 // In-Memory Game State
-const games = new Map();         // contestId -> { chess, players, turn, lastMoveAt }
+const games = new Map();         // contestId -> { chess, players, turn, lastMoveAt, moveCount }
 const userSockets = new Map();   // userId -> socketId
 const moveTimers = new Map();    // contestId -> setTimeout handle
 const playersReady = new Map();  // contestId -> Set of userIds
@@ -29,6 +18,9 @@ const MOVE_TIMEOUT_MS = 30000;
 
 module.exports = (io) => {
 
+  // ─────────────────────────────────────────────────────────────
+  // BUG 6 FIX: Timer only starts after White's first move
+  // ─────────────────────────────────────────────────────────────
   const startMoveTimer = (contestId, gameState) => {
     if (moveTimers.has(contestId)) clearTimeout(moveTimers.get(contestId));
 
@@ -39,9 +31,10 @@ module.exports = (io) => {
         const contest = await Contest.findById(contestId).populate('contestType');
         if (!contest || contest.status !== 'playing') return;
 
+        // BUG 1 FIX: chess.turn() = the player whose turn it is = the player who timed out = the LOSER
         const turn = gameState.chess.turn();
-        const winnerId = turn === 'w' ? contest.blackPlayer : contest.whitePlayer;
         const loserId = turn === 'w' ? contest.whitePlayer : contest.blackPlayer;
+        const winnerId = turn === 'w' ? contest.blackPlayer : contest.whitePlayer;
 
         await endContest(contestId, winnerId, loserId, 'timeout', gameState);
       } catch (err) {
@@ -158,7 +151,8 @@ module.exports = (io) => {
       await contest.save();
 
       const chess = new Chess();
-      const gameState = { chess, players: [whiteId, blackId], turn: 'w', lastMoveAt: Date.now() };
+      // BUG 6: moveCount tracks total moves — timer only starts after first move
+      const gameState = { chess, players: [whiteId, blackId], turn: 'w', lastMoveAt: Date.now(), moveCount: 0 };
       games.set(contest._id.toString(), gameState);
 
       const white = await User.findById(whiteId).select('username elo').lean();
@@ -192,6 +186,7 @@ module.exports = (io) => {
       });
 
       // After 3 second countdown, emit matchStarted
+      // BUG 6: Don't start move timer here — wait for first move
       setTimeout(() => {
         io.to(contest._id.toString()).emit('matchStarted', matchPayload);
       }, 3000);
@@ -202,16 +197,6 @@ module.exports = (io) => {
       console.error('[startMatch] error:', err);
     }
   };
-
-  // ─────────────────────────────────────────────────────────────
-  // OLD MATCHMAKING INTERVAL — COMMENTED OUT
-  // setInterval(async () => {
-  //   try {
-  //     const matches = checkQueuesForMatches();
-  //     for (const match of matches) await startMatch(match.player1, match.player2);
-  //   } catch (err) {}
-  // }, 10000);
-  // ─────────────────────────────────────────────────────────────
 
   io.on('connection', (socket) => {
     socket.on('identify', ({ userId }) => {
@@ -255,13 +240,17 @@ module.exports = (io) => {
         if (contest) {
           if (contest.players.length >= 2 && contest.status === 'playing') {
             const [p1, p2] = contest.players;
+            // Re-send game state for reconnection
+            const gameState = games.get(roomId);
             socket.emit('matchStarted', {
               contestId: contest._id.toString(),
               roomId: contest._id.toString(),
-              fen: contest.fen || 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1',
+              fen: gameState ? gameState.chess.fen() : (contest.fen || 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1'),
               whitePlayer: { id: contest.whitePlayer?.toString(), username: p1._id.toString() === contest.whitePlayer?.toString() ? p1.username : p2.username },
               blackPlayer: { id: contest.blackPlayer?.toString(), username: p1._id.toString() === contest.blackPlayer?.toString() ? p1.username : p2.username },
-              contestType: contest.contestType
+              contestType: contest.contestType,
+              // Send existing moves for reconnection
+              moves: (contest.moves || []).map(m => m.san).filter(Boolean),
             });
           }
         }
@@ -272,7 +261,6 @@ module.exports = (io) => {
 
     // ─────────────────────────────────────────────────────────────
     // SIMPLE JOIN CONTEST (replaces broken matchmaking queue)
-    // Player clicks "Join" → deduct wallet → add to contest → if 2 players → start match
     // ─────────────────────────────────────────────────────────────
     socket.on('joinContest', async ({ contestId, userId }) => {
       try {
@@ -320,7 +308,7 @@ module.exports = (io) => {
         ).populate('contestType');
 
         if (!updatedContest) {
-          // If update failed, it was filled or cancelled while we checked. Reflex refund.
+          // If update failed, it was filled or cancelled while we checked. Refund.
           if (ct.entry > 0) {
              user.wallet += ct.entry;
              await user.save();
@@ -390,13 +378,6 @@ module.exports = (io) => {
       }
     });
 
-    // ─────────────────────────────────────────────────────────────
-    // OLD MATCHMAKING QUEUE EVENTS — COMMENTED OUT
-    // socket.on('joinQueue', ...) — COMMENTED OUT
-    // socket.on('leaveQueue', ...) — COMMENTED OUT
-    // socket.on('getQueueStatus', ...) — COMMENTED OUT
-    // ─────────────────────────────────────────────────────────────
-
     socket.on('playerReady', async ({ contestId, userId }) => {
       try {
         if (!playersReady.has(contestId)) playersReady.set(contestId, new Set());
@@ -404,13 +385,17 @@ module.exports = (io) => {
         const gameState = games.get(contestId);
         if (!gameState) return;
         if (playersReady.get(contestId).size >= 2) {
-          gameState.lastMoveAt = Date.now();
-          startMoveTimer(contestId, gameState);
+          // BUG 6: Don't start timer on playerReady — wait for first move
+          // Just emit gameReady so UI knows both players are ready
           io.to(contestId).emit('gameReady', { contestId });
         }
       } catch (err) {}
     });
 
+    // ─────────────────────────────────────────────────────────────
+    // MAKE MOVE — BUG 1 FIX: Correct winner declaration
+    // BUG 6 FIX: Timer starts only after White's first move
+    // ─────────────────────────────────────────────────────────────
     socket.on('makeMove', async ({ contestId, from, to, promotion, playerId }) => {
       try {
         const gameState = games.get(contestId);
@@ -419,38 +404,80 @@ module.exports = (io) => {
         const contest = await Contest.findById(contestId);
         if (!contest || contest.status !== 'playing') return;
 
-        const turn = gameState.chess.turn();
-        const expectedPlayer = turn === 'w' ? contest.whitePlayer?.toString() : contest.blackPlayer?.toString();
+        // Validate it's this player's turn
+        const turnBefore = gameState.chess.turn();
+        const expectedPlayer = turnBefore === 'w' ? contest.whitePlayer?.toString() : contest.blackPlayer?.toString();
         if (expectedPlayer !== playerId) return socket.emit('invalidMove', { reason: 'Not your turn' });
 
         const move = gameState.chess.move({ from, to, promotion: promotion || 'q' });
-        if (!move) return socket.emit('invalidMove', { reason: `Illegal move` });
+        if (!move) return socket.emit('invalidMove', { reason: `${from}-${to} is not legal` });
 
         gameState.lastMoveAt = Date.now();
+        gameState.moveCount = (gameState.moveCount || 0) + 1;
         pendingDrawOffers.delete(contestId);
 
         contest.moves.push({ from, to, san: move.san, fen: gameState.chess.fen(), ts: new Date() });
         contest.fen = gameState.chess.fen();
 
-        if (gameState.chess.game_over()) {
-          let winnerId = null, loserId = null, reason = 'draw';
-          if (gameState.chess.in_checkmate()) {
-            winnerId = turn === 'b' ? contest.whitePlayer : contest.blackPlayer;
-            loserId = turn === 'b' ? contest.blackPlayer : contest.whitePlayer;
-            reason = 'checkmate';
-          } else if (gameState.chess.in_stalemate()) reason = 'stalemate';
-          else if (gameState.chess.in_threefold_repetition()) reason = 'repetition';
-          else if (gameState.chess.insufficient_material()) reason = 'insufficient';
+        // ── BUG 1 FIX: Check game end AFTER the move ──
+        // After a move, chess.turn() returns the NEXT player's turn
+        // If checkmate: chess.turn() = the player in checkmate = LOSER
+        if (gameState.chess.isCheckmate()) {
+          const loserColor = gameState.chess.turn(); // whose turn it is now = the one in checkmate = LOSER
+          const winnerId = loserColor === 'w' ? contest.blackPlayer : contest.whitePlayer;
+          const loserId = loserColor === 'w' ? contest.whitePlayer : contest.blackPlayer;
+
+          // Emit the final move before ending
+          io.to(contestId).emit('moveMade', {
+            contestId, from, to, san: move.san,
+            fen: gameState.chess.fen(),
+            inCheck: true,
+            captured: move.captured || null,
+            isCheckmate: true,
+          });
 
           await contest.save();
-          await endContest(contestId, winnerId, loserId, reason, gameState);
+          await endContest(contestId, winnerId, loserId, 'checkmate', gameState);
+          return;
+        }
+
+        if (gameState.chess.isStalemate()) {
+          io.to(contestId).emit('moveMade', { contestId, from, to, san: move.san, fen: gameState.chess.fen(), inCheck: false, captured: move.captured || null });
+          await contest.save();
+          await endContest(contestId, null, null, 'stalemate', gameState);
+          return;
+        }
+
+        if (gameState.chess.isThreefoldRepetition()) {
+          io.to(contestId).emit('moveMade', { contestId, from, to, san: move.san, fen: gameState.chess.fen(), inCheck: false, captured: move.captured || null });
+          await contest.save();
+          await endContest(contestId, null, null, 'repetition', gameState);
+          return;
+        }
+
+        if (gameState.chess.isInsufficientMaterial()) {
+          io.to(contestId).emit('moveMade', { contestId, from, to, san: move.san, fen: gameState.chess.fen(), inCheck: false, captured: move.captured || null });
+          await contest.save();
+          await endContest(contestId, null, null, 'insufficient', gameState);
           return;
         }
 
         await contest.save();
+
+        // BUG 6 FIX: Start timer only after the first move (White's first move)
+        // After White's first move, moveCount becomes 1, and we start the timer
+        // This means both players get equal time starting from the first move
         startMoveTimer(contestId, gameState);
-        io.to(contestId).emit('moveMade', { contestId, from, to, san: move.san, fen: gameState.chess.fen(), inCheck: gameState.chess.in_check(), captured: move.captured || null });
-      } catch (err) {}
+
+        io.to(contestId).emit('moveMade', {
+          contestId, from, to, san: move.san,
+          fen: gameState.chess.fen(),
+          inCheck: gameState.chess.isCheck(),
+          captured: move.captured || null,
+        });
+      } catch (err) {
+        console.error('[makeMove] error:', err);
+      }
     });
 
     socket.on('resign', async ({ contestId, playerId }) => {
@@ -496,7 +523,6 @@ module.exports = (io) => {
     });
 
     socket.on('lobbyChat', ({ message, username }) => { 
-      // broadcast to everyone in lobby (or simply all connected sockets)
       io.emit('lobbyChat', { message, username, ts: Date.now() }); 
     });
 
