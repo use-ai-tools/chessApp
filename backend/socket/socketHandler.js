@@ -1,5 +1,6 @@
 const Room = require('../models/Room');
 
+module.exports = (io) => {
   // Chess Arena: Start match when room is full (wait for DB update)
   io.on('connection', (socket) => {
     socket.on('joinRoom', async ({ roomId, userId }) => {
