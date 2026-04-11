@@ -10,9 +10,10 @@ export default function Lobby() {
   const { token, user, refreshUser } = useContext(AuthContext);
   const navigate = useNavigate();
 
-  const [contests, setContests] = useState([]);
+  const [contestTypes, setContestTypes] = useState([]);
   const [message, setMessage] = useState('');
   const [msgType, setMsgType] = useState('');
+  const [joiningId, setJoiningId] = useState(null); // which type is currently joining
   
   const socketRef = useRef(null);
 
@@ -20,24 +21,38 @@ export default function Lobby() {
     fetchContests();
     const iv = setInterval(fetchContests, 5000);
     
+    // Setup socket
     socketRef.current = io(SOCKET_URL);
+    const socket = socketRef.current;
+
     if (user?.id) {
-       socketRef.current.emit('identify', { userId: user.id });
+      socket.emit('identify', { userId: user.id });
     }
 
-    socketRef.current.on('contestError', (data) => {
-       setMessage(data.message || 'Failed to join');
-       setMsgType('error');
+    // Error from join attempt
+    socket.on('contestError', (data) => {
+      setMessage(data.message || 'Failed to join');
+      setMsgType('error');
+      setJoiningId(null);
     });
 
-    socketRef.current.on('waitingForOpponent', (data) => {
-       refreshUser();
-       navigate(`/room/${data.contestId}`);
+    // Successfully joined — navigate to room
+    socket.on('joinedContest', (data) => {
+      refreshUser();
+      setJoiningId(null);
+      navigate(`/room/${data.contestId}`);
     });
-    
-    socketRef.current.on('opponentFound', (data) => {
-       refreshUser();
-       navigate(`/room/${data.contestId}`);
+
+    // Match started — navigate to room
+    socket.on('matchStarted', (data) => {
+      refreshUser();
+      setJoiningId(null);
+      navigate(`/room/${data.contestId}`);
+    });
+
+    // Contest slots updated — refresh list
+    socket.on('contestUpdated', () => {
+      fetchContests();
     });
 
     return () => {
@@ -50,66 +65,79 @@ export default function Lobby() {
     if (!token) return;
     try {
       const res = await fetch(`${API_URL}/api/contests`, { headers: { Authorization: `Bearer ${token}` } });
-      if (res.ok) setContests(await res.json());
+      if (res.ok) setContestTypes(await res.json());
     } catch (e) {}
   };
 
-  const handleJoin = (contest) => {
+  const handleJoin = (ct) => {
     if (!user) return;
-    if ((user.wallet || 0) < contest.entry) {
-      setMessage(`Insufficient balance! Need ₹${contest.entry}, have ₹${user.wallet}`);
+    if (joiningId) return; // already joining something
+
+    if (ct.entry > 0 && (user.wallet || 0) < ct.entry) {
+      setMessage(`Insufficient balance! Need ₹${ct.entry}, have ₹${user.wallet}`);
       setMsgType('error');
       return;
     }
-    
-    setMessage('');
-    
-    // Choose which contest ID to join based on what's available
-    const joinId = contest.waitingCount > 0 && contest.waitingPlayers.length > 0
-      ? contest.waitingPlayers[0].contestId
-      : (contest.emptyContests && contest.emptyContests.length > 0 ? contest.emptyContests[0] : null);
-      
-    if (!joinId) {
-       setMessage('No slots available for this contest right now.');
-       setMsgType('error');
-       return;
-    }
 
-    socketRef.current?.emit('joinContest', { contestId: joinId, userId: user.id });
+    setMessage('');
+    setJoiningId(ct._id);
+
+    // Send contestTypeId — backend will find an open slot
+    socketRef.current?.emit('joinContest', { contestTypeId: ct._id, userId: user.id });
   };
 
   return (
     <div className="min-h-screen bg-hero">
       <div className="max-w-7xl mx-auto px-4 py-6">
-        <h1 className="text-3xl font-black text-white mb-6">Chess Arena</h1>
+        <h1 className="text-3xl font-black text-white mb-2">Chess Arena</h1>
+        <p className="text-slate-400 text-sm mb-6">Pick a contest and play!</p>
+
         {message && (
-          <div className={`mb-4 p-3 rounded-xl border text-sm font-medium ${
+          <div className={`mb-4 p-3 rounded-xl border text-sm font-medium animate-slide-down ${
             msgType === 'error' ? 'bg-red-500/10 border-red-500/20 text-red-400' : 'bg-emerald-500/10 border-emerald-500/20 text-emerald-400'
           }`}>{message}</div>
         )}
-        <div className="grid sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-          {contests.map((contest, index) => {
-             const key = contest._id || index;
-             const isFull = (!contest.waitingCount && (!contest.emptyContests || contest.emptyContests.length === 0));
-             return (
-              <div key={key} className="p-5 rounded-xl bg-navy-900/60 border border-navy-700/20 shadow">
-                <h2 className="text-lg font-bold text-white mb-2">{contest.name}</h2>
+
+        <div className="grid sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+          {contestTypes.map((ct) => {
+            const isJoining = joiningId === ct._id;
+            const hasWaiting = ct.waitingCount > 0;
+
+            return (
+              <div key={ct._id} className="contest-card p-5">
+                <h2 className="text-lg font-bold text-white mb-1">{ct.name}</h2>
+
                 <div className="flex items-center justify-between mb-2">
-                  <span className="text-slate-400 text-sm">Entry: <b className="text-white">₹{contest.entry}</b></span>
-                  <span className="text-chess-green text-sm">Prize: <b>₹{contest.payout}</b></span>
+                  <span className="text-slate-400 text-sm">Entry: <b className="text-white">₹{ct.entry}</b></span>
+                  <span className="text-chess-green text-sm font-bold">Win ₹{ct.payout}</span>
                 </div>
+
                 <div className="flex items-center justify-between mb-4">
-                  <span className="text-slate-400 text-xs">{contest.openCount || 0} open slots</span>
-                  {contest.waitingCount > 0 && (
-                    <span className="text-chess-green text-xs font-bold">{contest.waitingCount} waiting... Join now!</span>
+                  <span className="text-slate-500 text-xs">{ct.openCount || 0} open slots</span>
+                  {hasWaiting && (
+                    <span className="badge-green text-[10px]">⚡ {ct.waitingCount} waiting</span>
                   )}
                 </div>
+
                 <button
-                  className={`w-full py-2 rounded-xl text-sm font-black text-white shadow-lg ${isFull ? 'bg-slate-600 text-slate-300 cursor-not-allowed' : 'bg-gradient-to-r from-chess-green to-emerald-600 hover:shadow-chess-green/40'}`}
-                  onClick={() => handleJoin(contest)}
-                  disabled={isFull}
+                  className={`w-full py-2.5 rounded-xl text-sm font-bold text-white transition-all active:scale-[0.97] ${
+                    isJoining
+                      ? 'bg-navy-600 text-slate-300 cursor-wait'
+                      : 'bg-gradient-to-r from-chess-green to-emerald-600 hover:shadow-lg hover:shadow-chess-green/30'
+                  }`}
+                  onClick={() => handleJoin(ct)}
+                  disabled={isJoining}
                 >
-                  {isFull ? 'Full' : 'Join'}
+                  {isJoining ? (
+                    <span className="flex items-center justify-center gap-2">
+                      <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                      Finding match...
+                    </span>
+                  ) : hasWaiting ? (
+                    '⚡ Join Now — Instant Match!'
+                  ) : (
+                    `Join — ₹${ct.entry}`
+                  )}
                 </button>
               </div>
             );
