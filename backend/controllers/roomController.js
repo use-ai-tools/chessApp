@@ -43,77 +43,41 @@ exports.createRoom = async (req, res) => {
 };
 
 exports.joinRoom = async (req, res) => {
-  try {
-    const { roomId } = req.body;
-    
-    // BUG 5 FIX: Prevent CastError by checking if roomId is a valid ObjectId first, or fallback to findOne
-    let room = null;
-    if (mongoose.Types.ObjectId.isValid(roomId)) {
-      room = await Room.findById(roomId);
-    }
-    if (!room) {
-      room = await Room.findOne({ roomId });
-    }
-
-    if (!room) return res.status(404).json({ message: 'Room not found' });
-    if (room.status !== 'waiting') return res.status(400).json({ message: 'Cannot join this room' });
-    if (room.players.includes(req.user._id)) return res.status(400).json({ message: 'Already joined' });
-    if (room.players.length >= room.maxPlayers) return res.status(400).json({ message: 'Room is full' });
-
-    // Wallet balance check and deduction
-    const user = await User.findById(req.user._id);
-    if (user.wallet < room.entryFee) {
-      return res.status(400).json({ message: 'Insufficient wallet balance', required: room.entryFee, current: user.wallet });
-    }
-
-    user.wallet -= room.entryFee;
-    await user.save();
-
-    await Transaction.create({
-      userId: req.user._id,
-      amount: room.entryFee,
-      type: 'debit',
-      reason: 'entry fee',
-      roomId: room.roomId,
-      status: 'completed',
-    });
-
-    // --- Chess Arena: Simple joinRoom logic ---
-    room.players.push(req.user._id);
-    if (room.players.length === room.maxPlayers) {
-      room.status = 'ongoing';
-    }
-    await room.save();
-
-    // Emit matchStarted if room is now full
-    if (room.players.length === room.maxPlayers) {
-      const io = req.app.get('io');
-      const populatedRoom = await Room.findById(room._id).populate('players');
-      const [p1, p2] = populatedRoom.players;
-      io.to(room._id.toString()).emit('matchStarted', {
-        roomId: room._id.toString(),
-        matchId: room._id.toString(),
-        fen: 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1',
-        whitePlayerId: p1._id.toString(),
-        blackPlayerId: p2._id.toString(),
-        whitePlayer: { id: p1._id, username: p1.username },
-        blackPlayer: { id: p2._id, username: p2.username },
-      });
-    }
-
-    room.players.push(req.user._id);
-    if (room.players.length === room.maxPlayers) {
-      room.status = 'ongoing';
-      room.currentRound = 1;
-    }
-    await room.save();
-
-    const updatedRoom = await Room.findById(room._id).populate('players', 'username wallet online');
-    res.json(updatedRoom);
-  } catch (err) {
-    console.error('[room] joinRoom error', err);
-    res.status(500).json({ message: 'Failed to join room' });
+  const { roomId } = req.body;
+  const room = await Room.findById(roomId).populate('players');
+  if (!room) return res.status(404).json({ message: 'Room not found' });
+  if (room.status !== 'waiting') return res.status(400).json({ message: 'Cannot join' });
+  if (room.players.some(p => p._id.toString() === req.user._id.toString())) {
+    return res.status(400).json({ message: 'Already joined' });
   }
+  if (room.players.length >= room.maxPlayers) {
+    return res.status(400).json({ message: 'Room full' });
+  }
+
+  room.players.push(req.user._id);
+  
+  if (room.players.length === room.maxPlayers) {
+    room.status = 'ongoing';
+    await room.save();
+    const populatedRoom = await Room.findById(room._id).populate('players');
+    const [p1, p2] = populatedRoom.players;
+    const io = req.app.get('io');
+    const roomIdStr = room._id.toString();
+    console.log('[matchStarted] emitting to room:', roomIdStr);
+    io.to(roomIdStr).emit('matchStarted', {
+      roomId: roomIdStr,
+      matchId: roomIdStr,
+      fen: 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1',
+      whitePlayerId: p1._id.toString(),
+      blackPlayerId: p2._id.toString(),
+      whitePlayer: { id: p1._id, username: p1.username },
+      blackPlayer: { id: p2._id, username: p2.username },
+    });
+  } else {
+    await room.save();
+  }
+  
+  res.json({ success: true, room });
 };
 
 exports.getRoomDetails = async (req, res) => {
