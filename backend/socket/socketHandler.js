@@ -1,6 +1,5 @@
 // ...existing code...
 const Room = require('../models/Room');
-  // ...existing code...
 
   // Chess Arena: Start match when room is full (wait for DB update)
   io.on('connection', (socket) => {
@@ -27,7 +26,6 @@ const Room = require('../models/Room');
   });
 const Contest = require('../models/Contest');
 const ContestType = require('../models/ContestType');
-const Room = require('../models/Room');
 const User = require('../models/User');
 const Transaction = require('../models/Transaction');
 const { Chess } = require('chess.js');
