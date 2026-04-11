@@ -78,6 +78,13 @@ exports.joinRoom = async (req, res) => {
       status: 'completed',
     });
 
+    // --- Chess Arena: Simple joinRoom logic ---
+    room.players.push(req.user._id);
+    if (room.players.length === room.maxPlayers) {
+      room.status = 'ongoing';
+    }
+    await room.save();
+
     room.players.push(req.user._id);
     if (room.players.length === room.maxPlayers) {
       room.status = 'ongoing';
