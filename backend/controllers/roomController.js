@@ -85,6 +85,22 @@ exports.joinRoom = async (req, res) => {
     }
     await room.save();
 
+    // Emit matchStarted if room is now full
+    if (room.players.length === room.maxPlayers) {
+      const io = req.app.get('io');
+      const populatedRoom = await Room.findById(room._id).populate('players');
+      const [p1, p2] = populatedRoom.players;
+      io.to(room._id.toString()).emit('matchStarted', {
+        roomId: room._id.toString(),
+        matchId: room._id.toString(),
+        fen: 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1',
+        whitePlayerId: p1._id.toString(),
+        blackPlayerId: p2._id.toString(),
+        whitePlayer: { id: p1._id, username: p1.username },
+        blackPlayer: { id: p2._id, username: p2.username },
+      });
+    }
+
     room.players.push(req.user._id);
     if (room.players.length === room.maxPlayers) {
       room.status = 'ongoing';

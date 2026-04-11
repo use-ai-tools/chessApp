@@ -2,24 +2,27 @@
 const Room = require('../models/Room');
   // ...existing code...
 
-  // Chess Arena: Start match when room is full
+  // Chess Arena: Start match when room is full (wait for DB update)
   io.on('connection', (socket) => {
     socket.on('joinRoom', async ({ roomId, userId }) => {
       socket.join(roomId);
-      const room = await Room.findById(roomId).populate('players');
-      if (!room) return;
-      if (room.players.length >= room.maxPlayers && room.status === 'ongoing') {
-        const [p1, p2] = room.players;
-        io.to(roomId).emit('matchStarted', {
-          roomId: room._id.toString(),
-          matchId: room._id.toString(),
-          fen: 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1',
-          whitePlayerId: p1._id.toString(),
-          blackPlayerId: p2._id.toString(),
-          whitePlayer: { id: p1._id, username: p1.username },
-          blackPlayer: { id: p2._id, username: p2.username },
-        });
-      }
+      // Wait 1 second for DB to update then check
+      setTimeout(async () => {
+        const room = await Room.findById(roomId).populate('players');
+        if (!room) return;
+        if (room.status === 'ongoing' && room.players.length >= room.maxPlayers) {
+          const [p1, p2] = room.players;
+          io.to(roomId).emit('matchStarted', {
+            roomId: room._id.toString(),
+            matchId: room._id.toString(),
+            fen: 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1',
+            whitePlayerId: p1._id.toString(),
+            blackPlayerId: p2._id.toString(),
+            whitePlayer: { id: p1._id, username: p1.username },
+            blackPlayer: { id: p2._id, username: p2.username },
+          });
+        }
+      }, 1000);
     });
   });
 const Contest = require('../models/Contest');

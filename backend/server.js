@@ -8,8 +8,19 @@ const { seedContests } = require('./scripts/seedContests');
 const setupSockets = require('./socket/socketHandler');
 
 const app = express();
+
+const allowedOrigins = [
+  process.env.FRONTEND_URL,
+  'http://localhost:3000',
+  'http://localhost:5173',
+  'http://localhost:5174',
+].filter(Boolean);
+
 app.use(cors({
-  origin: process.env.FRONTEND_URL || 'http://localhost:3000',
+  origin: (origin, cb) => {
+    if (!origin || allowedOrigins.includes(origin)) return cb(null, true);
+    cb(null, true); // Allow all in dev; tighten for prod if needed
+  },
   credentials: true
 }));
 app.use(express.json());
@@ -56,8 +67,11 @@ const io = new Server(server, {
   pingInterval: 25000
 });
 
+
 // Attach socket handlers
 setupSockets(io);
+// Make io accessible in controllers
+app.set('io', io);
 
 const PORT = process.env.PORT || 3001;
 server.listen(PORT, () => console.log(`Server listening on ${PORT}`));
