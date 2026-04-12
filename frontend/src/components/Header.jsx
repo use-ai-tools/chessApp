@@ -1,15 +1,38 @@
-import React, { useContext, useState } from 'react';
+import React, { useContext, useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { AuthContext } from '../contexts/AuthContext';
 import WalletModal from './WalletModal';
 import ChatBot from './ChatBot';
 
 export default function Header() {
-  const { user, logout } = useContext(AuthContext);
+  const { user, logout, token } = useContext(AuthContext);
   const [walletOpen, setWalletOpen] = useState(false);
   const [supportOpen, setSupportOpen] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
+  const [notifications, setNotifications] = useState([]);
   const location = useLocation();
+
+  // Fetch notifications for red dot
+  useEffect(() => {
+    if (!token) return;
+    fetchNotifications();
+    // Optionally, poll every 2 min for new notifications
+    // const interval = setInterval(fetchNotifications, 120000);
+    // return () => clearInterval(interval);
+  }, [token]);
+
+  const fetchNotifications = async () => {
+    try {
+      const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001';
+      const res = await fetch(`${API_URL}/api/notifications`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setNotifications(data.notifications || []);
+      }
+    } catch {}
+  };
 
   if (!user) return null;
 
@@ -93,9 +116,13 @@ export default function Header() {
               <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
               </svg>
-              {/* Pulse Badge */}
-              <span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full animate-ping"></span>
-              <span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full"></span>
+              {/* Red dot only if notifications.length > 0 */}
+              {notifications.length > 0 && (
+                <>
+                  <span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full animate-ping"></span>
+                  <span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full"></span>
+                </>
+              )}
             </Link>
 
             {/* User Avatar */}

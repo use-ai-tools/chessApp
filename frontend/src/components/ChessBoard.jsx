@@ -100,6 +100,7 @@ export default function ChessBoard({
   moveTimeoutMs = 30000,
   username, // FEATURE 5: Screenshot prevention watermark
 }) {
+  // Use useRef for chess instance
   const gameRef = useRef(new Chess());
   const containerRef = useRef(null);
   const readyEmitted = useRef(false);
@@ -186,8 +187,6 @@ export default function ChessBoard({
         console.error('Invalid FEN:', e);
       }
     }
-    // BUG 3 FIX: Don't clear selection on FEN change if it was from our own move
-    // Only clear if it's a new position from opponent
     setSelectedSquare(null);
     setLegalMoveStyles({});
   }, [fen]);
@@ -259,6 +258,7 @@ export default function ChessBoard({
     if (settings?.boardTheme) setBoardTheme(settings.boardTheme);
   }, [settings?.boardTheme]);
 
+  // Only allow move if player color matches chess.turn()
   const canMakeMove = () => {
     if (isSpectator || isReview) return false;
     if (gameStatus !== 'playing') return false;

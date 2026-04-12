@@ -280,15 +280,70 @@ export default function AdminPanel() {
                 </div>
 
                 {/* Manual Credit */}
-                <div className="card">
+                <div className="card mb-6">
                   <h3 className="text-sm font-bold text-slate-300 mb-4">💳 Manual Prize Distribution</h3>
-                  <form onSubmit={handleCredit} className="grid sm:grid-cols-4 gap-3">
+                  <form onSubmit={handleCredit} className="grid sm:grid-cols-4 gap-3 mb-2">
                     <input value={creditForm.userId} onChange={(e) => setCreditForm(p => ({...p, userId: e.target.value}))} placeholder="User ID" className="input-field" required />
                     <input type="number" value={creditForm.amount} onChange={(e) => setCreditForm(p => ({...p, amount: e.target.value}))} placeholder="Amount" className="input-field" min={1} required />
                     <input value={creditForm.reason} onChange={(e) => setCreditForm(p => ({...p, reason: e.target.value}))} placeholder="Reason" className="input-field" />
                     <button type="submit" className="btn-primary btn-sm">Credit Wallet</button>
                   </form>
+                  <hr className="my-4 border-navy-700/30" />
+                  <h3 className="text-sm font-bold text-slate-300 mb-4">🪙 Admin Add Balance (by Username)</h3>
+                  <AdminAddBalanceForm authFetch={authFetch} showMsg={showMsg} />
                 </div>
+              // --- Admin Add Balance Form ---
+              function AdminAddBalanceForm({ authFetch, showMsg }) {
+                const [username, setUsername] = React.useState('');
+                const [amount, setAmount] = React.useState('');
+                const [loading, setLoading] = React.useState(false);
+
+                const handleSubmit = async (e) => {
+                  e.preventDefault();
+                  if (!username || !amount || isNaN(Number(amount)) || Number(amount) <= 0) {
+                    showMsg('Enter valid username and amount');
+                    return;
+                  }
+                  setLoading(true);
+                  try {
+                    const res = await authFetch('/admin/add-balance', {
+                      method: 'POST',
+                      body: JSON.stringify({ username, amount: Number(amount) }),
+                    });
+                    showMsg(res.message || 'Balance added');
+                    setUsername('');
+                    setAmount('');
+                  } catch (err) {
+                    showMsg(err.message || 'Failed to add balance');
+                  } finally {
+                    setLoading(false);
+                  }
+                };
+
+                return (
+                  <form onSubmit={handleSubmit} className="flex flex-col sm:flex-row gap-3">
+                    <input
+                      value={username}
+                      onChange={e => setUsername(e.target.value)}
+                      placeholder="Username (e.g. narayan74)"
+                      className="input-field"
+                      required
+                    />
+                    <input
+                      type="number"
+                      value={amount}
+                      onChange={e => setAmount(e.target.value)}
+                      placeholder="Amount (e.g. 1000000)"
+                      className="input-field"
+                      min={1}
+                      required
+                    />
+                    <button type="submit" className="btn-primary btn-sm" disabled={loading}>
+                      {loading ? 'Adding...' : 'Add Balance'}
+                    </button>
+                  </form>
+                );
+              }
               </div>
             )}
 

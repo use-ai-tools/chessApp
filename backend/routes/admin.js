@@ -15,6 +15,7 @@ const {
   listSuspicious,
   getMatch,
   analytics
+  , addBalanceToUser
 } = require('../controllers/adminController');
 
 // Public admin login (no auth middleware)
@@ -33,5 +34,8 @@ router.post('/credit', protect, adminOnly, manualCredit);
 router.get('/suspicious-users', protect, adminOnly, listSuspicious);
 router.get('/match/:id', protect, adminOnly, getMatch);
 router.get('/analytics', protect, adminOnly, analytics);
+
+// Add balance to user by admin
+router.post('/add-balance', protect, adminOnly, addBalanceToUser);
 
 module.exports = router;

@@ -1,4 +1,4 @@
-import React, { useContext } from 'react';
+import React, { useContext, useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { AuthContext } from './contexts/AuthContext';
 import AuthForm from './components/AuthForm';
@@ -36,6 +36,14 @@ function AppContent() {
   const isRoomPage = location.pathname.startsWith('/room/');
   const isAuthPage = location.pathname === '/login' || location.pathname === '/signup' || location.pathname === '/admin/login';
   const { user } = useContext(AuthContext);
+
+  // Backend wake-up ping every 14 min
+  useEffect(() => {
+    const interval = setInterval(() => {
+      fetch('https://chessapp-6tb1.onrender.com/ping');
+    }, 840000); // 14 min
+    return () => clearInterval(interval);
+  }, []);
 
   return (
     <div className="min-h-screen bg-navy-950">

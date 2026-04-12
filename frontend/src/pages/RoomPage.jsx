@@ -23,6 +23,8 @@ export default function RoomPage() {
   const matchDataRef = useRef(null);
 
   const [fen, setFen] = useState('rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1');
+  // UseRef for chess instance
+  const chessRef = useRef(new Chess());
   const [status, setStatus] = useState('Connecting...');
   const [gameStatus, setGameStatus] = useState('waiting');
   const [whitePlayer, setWhitePlayer] = useState(null);
@@ -69,6 +71,9 @@ export default function RoomPage() {
     if (!contestId) return;
     const userId = user?.id;
 
+    // Always keep chessRef in sync with FEN
+    chessRef.current.load(fen);
+
     const setupMatch = (data) => {
       const rId = data.roomId || data.contestId || data._id;
       if (rId && rId !== contestId) return;
@@ -76,6 +81,7 @@ export default function RoomPage() {
       matchDataRef.current = data;
       if (data.contestType) setContestType(data.contestType);
       setFen(data.fen || 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1');
+      chessRef.current.load(data.fen || 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1');
 
       if (data.moves && data.moves.length > 0) {
         setMoveHistory(data.moves);
@@ -273,9 +279,16 @@ export default function RoomPage() {
     };
   }, []);
 
+  // Only allow move if player color matches chess.turn()
   const handleMove = ({ from, to, promotion }) => {
     if (!matchDataRef.current || !currentPlayerColor) return;
     if (previewIndex !== -1) { setPreviewIndex(-1); return; }
+    const chess = chessRef.current;
+    const turn = chess.turn();
+    if ((turn === 'w' && currentPlayerColor !== 'white') || (turn === 'b' && currentPlayerColor !== 'black')) {
+      setStatus('Not your turn');
+      return;
+    }
     socketRef.current?.emit('makeMove', {
       contestId, from, to, promotion, playerId: user.id,
     });
