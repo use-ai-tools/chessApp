@@ -98,16 +98,7 @@ export default function Lobby() {
           }`}>{message}</div>
         )}
 
-        {user?.username === 'kabir' && (
-          <div className="mb-4">
-            <button
-              onClick={() => navigate('/admin')}
-              className="px-4 py-2.5 rounded-xl bg-gradient-to-r from-gold-500/15 to-amber-600/15 border border-gold-500/30 text-gold-400 text-sm font-bold hover:border-gold-500/50 transition-all flex items-center gap-2"
-            >
-              <span>⚙️</span> Admin Panel
-            </button>
-          </div>
-        )}
+
 
         <div className="pb-24">
           <div className="grid sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">

@@ -268,7 +268,7 @@ export default function AdminPanel() {
   }
 
   return (
-    <div className="min-h-[calc(100vh-64px)] bg-hero px-4 py-6">
+    <div className="min-h-[calc(100vh-64px)] bg-hero px-4 py-6" style={{ paddingBottom: '100px' }}>
       <div className="max-w-7xl mx-auto">
         <h1 className="text-2xl font-black text-white mb-6">
           Admin <span className="text-gradient-gold">Panel</span>
