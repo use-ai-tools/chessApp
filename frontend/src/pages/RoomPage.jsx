@@ -10,6 +10,7 @@ import MoveHistory from '../components/MoveHistory';
 import GameReview from '../components/GameReview';
 import MatchSettings from '../components/MatchSettings';
 import TournamentBracket from '../components/TournamentBracket';
+import PingIndicator from '../components/PingIndicator';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001';
 const SOCKET_URL = import.meta.env.VITE_SOCKET_URL || 'http://localhost:3001';
@@ -432,7 +433,10 @@ export default function RoomPage() {
                 <TournamentBracket bracket={bracket} />
               </div>
             ) : (
-              <div className="card">
+              <div className="card relative">
+                <div className="absolute top-2 right-2 z-10 hidden sm:block">
+                  <PingIndicator customSocket={socketRef.current} />
+                </div>
                 {matchDataRef.current ? (
                   <ChessBoard
                     roomId={contestId}

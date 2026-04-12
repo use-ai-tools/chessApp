@@ -3,6 +3,7 @@ import { Link, useLocation } from 'react-router-dom';
 import { AuthContext } from '../contexts/AuthContext';
 import WalletModal from './WalletModal';
 import ChatBot from './ChatBot';
+import PingIndicator from './PingIndicator';
 
 export default function Header() {
   const { user, logout, token } = useContext(AuthContext);
@@ -112,6 +113,11 @@ export default function Header() {
                 {(user.wallet || 0).toLocaleString()}
               </span>
             </button>
+
+            {/* Ping Indicator */}
+            <div className="hidden sm:block">
+              <PingIndicator />
+            </div>
 
             {/* Notification Bell */}
             <Link to="/notifications" className="relative p-2 text-slate-400 hover:text-white transition-colors">

@@ -354,6 +354,7 @@ module.exports = (io) => {
     socket.on('emojiReaction', ({ contestId, emoji, playerId }) => { io.to(contestId).emit('emojiReaction', { emoji, playerId }); });
     socket.on('matchChat', ({ contestId, message, username }) => { io.to(contestId).emit('matchChat', { message, username, ts: Date.now() }); });
     socket.on('lobbyChat', ({ message, username }) => { io.emit('lobbyChat', { message, username, ts: Date.now() }); });
+    socket.on('ping_check', () => { socket.emit('pong_check'); });
 
     socket.on('getReview', async ({ contestId }) => {
       try {
