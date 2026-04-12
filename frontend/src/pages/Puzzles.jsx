@@ -31,6 +31,8 @@ export default function Puzzles() {
   const [showHint, setShowHint] = useState(false);
   const [selectedSquare, setSelectedSquare] = useState(null);
   const [wrongMoveSquare, setWrongMoveSquare] = useState(null);
+  const [legalMoveStyles, setLegalMoveStyles] = useState({});
+  const [invalidMsg, setInvalidMsg] = useState('');
 
   // Sync progress to localStorage
   useEffect(() => {
@@ -50,6 +52,8 @@ export default function Puzzles() {
     setShowHint(false);
     setSelectedSquare(null);
     setWrongMoveSquare(null);
+    setLegalMoveStyles({});
+    setInvalidMsg('');
   };
 
   const handleSquareClick = (square) => {
@@ -59,17 +63,35 @@ export default function Puzzles() {
     const initialTurn = activePuzzle.fen.split(' ')[1];
     if (game.turn() !== initialTurn) return; // Opponent is moving.
 
-    if (selectedSquare) {
-      if (handlePuzzleMove(selectedSquare, square)) {
-        return;
-      }
-    }
-
     const piece = game.get(square);
     if (piece && piece.color === game.turn()) {
       setSelectedSquare(square);
-    } else {
-      setSelectedSquare(null);
+      const moves = game.moves({ square, verbose: true });
+      const dots = {};
+      moves.forEach(m => {
+        dots[m.to] = {
+          background: game.get(m.to)
+            ? 'radial-gradient(circle, rgba(0,0,0,0.3) 60%, transparent 60%)'
+            : 'radial-gradient(circle, rgba(0,0,0,0.2) 25%, transparent 25%)',
+          borderRadius: '50%'
+        };
+      });
+      setLegalMoveStyles(dots);
+    } else if (selectedSquare) {
+      const moveCopy = new Chess(game.fen());
+      let isValidMove = false;
+      try {
+        isValidMove = !!moveCopy.move({ from: selectedSquare, to: square, promotion: 'q' });
+      } catch(e) {}
+
+      if (isValidMove) {
+        handlePuzzleMove(selectedSquare, square);
+      } else {
+        setInvalidMsg(`${square.toUpperCase()} is not a valid move`);
+        setTimeout(() => setInvalidMsg(''), 2000);
+        setSelectedSquare(null);
+        setLegalMoveStyles({});
+      }
     }
   };
 
@@ -86,11 +108,16 @@ export default function Puzzles() {
         to: targetSquare,
         promotion: promotionPiece,
       });
-    } catch(e) { return false; }
+    } catch(e) { 
+      setSelectedSquare(null);
+      setLegalMoveStyles({});
+      return false; 
+    }
 
     if (!moveStr) return false;
     
     setSelectedSquare(null);
+    setLegalMoveStyles({});
 
     const isCheckmate = moveCopy.isCheckmate();
     const expectedSan = activePuzzle.solution[moveIndex];
@@ -227,11 +254,10 @@ export default function Puzzles() {
                   onSquareClick={handleSquareClick}
                   boardOrientation={boardOrientation}
                   animationDuration={200}
-                  customSquareStyles={
-                    (feedback.type === 'error' && wrongMoveSquare) ? { 
-                      [wrongMoveSquare]: { backgroundColor: 'rgba(239,68,68,0.5)' } 
-                    } : {}
-                  }
+                  customSquareStyles={{
+                    ...legalMoveStyles,
+                    ...(feedback.type === 'error' && wrongMoveSquare ? { [wrongMoveSquare]: { backgroundColor: 'rgba(239,68,68,0.5)' } } : {})
+                  }}
                   customLightSquareStyle={{ backgroundColor: theme.light }}
                   customDarkSquareStyle={{ backgroundColor: theme.dark }}
                   snapToCursor={false}
@@ -273,6 +299,10 @@ export default function Puzzles() {
                   </div>
                 )}
               </div>
+              
+              {invalidMsg && (
+                <p className="text-red-400 text-sm font-bold text-center mt-3 animate-fade-in">{invalidMsg}</p>
+              )}
             </div>
 
             <div className="md:col-span-4 space-y-4">
