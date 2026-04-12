@@ -43,41 +43,67 @@ exports.createRoom = async (req, res) => {
 };
 
 exports.joinRoom = async (req, res) => {
-  const { roomId } = req.body;
-  const room = await Room.findById(roomId).populate('players');
-  if (!room) return res.status(404).json({ message: 'Room not found' });
-  if (room.status !== 'waiting') return res.status(400).json({ message: 'Cannot join' });
-  if (room.players.some(p => p._id.toString() === req.user._id.toString())) {
-    return res.status(400).json({ message: 'Already joined' });
-  }
-  if (room.players.length >= room.maxPlayers) {
-    return res.status(400).json({ message: 'Room full' });
-  }
+  try {
+    const { roomId, entryFee } = req.body;
+    
+    // Find existing WAITING room by entryFee with available slot
+    let room = await Room.findOne({
+      entryFee: entryFee !== undefined ? entryFee : 49,
+      status: 'waiting',
+      $expr: { $lt: [{ $size: '$players' }, '$maxPlayers'] }
+    }).populate('players');
 
-  room.players.push(req.user._id);
-  
-  if (room.players.length === room.maxPlayers) {
-    room.status = 'ongoing';
-    await room.save();
-    const populatedRoom = await Room.findById(room._id).populate('players');
-    const [p1, p2] = populatedRoom.players;
-    const io = req.app.get('io');
-    const roomIdStr = room._id.toString();
-    console.log('[matchStarted] emitting roomId:', room._id.toString());
-    io.to(roomIdStr).emit('matchStarted', {
-      roomId: roomIdStr,
-      matchId: roomIdStr,
-      fen: 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1',
-      whitePlayerId: p1._id.toString(),
-      blackPlayerId: p2._id.toString(),
-      whitePlayer: { id: p1._id, username: p1.username },
-      blackPlayer: { id: p2._id, username: p2.username },
-    });
-  } else {
-    await room.save();
+    if (!room) {
+      // Create new room
+      const newRoomId = roomId || new mongoose.Types.ObjectId().toString();
+      const created = await Room.create({
+        roomId: newRoomId,
+        name: `Match ₹${entryFee !== undefined ? entryFee : 49}`,
+        maxPlayers: 2,
+        entryFee: entryFee !== undefined ? entryFee : 49,
+        prizeDistribution: 'winner_takes_all',
+        status: 'waiting',
+        players: []
+      });
+      // Query it to have population format match existing flow
+      room = await Room.findById(created._id).populate('players');
+    }
+
+    if (room.players.some(p => p._id && p._id.toString() === req.user._id.toString())) {
+      return res.status(400).json({ message: 'Already joined' });
+    }
+
+    // Join existing room
+    room.players.push(req.user._id);
+
+    if (room.players.length === room.maxPlayers) {
+      room.status = 'ongoing';
+      await room.save();
+
+      const populatedRoom = await Room.findById(room._id).populate('players');
+      const [p1, p2] = populatedRoom.players;
+      const io = req.app.get('io');
+      const roomIdStr = room._id.toString();
+      console.log('[matchStarted] emitting roomId:', roomIdStr);
+      
+      io.to(roomIdStr).emit('matchStarted', {
+        roomId: roomIdStr,
+        matchId: roomIdStr,
+        fen: 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1',
+        whitePlayerId: p1._id.toString(),
+        blackPlayerId: p2._id.toString(),
+        whitePlayer: { id: p1._id, username: p1.username },
+        blackPlayer: { id: p2._id, username: p2.username },
+      });
+    } else {
+      await room.save();
+    }
+
+    res.json({ success: true, room });
+  } catch (err) {
+    console.error('[room] joinRoom error', err);
+    res.status(500).json({ message: 'Failed to join room' });
   }
-  
-  res.json({ success: true, room });
 };
 
 exports.getRoomDetails = async (req, res) => {
