@@ -270,7 +270,7 @@ export default function RoomPage() {
     });
     socket.on('errorMsg', (msg) => console.error('Socket error:', msg));
     socket.on('forceLogout', () => navigate('/login'));
-    socket.on('disconnect', () => { socket.connect() });
+    socket.on('disconnect', () => { setTimeout(() => socket.connect(), 2000); });
 
     return () => {
       socket.off('matchStarted');
@@ -356,6 +356,18 @@ export default function RoomPage() {
 
   const isSpectator = currentPlayerColor === null && matchDataRef.current !== null;
   const currentPlayer = currentPlayerColor ? { color: currentPlayerColor, ...(currentPlayerColor === 'white' ? whitePlayer : blackPlayer) } : null;
+
+  if (!currentPlayerColor && !isSpectator) {
+    return (
+      <div className="min-h-[calc(100vh-64px)] bg-hero flex items-center justify-center">
+        <div className="text-center">
+          <div className="w-12 h-12 border-4 border-chess-green border-t-transparent rounded-full animate-spin mx-auto mb-4" />
+          <h2 className="text-xl font-bold text-white mb-2">Connecting...</h2>
+          <p className="text-slate-400">Loading match data and color assignment</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-[calc(100vh-64px)] bg-hero px-4 py-6">
