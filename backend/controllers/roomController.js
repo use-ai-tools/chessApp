@@ -63,7 +63,7 @@ exports.joinRoom = async (req, res) => {
     const [p1, p2] = populatedRoom.players;
     const io = req.app.get('io');
     const roomIdStr = room._id.toString();
-    console.log('[matchStarted] emitting to room:', roomIdStr);
+    console.log('[matchStarted] emitting roomId:', room._id.toString());
     io.to(roomIdStr).emit('matchStarted', {
       roomId: roomIdStr,
       matchId: roomIdStr,

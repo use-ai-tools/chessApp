@@ -109,50 +109,52 @@ export default function Lobby() {
           </div>
         )}
 
-        <div className="grid sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-          {contestTypes.map((ct) => {
-            const isJoining = joiningId === ct._id;
-            const hasWaiting = ct.waitingCount > 0;
+        <div className="pb-24">
+          <div className="grid sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+            {contestTypes.map((ct) => {
+              const isJoining = joiningId === ct._id;
+              const hasWaiting = ct.waitingCount > 0;
 
-            return (
-              <div key={ct._id} className="contest-card p-5">
-                <h2 className="text-lg font-bold text-white mb-1">{ct.name}</h2>
+              return (
+                <div key={ct._id} className="contest-card p-5">
+                  <h2 className="text-lg font-bold text-white mb-1">{ct.name}</h2>
 
-                <div className="flex items-center justify-between mb-2">
-                  <span className="text-slate-400 text-sm">Entry: <b className="text-white">₹{ct.entry}</b></span>
-                  <span className="text-chess-green text-sm font-bold">Win ₹{ct.payout}</span>
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-slate-400 text-sm">Entry: <b className="text-white">₹{ct.entry}</b></span>
+                    <span className="text-chess-green text-sm font-bold">Win ₹{ct.payout}</span>
+                  </div>
+
+                  <div className="flex items-center justify-between mb-4">
+                    <span className="text-slate-500 text-xs">{ct.openCount || 0} open slots</span>
+                    {hasWaiting && (
+                      <span className="badge-green text-[10px]">⚡ {ct.waitingCount} waiting</span>
+                    )}
+                  </div>
+
+                  <button
+                    className={`w-full py-2.5 rounded-xl text-sm font-bold text-white transition-all active:scale-[0.97] ${
+                      isJoining
+                        ? 'bg-navy-600 text-slate-300 cursor-wait'
+                        : 'bg-gradient-to-r from-chess-green to-emerald-600 hover:shadow-lg hover:shadow-chess-green/30'
+                    }`}
+                    onClick={() => handleJoin(ct)}
+                    disabled={isJoining}
+                  >
+                    {isJoining ? (
+                      <span className="flex items-center justify-center gap-2">
+                        <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                        Finding match...
+                      </span>
+                    ) : hasWaiting ? (
+                      '⚡ Join Now — Instant Match!'
+                    ) : (
+                      `Join — ₹${ct.entry}`
+                    )}
+                  </button>
                 </div>
-
-                <div className="flex items-center justify-between mb-4">
-                  <span className="text-slate-500 text-xs">{ct.openCount || 0} open slots</span>
-                  {hasWaiting && (
-                    <span className="badge-green text-[10px]">⚡ {ct.waitingCount} waiting</span>
-                  )}
-                </div>
-
-                <button
-                  className={`w-full py-2.5 rounded-xl text-sm font-bold text-white transition-all active:scale-[0.97] ${
-                    isJoining
-                      ? 'bg-navy-600 text-slate-300 cursor-wait'
-                      : 'bg-gradient-to-r from-chess-green to-emerald-600 hover:shadow-lg hover:shadow-chess-green/30'
-                  }`}
-                  onClick={() => handleJoin(ct)}
-                  disabled={isJoining}
-                >
-                  {isJoining ? (
-                    <span className="flex items-center justify-center gap-2">
-                      <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                      Finding match...
-                    </span>
-                  ) : hasWaiting ? (
-                    '⚡ Join Now — Instant Match!'
-                  ) : (
-                    `Join — ₹${ct.entry}`
-                  )}
-                </button>
-              </div>
-            );
-          })}
+              );
+            })}
+          </div>
         </div>
       </div>
     </div>

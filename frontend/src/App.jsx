@@ -2,6 +2,7 @@ import React, { useContext } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { AuthContext } from './contexts/AuthContext';
 import AuthForm from './components/AuthForm';
+import Home from './pages/Home';
 import Lobby from './components/Lobby';
 import RoomPage from './pages/RoomPage';
 import Leaderboard from './components/Leaderboard';
@@ -41,7 +42,7 @@ function AppContent() {
         <Route path="/login" element={<AuthForm mode="login" />} />
         <Route path="/signup" element={<AuthForm mode="signup" />} />
         <Route path="/admin/login" element={<AdminLogin />} />
-        <Route path="/" element={<Protected><Header /><Lobby /></Protected>} />
+        <Route path="/" element={<Protected><Header /><Home /></Protected>} />
         <Route path="/contests" element={<Protected><Header /><Lobby /></Protected>} />
         <Route path="/room/:roomId" element={<Protected><Header /><RoomPage /></Protected>} />
         <Route path="/leaderboard" element={<Protected><Header /><Leaderboard /></Protected>} />
