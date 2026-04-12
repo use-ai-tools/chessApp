@@ -1,103 +1,103 @@
 export const puzzles = [
   {
     "id": 1,
-    "fen": "k7/7Q/K7/8/8/8/8/8 w - - 0 1",
-    "solution": [
-      "Qh8#"
-    ],
-    "difficulty": "easy",
-    "moves": 1,
-    "hint": "Cut off the king and mate on the back rank."
-  },
-  {
-    "id": 2,
-    "fen": "6k1/5ppp/8/8/8/8/5PPP/R5K1 w - - 0 1",
-    "solution": [
-      "Ra8#"
-    ],
-    "difficulty": "easy",
-    "moves": 1,
-    "hint": "Cut off the king and mate on the back rank."
-  },
-  {
-    "id": 3,
-    "fen": "2k5/Q7/2K5/8/8/8/8/8 w - - 0 1",
-    "solution": [
-      "Qa8#"
-    ],
-    "difficulty": "easy",
-    "moves": 1,
-    "hint": "Cut off the king and mate on the back rank."
-  },
-  {
-    "id": 4,
-    "fen": "3k4/Q7/3K4/8/8/8/8/8 w - - 0 1",
-    "solution": [
-      "Qa8#"
-    ],
-    "difficulty": "easy",
-    "moves": 1,
-    "hint": "Cut off the king and mate on the back rank."
-  },
-  {
-    "id": 5,
-    "fen": "4k3/Q7/4K3/8/8/8/8/8 w - - 0 1",
-    "solution": [
-      "Qa8#"
-    ],
-    "difficulty": "easy",
-    "moves": 1,
-    "hint": "Cut off the king and mate on the back rank."
-  },
-  {
-    "id": 6,
-    "fen": "5k2/Q7/5K2/8/8/8/8/8 w - - 0 1",
-    "solution": [
-      "Qa8#"
-    ],
-    "difficulty": "easy",
-    "moves": 1,
-    "hint": "Cut off the king and mate on the back rank."
-  },
-  {
-    "id": 7,
-    "fen": "6k1/Q7/6K1/8/8/8/8/8 w - - 0 1",
-    "solution": [
-      "Qa8#"
-    ],
-    "difficulty": "easy",
-    "moves": 1,
-    "hint": "Cut off the king and mate on the back rank."
-  },
-  {
-    "id": 8,
-    "fen": "7k/Q7/7K/8/8/8/8/8 w - - 0 1",
-    "solution": [
-      "Qa8#"
-    ],
-    "difficulty": "easy",
-    "moves": 1,
-    "hint": "Cut off the king and mate on the back rank."
-  },
-  {
-    "id": 9,
-    "fen": "6k1/5ppp/8/8/8/8/5PPP/R5K1 w - - 0 1",
-    "solution": [
-      "Ra8#"
-    ],
-    "difficulty": "easy",
-    "moves": 1,
-    "hint": "Classic back rank mate."
-  },
-  {
-    "id": 10,
-    "fen": "r1bqkb1r/pppp1ppp/2n2n2/4p2Q/2B1P3/8/PPPP1PPP/RNB1K1NR w KQkq - 4 4",
+    "fen": "r1bqkbnr/pppp1ppp/2n5/4p3/2B1P3/5Q2/PPPP1PPP/RNB1K1NR w KQkq - 0 1",
     "solution": [
       "Qxf7#"
     ],
     "difficulty": "easy",
     "moves": 1,
-    "hint": "Target the weak f7 pawn."
+    "hint": "Win the game in one move"
+  },
+  {
+    "id": 2,
+    "fen": "6k1/5ppp/8/8/8/8/2R5/6K1 w - - 0 1",
+    "solution": [
+      "Rc8#"
+    ],
+    "difficulty": "easy",
+    "moves": 1,
+    "hint": "Win the game in one move"
+  },
+  {
+    "id": 3,
+    "fen": "2k5/R7/2K5/8/8/8/8/8 w - - 0 1",
+    "solution": [
+      "Ra8#"
+    ],
+    "difficulty": "easy",
+    "moves": 1,
+    "hint": "Win the game in one move"
+  },
+  {
+    "id": 4,
+    "fen": "rnbqkbnr/pppp1ppp/8/4p3/6P1/5P2/PPPPP2P/RNBQKBNR b KQkq - 0 1",
+    "solution": [
+      "Qh4#"
+    ],
+    "difficulty": "easy",
+    "moves": 1,
+    "hint": "Win the game in one move"
+  },
+  {
+    "id": 5,
+    "fen": "k7/8/2K5/1Q6/8/8/8/8 w - - 0 1",
+    "solution": [
+      "Qb7#"
+    ],
+    "difficulty": "easy",
+    "moves": 1,
+    "hint": "Win the game in one move"
+  },
+  {
+    "id": 6,
+    "fen": "r1bqk1nr/pppp1ppp/2n5/2b1p3/2B1P3/5Q2/PPPP1PPP/RNB1K1NR w KQkq - 0 1",
+    "solution": [
+      "Qxf7#"
+    ],
+    "difficulty": "easy",
+    "moves": 1,
+    "hint": "Win the game in one move"
+  },
+  {
+    "id": 7,
+    "fen": "k7/1R6/1K6/8/8/8/8/1R6 w - - 0 1",
+    "solution": [
+      "Ra1#"
+    ],
+    "difficulty": "easy",
+    "moves": 1,
+    "hint": "Win the game in one move"
+  },
+  {
+    "id": 8,
+    "fen": "r1bqkb1r/pppp1ppp/2n2n2/4p2Q/2B1P3/8/PPPP1PPP/RNB1K1NR w KQkq - 0 1",
+    "solution": [
+      "Qxf7#"
+    ],
+    "difficulty": "easy",
+    "moves": 1,
+    "hint": "Win the game in one move"
+  },
+  {
+    "id": 9,
+    "fen": "k7/8/2K5/8/8/8/Q7/8 w - - 0 1",
+    "solution": [
+      "Kc7#"
+    ],
+    "difficulty": "easy",
+    "moves": 1,
+    "hint": "Win the game in one move"
+  },
+  {
+    "id": 10,
+    "fen": "2k5/8/2K5/8/8/8/R7/8 w - - 0 1",
+    "solution": [
+      "Ra8#"
+    ],
+    "difficulty": "easy",
+    "moves": 1,
+    "hint": "Win the game in one move"
   },
   {
     "id": 11,
