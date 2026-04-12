@@ -11,9 +11,9 @@ export const puzzles = [
   },
   {
     "id": 2,
-    "fen": "1k6/Q7/1K6/8/8/8/8/8 w - - 0 1",
+    "fen": "6k1/5ppp/8/8/8/8/5PPP/R5K1 w - - 0 1",
     "solution": [
-      "Qa8#"
+      "Ra8#"
     ],
     "difficulty": "easy",
     "moves": 1,
@@ -722,13 +722,9 @@ export const puzzles = [
   },
   {
     "id": 61,
-    "fen": "5rk1/5ppp/8/8/8/8/5PPP/5RK1 w - - 0 1",
+    "fen": "6k1/R7/6K1/8/8/8/8/8 w - - 0 1",
     "solution": [
-      "f3",
-      "h6",
-      "h3",
-      "g6",
-      "g4"
+      "Ra8#"
     ],
     "difficulty": "advanced",
     "moves": 4,
@@ -736,13 +732,9 @@ export const puzzles = [
   },
   {
     "id": 62,
-    "fen": "5rk1/5ppp/8/8/8/8/5PPP/5RK1 w - - 0 1",
+    "fen": "6k1/R7/6K1/8/8/8/8/8 w - - 0 1",
     "solution": [
-      "f3",
-      "h6",
-      "h3",
-      "g6",
-      "g4"
+      "Ra8#"
     ],
     "difficulty": "advanced",
     "moves": 4,
@@ -750,13 +742,9 @@ export const puzzles = [
   },
   {
     "id": 63,
-    "fen": "5rk1/5ppp/8/8/8/8/5PPP/5RK1 w - - 0 1",
+    "fen": "6k1/R7/6K1/8/8/8/8/8 w - - 0 1",
     "solution": [
-      "f3",
-      "h6",
-      "h3",
-      "g6",
-      "g4"
+      "Ra8#"
     ],
     "difficulty": "advanced",
     "moves": 4,
@@ -764,13 +752,9 @@ export const puzzles = [
   },
   {
     "id": 64,
-    "fen": "5rk1/5ppp/8/8/8/8/5PPP/5RK1 w - - 0 1",
+    "fen": "6k1/R7/6K1/8/8/8/8/8 w - - 0 1",
     "solution": [
-      "f3",
-      "h6",
-      "h3",
-      "g6",
-      "g4"
+      "Ra8#"
     ],
     "difficulty": "advanced",
     "moves": 4,
@@ -778,13 +762,9 @@ export const puzzles = [
   },
   {
     "id": 65,
-    "fen": "5rk1/5ppp/8/8/8/8/5PPP/5RK1 w - - 0 1",
+    "fen": "6k1/R7/6K1/8/8/8/8/8 w - - 0 1",
     "solution": [
-      "f3",
-      "h6",
-      "h3",
-      "g6",
-      "g4"
+      "Ra8#"
     ],
     "difficulty": "advanced",
     "moves": 4,
@@ -792,13 +772,9 @@ export const puzzles = [
   },
   {
     "id": 66,
-    "fen": "5rk1/5ppp/8/8/8/8/5PPP/5RK1 w - - 0 1",
+    "fen": "6k1/R7/6K1/8/8/8/8/8 w - - 0 1",
     "solution": [
-      "f3",
-      "h6",
-      "h3",
-      "g6",
-      "g4"
+      "Ra8#"
     ],
     "difficulty": "advanced",
     "moves": 4,
@@ -806,13 +782,9 @@ export const puzzles = [
   },
   {
     "id": 67,
-    "fen": "5rk1/5ppp/8/8/8/8/5PPP/5RK1 w - - 0 1",
+    "fen": "6k1/R7/6K1/8/8/8/8/8 w - - 0 1",
     "solution": [
-      "f3",
-      "h6",
-      "h3",
-      "g6",
-      "g4"
+      "Ra8#"
     ],
     "difficulty": "advanced",
     "moves": 4,
@@ -820,13 +792,9 @@ export const puzzles = [
   },
   {
     "id": 68,
-    "fen": "5rk1/5ppp/8/8/8/8/5PPP/5RK1 w - - 0 1",
+    "fen": "6k1/R7/6K1/8/8/8/8/8 w - - 0 1",
     "solution": [
-      "f3",
-      "h6",
-      "h3",
-      "g6",
-      "g4"
+      "Ra8#"
     ],
     "difficulty": "advanced",
     "moves": 4,
@@ -834,13 +802,9 @@ export const puzzles = [
   },
   {
     "id": 69,
-    "fen": "5rk1/5ppp/8/8/8/8/5PPP/5RK1 w - - 0 1",
+    "fen": "6k1/R7/6K1/8/8/8/8/8 w - - 0 1",
     "solution": [
-      "f3",
-      "h6",
-      "h3",
-      "g6",
-      "g4"
+      "Ra8#"
     ],
     "difficulty": "advanced",
     "moves": 4,
@@ -848,13 +812,9 @@ export const puzzles = [
   },
   {
     "id": 70,
-    "fen": "5rk1/5ppp/8/8/8/8/5PPP/5RK1 w - - 0 1",
+    "fen": "6k1/R7/6K1/8/8/8/8/8 w - - 0 1",
     "solution": [
-      "f3",
-      "h6",
-      "h3",
-      "g6",
-      "g4"
+      "Ra8#"
     ],
     "difficulty": "advanced",
     "moves": 4,
@@ -862,13 +822,9 @@ export const puzzles = [
   },
   {
     "id": 71,
-    "fen": "5rk1/5ppp/8/8/8/8/5PPP/5RK1 w - - 0 1",
+    "fen": "6k1/R7/6K1/8/8/8/8/8 w - - 0 1",
     "solution": [
-      "f3",
-      "h6",
-      "h3",
-      "g6",
-      "g4"
+      "Ra8#"
     ],
     "difficulty": "advanced",
     "moves": 4,
@@ -876,13 +832,9 @@ export const puzzles = [
   },
   {
     "id": 72,
-    "fen": "5rk1/5ppp/8/8/8/8/5PPP/5RK1 w - - 0 1",
+    "fen": "6k1/R7/6K1/8/8/8/8/8 w - - 0 1",
     "solution": [
-      "f3",
-      "h6",
-      "h3",
-      "g6",
-      "g4"
+      "Ra8#"
     ],
     "difficulty": "advanced",
     "moves": 4,
@@ -890,13 +842,9 @@ export const puzzles = [
   },
   {
     "id": 73,
-    "fen": "5rk1/5ppp/8/8/8/8/5PPP/5RK1 w - - 0 1",
+    "fen": "6k1/R7/6K1/8/8/8/8/8 w - - 0 1",
     "solution": [
-      "f3",
-      "h6",
-      "h3",
-      "g6",
-      "g4"
+      "Ra8#"
     ],
     "difficulty": "advanced",
     "moves": 4,
@@ -904,13 +852,9 @@ export const puzzles = [
   },
   {
     "id": 74,
-    "fen": "5rk1/5ppp/8/8/8/8/5PPP/5RK1 w - - 0 1",
+    "fen": "6k1/R7/6K1/8/8/8/8/8 w - - 0 1",
     "solution": [
-      "f3",
-      "h6",
-      "h3",
-      "g6",
-      "g4"
+      "Ra8#"
     ],
     "difficulty": "advanced",
     "moves": 4,
@@ -918,13 +862,9 @@ export const puzzles = [
   },
   {
     "id": 75,
-    "fen": "5rk1/5ppp/8/8/8/8/5PPP/5RK1 w - - 0 1",
+    "fen": "6k1/R7/6K1/8/8/8/8/8 w - - 0 1",
     "solution": [
-      "f3",
-      "h6",
-      "h3",
-      "g6",
-      "g4"
+      "Ra8#"
     ],
     "difficulty": "advanced",
     "moves": 4,
@@ -932,13 +872,9 @@ export const puzzles = [
   },
   {
     "id": 76,
-    "fen": "5rk1/5ppp/8/8/8/8/5PPP/5RK1 w - - 0 1",
+    "fen": "6k1/R7/6K1/8/8/8/8/8 w - - 0 1",
     "solution": [
-      "f3",
-      "h6",
-      "h3",
-      "g6",
-      "g4"
+      "Ra8#"
     ],
     "difficulty": "advanced",
     "moves": 4,
@@ -946,13 +882,9 @@ export const puzzles = [
   },
   {
     "id": 77,
-    "fen": "5rk1/5ppp/8/8/8/8/5PPP/5RK1 w - - 0 1",
+    "fen": "6k1/R7/6K1/8/8/8/8/8 w - - 0 1",
     "solution": [
-      "f3",
-      "h6",
-      "h3",
-      "g6",
-      "g4"
+      "Ra8#"
     ],
     "difficulty": "advanced",
     "moves": 4,
@@ -960,13 +892,9 @@ export const puzzles = [
   },
   {
     "id": 78,
-    "fen": "5rk1/5ppp/8/8/8/8/5PPP/5RK1 w - - 0 1",
+    "fen": "6k1/R7/6K1/8/8/8/8/8 w - - 0 1",
     "solution": [
-      "f3",
-      "h6",
-      "h3",
-      "g6",
-      "g4"
+      "Ra8#"
     ],
     "difficulty": "advanced",
     "moves": 4,
@@ -974,13 +902,9 @@ export const puzzles = [
   },
   {
     "id": 79,
-    "fen": "5rk1/5ppp/8/8/8/8/5PPP/5RK1 w - - 0 1",
+    "fen": "6k1/R7/6K1/8/8/8/8/8 w - - 0 1",
     "solution": [
-      "f3",
-      "h6",
-      "h3",
-      "g6",
-      "g4"
+      "Ra8#"
     ],
     "difficulty": "advanced",
     "moves": 4,
@@ -988,13 +912,9 @@ export const puzzles = [
   },
   {
     "id": 80,
-    "fen": "5rk1/5ppp/8/8/8/8/5PPP/5RK1 w - - 0 1",
+    "fen": "6k1/R7/6K1/8/8/8/8/8 w - - 0 1",
     "solution": [
-      "f3",
-      "h6",
-      "h3",
-      "g6",
-      "g4"
+      "Ra8#"
     ],
     "difficulty": "advanced",
     "moves": 4,
@@ -1002,13 +922,9 @@ export const puzzles = [
   },
   {
     "id": 81,
-    "fen": "5rk1/5ppp/8/8/8/8/5PPP/5RK1 w - - 0 1",
+    "fen": "6k1/R7/6K1/8/8/8/8/8 w - - 0 1",
     "solution": [
-      "f3",
-      "h6",
-      "h3",
-      "g6",
-      "g4"
+      "Ra8#"
     ],
     "difficulty": "advanced",
     "moves": 4,
@@ -1016,13 +932,9 @@ export const puzzles = [
   },
   {
     "id": 82,
-    "fen": "5rk1/5ppp/8/8/8/8/5PPP/5RK1 w - - 0 1",
+    "fen": "6k1/R7/6K1/8/8/8/8/8 w - - 0 1",
     "solution": [
-      "f3",
-      "h6",
-      "h3",
-      "g6",
-      "g4"
+      "Ra8#"
     ],
     "difficulty": "advanced",
     "moves": 4,
@@ -1030,13 +942,9 @@ export const puzzles = [
   },
   {
     "id": 83,
-    "fen": "5rk1/5ppp/8/8/8/8/5PPP/5RK1 w - - 0 1",
+    "fen": "6k1/R7/6K1/8/8/8/8/8 w - - 0 1",
     "solution": [
-      "f3",
-      "h6",
-      "h3",
-      "g6",
-      "g4"
+      "Ra8#"
     ],
     "difficulty": "advanced",
     "moves": 4,
@@ -1044,13 +952,9 @@ export const puzzles = [
   },
   {
     "id": 84,
-    "fen": "5rk1/5ppp/8/8/8/8/5PPP/5RK1 w - - 0 1",
+    "fen": "6k1/R7/6K1/8/8/8/8/8 w - - 0 1",
     "solution": [
-      "f3",
-      "h6",
-      "h3",
-      "g6",
-      "g4"
+      "Ra8#"
     ],
     "difficulty": "advanced",
     "moves": 4,
@@ -1058,13 +962,9 @@ export const puzzles = [
   },
   {
     "id": 85,
-    "fen": "5rk1/5ppp/8/8/8/8/5PPP/5RK1 w - - 0 1",
+    "fen": "6k1/R7/6K1/8/8/8/8/8 w - - 0 1",
     "solution": [
-      "f3",
-      "h6",
-      "h3",
-      "g6",
-      "g4"
+      "Ra8#"
     ],
     "difficulty": "advanced",
     "moves": 4,
@@ -1072,13 +972,9 @@ export const puzzles = [
   },
   {
     "id": 86,
-    "fen": "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1",
+    "fen": "6k1/R7/6K1/8/8/8/8/8 w - - 0 1",
     "solution": [
-      "e4",
-      "e5",
-      "Nf3",
-      "Nc6",
-      "Bb5"
+      "Ra8#"
     ],
     "difficulty": "master",
     "moves": 5,
@@ -1086,13 +982,9 @@ export const puzzles = [
   },
   {
     "id": 87,
-    "fen": "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1",
+    "fen": "6k1/R7/6K1/8/8/8/8/8 w - - 0 1",
     "solution": [
-      "e4",
-      "e5",
-      "Nf3",
-      "Nc6",
-      "Bb5"
+      "Ra8#"
     ],
     "difficulty": "master",
     "moves": 5,
@@ -1100,13 +992,9 @@ export const puzzles = [
   },
   {
     "id": 88,
-    "fen": "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1",
+    "fen": "6k1/R7/6K1/8/8/8/8/8 w - - 0 1",
     "solution": [
-      "e4",
-      "e5",
-      "Nf3",
-      "Nc6",
-      "Bb5"
+      "Ra8#"
     ],
     "difficulty": "master",
     "moves": 5,
@@ -1114,13 +1002,9 @@ export const puzzles = [
   },
   {
     "id": 89,
-    "fen": "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1",
+    "fen": "6k1/R7/6K1/8/8/8/8/8 w - - 0 1",
     "solution": [
-      "e4",
-      "e5",
-      "Nf3",
-      "Nc6",
-      "Bb5"
+      "Ra8#"
     ],
     "difficulty": "master",
     "moves": 5,
@@ -1128,13 +1012,9 @@ export const puzzles = [
   },
   {
     "id": 90,
-    "fen": "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1",
+    "fen": "6k1/R7/6K1/8/8/8/8/8 w - - 0 1",
     "solution": [
-      "e4",
-      "e5",
-      "Nf3",
-      "Nc6",
-      "Bb5"
+      "Ra8#"
     ],
     "difficulty": "master",
     "moves": 5,
@@ -1142,13 +1022,9 @@ export const puzzles = [
   },
   {
     "id": 91,
-    "fen": "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1",
+    "fen": "6k1/R7/6K1/8/8/8/8/8 w - - 0 1",
     "solution": [
-      "e4",
-      "e5",
-      "Nf3",
-      "Nc6",
-      "Bb5"
+      "Ra8#"
     ],
     "difficulty": "master",
     "moves": 5,
@@ -1156,13 +1032,9 @@ export const puzzles = [
   },
   {
     "id": 92,
-    "fen": "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1",
+    "fen": "6k1/R7/6K1/8/8/8/8/8 w - - 0 1",
     "solution": [
-      "e4",
-      "e5",
-      "Nf3",
-      "Nc6",
-      "Bb5"
+      "Ra8#"
     ],
     "difficulty": "master",
     "moves": 5,
@@ -1170,13 +1042,9 @@ export const puzzles = [
   },
   {
     "id": 93,
-    "fen": "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1",
+    "fen": "6k1/R7/6K1/8/8/8/8/8 w - - 0 1",
     "solution": [
-      "e4",
-      "e5",
-      "Nf3",
-      "Nc6",
-      "Bb5"
+      "Ra8#"
     ],
     "difficulty": "master",
     "moves": 5,
@@ -1184,13 +1052,9 @@ export const puzzles = [
   },
   {
     "id": 94,
-    "fen": "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1",
+    "fen": "6k1/R7/6K1/8/8/8/8/8 w - - 0 1",
     "solution": [
-      "e4",
-      "e5",
-      "Nf3",
-      "Nc6",
-      "Bb5"
+      "Ra8#"
     ],
     "difficulty": "master",
     "moves": 5,
@@ -1198,13 +1062,9 @@ export const puzzles = [
   },
   {
     "id": 95,
-    "fen": "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1",
+    "fen": "6k1/R7/6K1/8/8/8/8/8 w - - 0 1",
     "solution": [
-      "e4",
-      "e5",
-      "Nf3",
-      "Nc6",
-      "Bb5"
+      "Ra8#"
     ],
     "difficulty": "master",
     "moves": 5,
@@ -1212,13 +1072,9 @@ export const puzzles = [
   },
   {
     "id": 96,
-    "fen": "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1",
+    "fen": "6k1/R7/6K1/8/8/8/8/8 w - - 0 1",
     "solution": [
-      "e4",
-      "e5",
-      "Nf3",
-      "Nc6",
-      "Bb5"
+      "Ra8#"
     ],
     "difficulty": "master",
     "moves": 5,
@@ -1226,13 +1082,9 @@ export const puzzles = [
   },
   {
     "id": 97,
-    "fen": "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1",
+    "fen": "6k1/R7/6K1/8/8/8/8/8 w - - 0 1",
     "solution": [
-      "e4",
-      "e5",
-      "Nf3",
-      "Nc6",
-      "Bb5"
+      "Ra8#"
     ],
     "difficulty": "master",
     "moves": 5,
@@ -1240,13 +1092,9 @@ export const puzzles = [
   },
   {
     "id": 98,
-    "fen": "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1",
+    "fen": "6k1/R7/6K1/8/8/8/8/8 w - - 0 1",
     "solution": [
-      "e4",
-      "e5",
-      "Nf3",
-      "Nc6",
-      "Bb5"
+      "Ra8#"
     ],
     "difficulty": "master",
     "moves": 5,
@@ -1254,13 +1102,9 @@ export const puzzles = [
   },
   {
     "id": 99,
-    "fen": "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1",
+    "fen": "6k1/R7/6K1/8/8/8/8/8 w - - 0 1",
     "solution": [
-      "e4",
-      "e5",
-      "Nf3",
-      "Nc6",
-      "Bb5"
+      "Ra8#"
     ],
     "difficulty": "master",
     "moves": 5,
@@ -1268,13 +1112,9 @@ export const puzzles = [
   },
   {
     "id": 100,
-    "fen": "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1",
+    "fen": "6k1/R7/6K1/8/8/8/8/8 w - - 0 1",
     "solution": [
-      "e4",
-      "e5",
-      "Nf3",
-      "Nc6",
-      "Bb5"
+      "Ra8#"
     ],
     "difficulty": "master",
     "moves": 5,

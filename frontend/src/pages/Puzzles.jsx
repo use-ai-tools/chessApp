@@ -30,6 +30,7 @@ export default function Puzzles() {
   const [feedback, setFeedback] = useState({ type: '', text: '' }); // type: 'success', 'error', 'complete'
   const [showHint, setShowHint] = useState(false);
   const [selectedSquare, setSelectedSquare] = useState(null);
+  const [wrongMoveSquare, setWrongMoveSquare] = useState(null);
 
   // Sync progress to localStorage
   useEffect(() => {
@@ -48,6 +49,7 @@ export default function Puzzles() {
     setFeedback({ type: '', text: '' });
     setShowHint(false);
     setSelectedSquare(null);
+    setWrongMoveSquare(null);
   };
 
   const handleSquareClick = (square) => {
@@ -145,6 +147,7 @@ export default function Puzzles() {
     } else {
       // Wrong move
       setAttempts(prev => prev + 1);
+      setWrongMoveSquare(targetSquare);
       setFeedback({ type: 'error', text: 'Not quite, try again' });
       setTimeout(() => {
         // Reset to initial position of the puzzle
@@ -152,7 +155,8 @@ export default function Puzzles() {
         setGame(resetGame);
         setMoveIndex(0);
         setFeedback({ type: '', text: '' });
-      }, 1000);
+        setWrongMoveSquare(null);
+      }, 500);
       return false; // don't visually drop the piece
     }
   };
@@ -168,10 +172,25 @@ export default function Puzzles() {
     }
   };
 
+  const BOARD_THEMES = {
+    classic: { label: 'Classic', light: '#f0d9b5', dark: '#b58863' },
+    dark:    { label: 'Dark', light: '#334155', dark: '#1e293b' },
+    green:   { label: 'Green', light: '#eeeed2', dark: '#769656' },
+    ocean:   { label: 'Ocean', light: '#b8cce2', dark: '#5b7ea4' },
+    bw:      { label: 'Classic B&W', light: '#ffffff', dark: '#808080' },
+  };
+
   // 1. RENDER PUZZLE PLAY SCREEN
   if (activePuzzle) {
     const isWhiteTurn = game.turn() === 'w';
     const boardOrientation = activePuzzle.fen.split(' ')[1] === 'w' ? 'white' : 'black';
+
+    let boardTheme = 'classic';
+    try {
+      const s = JSON.parse(localStorage.getItem('chess-settings') || '{}');
+      if (s.boardTheme) boardTheme = s.boardTheme;
+    } catch {}
+    const theme = BOARD_THEMES[boardTheme] || BOARD_THEMES.classic;
 
     return (
       <div className="min-h-[calc(100vh-64px)] bg-hero px-4 py-6 pb-24 overflow-y-auto">
@@ -200,10 +219,19 @@ export default function Puzzles() {
                   boardOrientation={boardOrientation}
                   animationDuration={200}
                   customSquareStyles={
-                    feedback.type === 'error' ? { 
-                      [game.turn() === 'w' ? 'e1' : 'e8']: { backgroundColor: 'rgba(239,68,68,0.5)' } 
+                    (feedback.type === 'error' && wrongMoveSquare) ? { 
+                      [wrongMoveSquare]: { backgroundColor: 'rgba(239,68,68,0.5)' } 
                     } : {}
                   }
+                  customLightSquareStyle={{ backgroundColor: theme.light }}
+                  customDarkSquareStyle={{ backgroundColor: theme.dark }}
+                  snapToCursor={false}
+                  showBoardNotation={true}
+                  customNotationStyle={{
+                    color: '#b58863',
+                    fontWeight: 'bold',
+                    fontSize: '12px'
+                  }}
                 />
                 
                 {feedback.type === 'success' && (

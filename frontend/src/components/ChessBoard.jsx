@@ -10,6 +10,7 @@ const BOARD_THEMES = {
   dark:    { label: 'Dark', light: '#334155', dark: '#1e293b' },
   green:   { label: 'Green', light: '#eeeed2', dark: '#769656' },
   ocean:   { label: 'Ocean', light: '#b8cce2', dark: '#5b7ea4' },
+  bw:      { label: 'Classic B&W', light: '#ffffff', dark: '#808080' },
 };
 
 const PIECE_UNICODE = {

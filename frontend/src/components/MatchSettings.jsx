@@ -42,6 +42,7 @@ export default function MatchSettings({ onClose, onApply }) {
     { key: 'dark', label: 'Dark', light: '#334155', dark: '#1e293b' },
     { key: 'green', label: 'Green', light: '#eeeed2', dark: '#769656' },
     { key: 'ocean', label: 'Ocean', light: '#b8cce2', dark: '#5b7ea4' },
+    { key: 'bw', label: 'Classic B&W', light: '#ffffff', dark: '#808080' }
   ];
 
   return (
