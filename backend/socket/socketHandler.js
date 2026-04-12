@@ -275,32 +275,33 @@ module.exports = (io) => {
         contest.moves.push({ from, to, san: move.san, fen: gameState.chess.fen(), ts: new Date() });
         contest.fen = gameState.chess.fen();
 
+        const chess = gameState.chess;
         // Check game end
-        if (gameState.chess.isCheckmate()) {
-          const loserColor = gameState.chess.turn();
+        if (chess.isCheckmate()) {
+          const loserColor = chess.turn();
           const winnerId = loserColor === 'w' ? contest.blackPlayer : contest.whitePlayer;
           const loserId = loserColor === 'w' ? contest.whitePlayer : contest.blackPlayer;
-          io.to(contestId).emit('moveMade', { contestId, from, to, san: move.san, fen: gameState.chess.fen(), inCheck: true, captured: move.captured || null, isCheckmate: true });
+          io.to(contestId).emit('moveMade', { contestId, from, to, san: move.san, fen: chess.fen(), inCheck: true, captured: move.captured || null, isCheckmate: true });
           await contest.save();
           await endContest(contestId, winnerId, loserId, 'checkmate', gameState);
           return;
         }
-        if (gameState.chess.isStalemate()) {
-          io.to(contestId).emit('moveMade', { contestId, from, to, san: move.san, fen: gameState.chess.fen() });
+        if (chess.isStalemate()) {
+          io.to(contestId).emit('moveMade', { contestId, from, to, san: move.san, fen: chess.fen() });
           await contest.save(); await endContest(contestId, null, null, 'stalemate', gameState); return;
         }
-        if (gameState.chess.isThreefoldRepetition()) {
-          io.to(contestId).emit('moveMade', { contestId, from, to, san: move.san, fen: gameState.chess.fen() });
+        if (chess.isThreefoldRepetition()) {
+          io.to(contestId).emit('moveMade', { contestId, from, to, san: move.san, fen: chess.fen() });
           await contest.save(); await endContest(contestId, null, null, 'repetition', gameState); return;
         }
-        if (gameState.chess.isInsufficientMaterial()) {
-          io.to(contestId).emit('moveMade', { contestId, from, to, san: move.san, fen: gameState.chess.fen() });
+        if (chess.isInsufficientMaterial()) {
+          io.to(contestId).emit('moveMade', { contestId, from, to, san: move.san, fen: chess.fen() });
           await contest.save(); await endContest(contestId, null, null, 'insufficient', gameState); return;
         }
 
         await contest.save();
         startMoveTimer(contestId, gameState);
-        io.to(contestId).emit('moveMade', { contestId, from, to, san: move.san, fen: gameState.chess.fen(), inCheck: gameState.chess.isCheck(), captured: move.captured || null });
+        io.to(contestId).emit('moveMade', { contestId, from, to, san: move.san, fen: chess.fen(), inCheck: chess.isCheck(), captured: move.captured || null });
       } catch (err) { console.error('[makeMove]', err); }
     });
 

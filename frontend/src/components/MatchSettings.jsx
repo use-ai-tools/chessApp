@@ -47,7 +47,7 @@ export default function MatchSettings({ onClose, onApply }) {
   return (
     <div className="modal-overlay" onClick={onClose}>
       <div className="modal-content max-w-md" onClick={(e) => e.stopPropagation()}>
-        <div className="p-5">
+        <div className="p-5 overflow-y-auto max-h-[80vh] pb-20">
           <div className="flex items-center justify-between mb-5">
             <h3 className="text-lg font-bold text-white">⚙️ Settings</h3>
             <button onClick={onClose} className="text-slate-400 hover:text-white">✕</button>

@@ -50,7 +50,8 @@ exports.joinRoom = async (req, res) => {
     let room = await Room.findOne({
       entryFee: entryFee !== undefined ? entryFee : 49,
       status: 'waiting',
-      $expr: { $lt: [{ $size: '$players' }, '$maxPlayers'] }
+      $expr: { $lt: [{ $size: '$players' }, '$maxPlayers'] },
+      players: { $ne: req.user._id }
     }).populate('players');
 
     if (!room) {
