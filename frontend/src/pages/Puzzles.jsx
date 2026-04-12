@@ -29,6 +29,7 @@ export default function Puzzles() {
   const [attempts, setAttempts] = useState(0);
   const [feedback, setFeedback] = useState({ type: '', text: '' }); // type: 'success', 'error', 'complete'
   const [showHint, setShowHint] = useState(false);
+  const [selectedSquare, setSelectedSquare] = useState(null);
 
   // Sync progress to localStorage
   useEffect(() => {
@@ -46,20 +47,48 @@ export default function Puzzles() {
     setAttempts(0);
     setFeedback({ type: '', text: '' });
     setShowHint(false);
+    setSelectedSquare(null);
+  };
+
+  const handleSquareClick = (square) => {
+    if (feedback.type === 'complete' || !activePuzzle) return;
+
+    // Is it player's turn? The player is the one whose turn it was initially.
+    const initialTurn = activePuzzle.fen.split(' ')[1];
+    if (game.turn() !== initialTurn) return; // Opponent is moving.
+
+    if (selectedSquare) {
+      if (handlePuzzleMove(selectedSquare, square)) {
+        return;
+      }
+    }
+
+    const piece = game.get(square);
+    if (piece && piece.color === game.turn()) {
+      setSelectedSquare(square);
+    } else {
+      setSelectedSquare(null);
+    }
   };
 
   // Handle move attempting
-  const onDrop = (sourceSquare, targetSquare, piece) => {
+  const handlePuzzleMove = (sourceSquare, targetSquare, piece) => {
     if (feedback.type === 'complete' || !activePuzzle) return false;
 
     const moveCopy = new Chess(game.fen());
-    const moveStr = moveCopy.move({
-      from: sourceSquare,
-      to: targetSquare,
-      promotion: piece[1].toLowerCase() ?? 'q',
-    });
+    const promotionPiece = piece ? piece[1].toLowerCase() : 'q';
+    let moveStr;
+    try {
+      moveStr = moveCopy.move({
+        from: sourceSquare,
+        to: targetSquare,
+        promotion: promotionPiece,
+      });
+    } catch(e) { return false; }
 
     if (!moveStr) return false;
+    
+    setSelectedSquare(null);
 
     // Check if move matches solution at current index
     const expectedSan = activePuzzle.solution[moveIndex];
@@ -145,7 +174,7 @@ export default function Puzzles() {
     const boardOrientation = activePuzzle.fen.split(' ')[1] === 'w' ? 'white' : 'black';
 
     return (
-      <div className="min-h-[calc(100vh-64px)] bg-hero px-4 py-6">
+      <div className="min-h-[calc(100vh-64px)] bg-hero px-4 py-6 pb-24 overflow-y-auto">
         <div className="max-w-3xl mx-auto animate-fade-in">
           
           <div className="flex items-center justify-between mb-6">
@@ -165,7 +194,9 @@ export default function Puzzles() {
               <div className={`rounded-xl overflow-hidden shadow-2xl relative ${feedback.type === 'error' ? 'board-shake' : ''}`}>
                 <Chessboard 
                   position={game.fen()}
-                  onPieceDrop={onDrop}
+                  arePiecesDraggable={true}
+                  onPieceDrop={handlePuzzleMove}
+                  onSquareClick={handleSquareClick}
                   boardOrientation={boardOrientation}
                   animationDuration={200}
                   customSquareStyles={
@@ -277,7 +308,7 @@ export default function Puzzles() {
   const completionPercent = Math.round((completedCount / 100) * 100);
 
   return (
-    <div className="min-h-[calc(100vh-64px)] bg-hero px-4 py-8">
+    <div className="min-h-[calc(100vh-64px)] bg-hero px-4 py-8 pb-24 overflow-y-auto">
       <div className="max-w-6xl mx-auto animate-fade-in">
         
         {/* Header & Progress */}
