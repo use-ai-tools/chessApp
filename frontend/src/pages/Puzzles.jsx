@@ -92,15 +92,23 @@ export default function Puzzles() {
     
     setSelectedSquare(null);
 
-    // Check if move matches solution at current index
+    const isCheckmate = moveCopy.isCheckmate();
     const expectedSan = activePuzzle.solution[moveIndex];
+    let isCorrect = false;
+    let isFinalSolved = false;
+
+    if (isCheckmate) {
+      isCorrect = true;
+      isFinalSolved = true;
+    } else if (expectedSan && (moveStr.san === expectedSan || moveStr.san.replace(/[+#]/g, '') === expectedSan.replace(/[+#]/g, ''))) {
+      isCorrect = true;
+    }
     
-    // Some edge cases with checks (+, #) mapping
-    if (moveStr.san === expectedSan || moveStr.san.replace(/[+#]/g, '') === expectedSan.replace(/[+#]/g, '')) {
+    if (isCorrect) {
       // Correct Move!
       setGame(moveCopy);
       
-      const isFinalMove = moveIndex === activePuzzle.solution.length - 1;
+      const isFinalMove = isFinalSolved || (moveIndex === activePuzzle.solution.length - 1);
       
       if (isFinalMove) {
         // Solved
@@ -210,8 +218,9 @@ export default function Puzzles() {
 
           <div className="grid md:grid-cols-12 gap-6">
             <div className="md:col-span-8">
-              <div className={`rounded-xl overflow-hidden shadow-2xl relative ${feedback.type === 'error' ? 'board-shake' : ''}`}>
+              <div className="shadow-2xl relative">
                 <Chessboard 
+                  customBoardStyle={{ borderRadius: '0px' }}
                   position={game.fen()}
                   arePiecesDraggable={true}
                   onPieceDrop={handlePuzzleMove}
