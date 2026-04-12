@@ -43,7 +43,7 @@ export default function RoomPage() {
   const [contestType, setContestType] = useState(null);
   const [chatMessages, setChatMessages] = useState([]);
   const chatRef = useRef(null);
-  
+
   const [bracket, setBracket] = useState(null);
   const [showBracket, setShowBracket] = useState(false);
   const isTournament = contestId?.startsWith('tournament-');
@@ -76,7 +76,7 @@ export default function RoomPage() {
       matchDataRef.current = data;
       if (data.contestType) setContestType(data.contestType);
       setFen(data.fen || 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1');
-      
+
       if (data.moves && data.moves.length > 0) {
         setMoveHistory(data.moves);
         moveSansRef.current = [...data.moves];
@@ -88,13 +88,13 @@ export default function RoomPage() {
             if (m) lastMoveData = { from: m.from, to: m.to };
           }
           if (lastMoveData) setLastMove(lastMoveData);
-        } catch {}
+        } catch { }
       } else {
         setMoveHistory([]);
         moveSansRef.current = [];
         setLastMove(null);
       }
-      
+
       setPreviewIndex(-1);
       setDrawOfferPending(false);
       setDrawOfferReceived(false);
@@ -129,31 +129,31 @@ export default function RoomPage() {
         if (res.ok) {
           const roomData = await res.json();
           if ((roomData.status === 'ongoing' || roomData.status === 'completed') && roomData.players?.length >= 2) {
-             const wId = roomData.whitePlayer?._id || roomData.whitePlayer;
-             const bId = roomData.blackPlayer?._id || roomData.blackPlayer;
-             
-             let wp = roomData.players.find(p => p._id === wId) || roomData.players[0];
-             let bp = roomData.players.find(p => p._id === bId) || roomData.players[1];
-             
-             setupMatch({
-               contestId: roomData._id,
-               fen: roomData.fen || 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1',
-               whitePlayer: { id: wp._id, username: wp.username, elo: wp.elo?.free || 1200 },
-               blackPlayer: { id: bp._id, username: bp.username, elo: bp.elo?.free || 1200 },
-               contestType: roomData.contestType,
-               moves: (roomData.moves || []).map(m => m.san).filter(Boolean)
-             });
+            const wId = roomData.whitePlayer?._id || roomData.whitePlayer;
+            const bId = roomData.blackPlayer?._id || roomData.blackPlayer;
 
-             if (roomData.status === 'completed') {
-                setGameStatus('finished');
-                setResultData({
-                  isWinner: roomData.winner === userId,
-                  isDraw: roomData.result === 'draw',
-                  reason: roomData.reason,
-                  playerColor: wId === userId ? 'w' : 'b',
-                  review: roomData.review
-                });
-             }
+            let wp = roomData.players.find(p => p._id === wId) || roomData.players[0];
+            let bp = roomData.players.find(p => p._id === bId) || roomData.players[1];
+
+            setupMatch({
+              contestId: roomData._id,
+              fen: roomData.fen || 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1',
+              whitePlayer: { id: wp._id, username: wp.username, elo: wp.elo?.free || 1200 },
+              blackPlayer: { id: bp._id, username: bp.username, elo: bp.elo?.free || 1200 },
+              contestType: roomData.contestType,
+              moves: (roomData.moves || []).map(m => m.san).filter(Boolean)
+            });
+
+            if (roomData.status === 'completed') {
+              setGameStatus('finished');
+              setResultData({
+                isWinner: roomData.winner === userId,
+                isDraw: roomData.result === 'draw',
+                reason: roomData.reason,
+                playerColor: wId === userId ? 'w' : 'b',
+                review: roomData.review
+              });
+            }
           }
         }
       } catch (err) { }
@@ -167,7 +167,7 @@ export default function RoomPage() {
           headers: { Authorization: `Bearer ${localStorage.getItem('token') || ''}` }
         });
         if (res.ok) setBracket(await res.json());
-      } catch (err) {}
+      } catch (err) { }
     };
     if (isTournament) fetchBracket();
 
@@ -175,7 +175,7 @@ export default function RoomPage() {
       socketRef.current = io(SOCKET_URL, { reconnection: true, reconnectionAttempts: Infinity, reconnectionDelay: 1000 });
     }
     const socket = socketRef.current;
-    
+
     // Clear previously attached listeners to avoid duplicates
     socket.off('matchStarted');
     socket.off('gameReady');
@@ -190,10 +190,10 @@ export default function RoomPage() {
     socket.off('connect');
 
     socket.on('connect', () => {
-       if (userId) {
-         socket.emit('identify', { userId });
-         socket.emit('joinRoom', { roomId: contestId, userId });
-       }
+      if (userId) {
+        socket.emit('identify', { userId });
+        socket.emit('joinRoom', { roomId: contestId, userId });
+      }
     });
 
     if (socket.connected && userId) {
@@ -264,7 +264,7 @@ export default function RoomPage() {
     socket.on('errorMsg', (msg) => console.error('Socket error:', msg));
     socket.on('forceLogout', () => navigate('/login'));
 
-    return () => {};
+    return () => { };
   }, [contestId, user?.id]);
 
   useEffect(() => {
@@ -309,7 +309,7 @@ export default function RoomPage() {
   const handleFlipBoard = () => setBoardOrientation(p => p === 'white' ? 'black' : 'white');
 
   const handleOpenGameReview = () => {
-    if (gameStatus === 'playing') return; 
+    if (gameStatus === 'playing') return;
     if (!reviewData) {
       socketRef.current?.emit('getReview', { contestId });
       socketRef.current?.once('reviewData', (data) => {
@@ -343,8 +343,8 @@ export default function RoomPage() {
           </div>
           <div className="flex items-center gap-2">
             {isTournament && (
-              <button 
-                onClick={() => setShowBracket(!showBracket)} 
+              <button
+                onClick={() => setShowBracket(!showBracket)}
                 className={`btn-sm flex items-center gap-2 font-bold ${showBracket ? 'btn-primary' : 'btn-secondary'}`}
               >
                 <span>{showBracket ? '♟️ View Board' : '🏆 View Bracket'}</span>
@@ -406,42 +406,42 @@ export default function RoomPage() {
             ) : (
               <div className="card">
                 {matchDataRef.current ? (
-                <ChessBoard
-                  roomId={contestId}
-                  matchId={contestId}
-                  fen={displayFen}
-                  onMove={handleMove}
-                  onPlayerReady={handlePlayerReady}
-                  currentPlayer={previewIndex === -1 ? currentPlayer : null}
-                  whitePlayer={whitePlayer}
-                  blackPlayer={blackPlayer}
-                  isSpectator={isSpectator || previewIndex !== -1}
-                  isReview={false}
-                  gameStatus={previewIndex !== -1 ? 'preview' : gameStatus}
-                  boardOrientation={boardOrientation}
-                  timerData={timerData}
-                  floatingEmoji={floatingEmoji}
-                  lastMove={lastMove}
-                  settings={settings}
-                  username={user?.username}
-                />
-              ) : (
-                <div className="flex flex-col items-center justify-center gap-4 py-20">
-                  <div className="w-16 h-16 rounded-full bg-navy-700/50 flex items-center justify-center">
-                    <div className="w-8 h-8 border-2 border-chess-green border-t-transparent rounded-full animate-spin" />
+                  <ChessBoard
+                    roomId={contestId}
+                    matchId={contestId}
+                    fen={displayFen}
+                    onMove={handleMove}
+                    onPlayerReady={handlePlayerReady}
+                    currentPlayer={previewIndex === -1 ? currentPlayer : null}
+                    whitePlayer={whitePlayer}
+                    blackPlayer={blackPlayer}
+                    isSpectator={isSpectator || previewIndex !== -1}
+                    isReview={false}
+                    gameStatus={previewIndex !== -1 ? 'preview' : gameStatus}
+                    boardOrientation={boardOrientation}
+                    timerData={timerData}
+                    floatingEmoji={floatingEmoji}
+                    lastMove={lastMove}
+                    settings={settings}
+                    username={user?.username}
+                  />
+                ) : (
+                  <div className="flex flex-col items-center justify-center gap-4 py-20">
+                    <div className="w-16 h-16 rounded-full bg-navy-700/50 flex items-center justify-center">
+                      <div className="w-8 h-8 border-2 border-chess-green border-t-transparent rounded-full animate-spin" />
+                    </div>
+                    <p className="text-slate-400 text-sm">Waiting for match data...</p>
                   </div>
-                  <p className="text-slate-400 text-sm">Waiting for match data...</p>
-                </div>
-              )}
+                )}
 
-              {previewIndex !== -1 && (
-                <div className="mt-2 p-2 rounded-lg bg-sky-500/10 border border-sky-500/20 flex items-center justify-between">
-                  <p className="text-xs text-sky-400">📖 Previewing move {previewIndex + 1}/{moveHistory.length}</p>
-                  <button onClick={() => setPreviewIndex(-1)} className="text-xs text-sky-400 font-bold hover:text-sky-300">← Live</button>
-                </div>
-              )}
-            </div>
-
+                {previewIndex !== -1 && (
+                  <div className="mt-2 p-2 rounded-lg bg-sky-500/10 border border-sky-500/20 flex items-center justify-between">
+                    <p className="text-xs text-sky-400">📖 Previewing move {previewIndex + 1}/{moveHistory.length}</p>
+                    <button onClick={() => setPreviewIndex(-1)} className="text-xs text-sky-400 font-bold hover:text-sky-300">← Live</button>
+                  </div>
+                )}
+              </div>
+            )}
             {currentPlayerColor && (
               <div className="lg:hidden mt-4">
                 <MoveHistory moves={moveHistory} currentIndex={previewIndex} onClickMove={setPreviewIndex} />
@@ -472,9 +472,8 @@ export default function RoomPage() {
               <div className="card">
                 <h3 className="text-sm font-bold text-slate-300 mb-3">Players</h3>
                 {[whitePlayer, blackPlayer].filter(Boolean).map((p, i) => (
-                  <div key={i} className={`flex items-center gap-3 p-2.5 rounded-xl mb-2 ${
-                    p.id === user?.id ? 'bg-chess-green/5 border border-chess-green/10' : 'bg-navy-900/30'
-                  }`}>
+                  <div key={i} className={`flex items-center gap-3 p-2.5 rounded-xl mb-2 ${p.id === user?.id ? 'bg-chess-green/5 border border-chess-green/10' : 'bg-navy-900/30'
+                    }`}>
                     <div className={`w-3 h-3 rounded-full ${i === 0 ? 'bg-white border border-slate-400' : 'bg-slate-800 border border-slate-600'}`} />
                     <div className="flex-1 min-w-0">
                       <p className="text-sm font-medium text-white truncate">{p.username}</p>
@@ -512,7 +511,7 @@ export default function RoomPage() {
                     ))
                   )}
                 </div>
-                <select 
+                <select
                   className="bg-navy-900 border border-navy-700 text-sm rounded-lg px-2 py-1.5 text-white outline-none"
                   onChange={(e) => {
                     if (e.target.value) {
