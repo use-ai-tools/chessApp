@@ -40,7 +40,8 @@ function AppContent() {
   // Backend wake-up ping every 14 min
   useEffect(() => {
     const interval = setInterval(() => {
-      fetch('https://chessapp-6tb1.onrender.com/ping');
+      fetch('https://chessapp-6tb1.onrender.com/ping')
+        .catch(() => {});
     }, 840000); // 14 min
     return () => clearInterval(interval);
   }, []);

@@ -269,6 +269,7 @@ export default function RoomPage() {
     });
     socket.on('errorMsg', (msg) => console.error('Socket error:', msg));
     socket.on('forceLogout', () => navigate('/login'));
+    socket.on('disconnect', () => { socket.connect() });
 
     return () => {
       socket.off('matchStarted');
@@ -281,6 +282,7 @@ export default function RoomPage() {
       socket.off('emojiReaction');
       socket.off('matchChat');
       socket.off('forceLogout');
+      socket.off('disconnect');
       socket.off('connect');
       socket.off('errorMsg');
     };
