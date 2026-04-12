@@ -119,15 +119,10 @@ export default function Puzzles() {
     setSelectedSquare(null);
     setLegalMoveStyles({});
 
-    const isCheckmate = moveCopy.isCheckmate();
     const expectedSan = activePuzzle.solution[moveIndex];
     let isCorrect = false;
-    let isFinalSolved = false;
 
-    if (isCheckmate) {
-      isCorrect = true;
-      isFinalSolved = true;
-    } else if (expectedSan && (moveStr.san === expectedSan || moveStr.san.replace(/[+#]/g, '') === expectedSan.replace(/[+#]/g, ''))) {
+    if (expectedSan && (moveStr.san === expectedSan || moveStr.san.replace(/[+#]/g, '') === expectedSan.replace(/[+#]/g, ''))) {
       isCorrect = true;
     }
     
@@ -135,7 +130,7 @@ export default function Puzzles() {
       // Correct Move!
       setGame(moveCopy);
       
-      const isFinalMove = isFinalSolved || (moveIndex === activePuzzle.solution.length - 1);
+      const isFinalMove = (moveIndex === activePuzzle.solution.length - 1);
       
       if (isFinalMove) {
         // Solved
