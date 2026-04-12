@@ -81,9 +81,9 @@ export const puzzles = [
   },
   {
     "id": 9,
-    "fen": "k7/8/2K5/8/8/8/Q7/8 w - - 0 1",
+    "fen": "k7/8/2K5/1Q6/8/8/8/8 w - - 0 1",
     "solution": [
-      "Kc7#"
+      "Qb7#"
     ],
     "difficulty": "easy",
     "moves": 1,
