@@ -59,7 +59,10 @@ mongoose.connect(MONGO_URI, {
 const server = http.createServer(app);
 const io = new Server(server, {
   cors: {
-    origin: process.env.FRONTEND_URL || 'http://localhost:3000',
+    origin: (origin, cb) => {
+      if (!origin || allowedOrigins.includes(origin)) return cb(null, true);
+      cb(null, true);
+    },
     credentials: true
   },
   transports: ['websocket', 'polling'],
