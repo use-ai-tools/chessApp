@@ -121,6 +121,19 @@ export default function AdminPanel() {
     }
   };
 
+  const handleClearHistory = async () => {
+    if (!window.confirm('DANGER: This will permanently delete ALL transactions, matches, rooms, and tournaments. Users and balances will be unaffected. Continue?')) return;
+    try {
+      setLoading(true);
+      const res = await authFetch('/admin/clear-history', { method: 'POST' });
+      showMsg('✓ ' + (res.message || 'History cleared'));
+      loadData();
+    } catch (err) {
+      showMsg(err.message || 'Failed to clear history');
+      setLoading(false);
+    }
+  };
+
   const deleteRoom = async (roomId) => {
     if (!window.confirm(`Delete room ${roomId}? Players in waiting rooms will be refunded.`)) return;
     try {
@@ -325,6 +338,16 @@ export default function AdminPanel() {
                       {addBalLoading ? 'Adding...' : 'Add Balance'}
                     </button>
                   </form>
+                  <hr className="my-4 border-navy-700/30" />
+                  <div className="flex justify-between items-center bg-red-900/10 p-3 rounded-lg border border-red-500/20">
+                    <div>
+                      <h3 className="text-sm font-bold text-red-400">🚨 Clear App History</h3>
+                      <p className="text-xs text-slate-400">Permanently deletes all transactions, matches, and tournaments. Users and wallets are kept safe.</p>
+                    </div>
+                    <button onClick={handleClearHistory} className="bg-red-500/20 text-red-400 hover:bg-red-500 hover:text-white px-4 py-2 text-sm font-bold rounded-lg transition-colors">
+                      Clear History
+                    </button>
+                  </div>
                 </div>
               </div>
             )}

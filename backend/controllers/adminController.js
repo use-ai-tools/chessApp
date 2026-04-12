@@ -266,3 +266,29 @@ exports.addBalanceToUser = async (req, res) => {
     res.status(500).json({ success: false, message: 'Failed to add balance' });
   }
 };
+
+exports.clearHistory = async (req, res) => {
+  try {
+    const Contest = require('../models/Contest');
+    const Tournament = require('../models/Tournament');
+    
+    const txRes = await Transaction.deleteMany({});
+    const contestRes = await Contest.deleteMany({});
+    const roomRes = await Room.deleteMany({});
+    const tourneyRes = await Tournament.deleteMany({});
+
+    res.json({
+      success: true,
+      message: 'History cleared',
+      deleted: {
+        transactions: txRes.deletedCount,
+        contests: contestRes.deletedCount,
+        rooms: roomRes.deletedCount,
+        tournaments: tourneyRes.deletedCount
+      }
+    });
+  } catch (err) {
+    console.error('[admin] clearHistory error', err);
+    res.status(500).json({ success: false, message: 'Failed to clear history' });
+  }
+};

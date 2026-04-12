@@ -14,8 +14,9 @@ const {
   manualCredit,
   listSuspicious,
   getMatch,
-  analytics
-  , addBalanceToUser
+  analytics,
+  addBalanceToUser,
+  clearHistory
 } = require('../controllers/adminController');
 
 // Public admin login (no auth middleware)
@@ -37,5 +38,8 @@ router.get('/analytics', protect, adminOnly, analytics);
 
 // Add balance to user by admin
 router.post('/add-balance', protect, adminOnly, addBalanceToUser);
+
+// Clear transaction and match history
+router.post('/clear-history', protect, adminOnly, clearHistory);
 
 module.exports = router;
