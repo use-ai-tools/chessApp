@@ -36,6 +36,7 @@ app.use('/api/contests', require('./routes/contest'));
 app.use('/api/bonus', require('./routes/bonus'));
 app.use('/api/notifications', require('./routes/notifications'));
 app.use('/api/chat', require('./routes/chat'));
+app.use('/api/profile', require('./routes/profile'));
 
 // Test route
 app.get("/", (req, res) => res.send("Chess Tournament Server is running"));
