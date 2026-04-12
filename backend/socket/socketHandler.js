@@ -1,34 +1,3 @@
-const Room = require('../models/Room');
-
-module.exports = (io) => {
-  io.on('connection', (socket) => {
-    // Simple joinRoom event
-    socket.on('joinRoom', async ({ roomId, userId }) => {
-      socket.join(roomId);
-      setTimeout(async () => {
-        const room = await Room.findById(roomId).populate('players');
-        if (!room) return;
-        if (room.status === 'ongoing' && room.players.length >= room.maxPlayers) {
-          const [p1, p2] = room.players;
-          io.to(roomId).emit('matchStarted', {
-            roomId: room._id.toString(),
-            matchId: room._id.toString(),
-            fen: 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1',
-            whitePlayerId: p1._id.toString(),
-            blackPlayerId: p2._id.toString(),
-            whitePlayer: { id: p1._id, username: p1.username },
-            blackPlayer: { id: p2._id, username: p2.username },
-          });
-        }
-      }, 1000);
-    });
-
-    // Simple makeMove event (stub, implement as needed)
-    socket.on('makeMove', async (data) => {
-      // Implement move logic here or call your existing handler
-    });
-  });
-};
 const Contest = require('../models/Contest');
 const ContestType = require('../models/ContestType');
 const User = require('../models/User');

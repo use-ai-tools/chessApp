@@ -1,10 +1,13 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 
 const DEFAULTS = {
   boardTheme: 'classic',
   premoves: true,
   moveSound: true,
+  autoQueen: true,
   moveConfirmation: false,
+  lowTimeSound: true,
+  lowTimeHaptic: true,
   showLegalMoves: true,
   showLastMove: true,
   animationSpeed: 'normal',
@@ -75,12 +78,34 @@ export default function MatchSettings({ onClose, onApply }) {
               </div>
             </div>
 
-            {/* Toggles */}
-            <ToggleRow label="Premoves" value={settings.premoves} onChange={(v) => update('premoves', v)} />
-            <ToggleRow label="Move Sounds" value={settings.moveSound} onChange={(v) => update('moveSound', v)} />
-            <ToggleRow label="Move Confirmation" value={settings.moveConfirmation} onChange={(v) => update('moveConfirmation', v)} desc="Tap to select, tap again to confirm" />
-            <ToggleRow label="Show Legal Moves" value={settings.showLegalMoves} onChange={(v) => update('showLegalMoves', v)} />
-            <ToggleRow label="Show Last Move" value={settings.showLastMove} onChange={(v) => update('showLastMove', v)} />
+            {/* Gameplay Toggles */}
+            <div>
+              <label className="text-xs font-bold text-slate-400 mb-3 block uppercase tracking-wider">Gameplay</label>
+              <div className="space-y-3">
+                <ToggleRow label="Premoves" desc="Queue a move during opponent's turn" value={settings.premoves} onChange={(v) => update('premoves', v)} />
+                <ToggleRow label="Move Sound" desc="Play sound on piece movement" value={settings.moveSound} onChange={(v) => update('moveSound', v)} />
+                <ToggleRow label="Auto-Queen" desc="Auto promote pawn to queen" value={settings.autoQueen} onChange={(v) => update('autoQueen', v)} />
+                <ToggleRow label="Confirm Each Move" desc="Tap to select, tap again to confirm" value={settings.moveConfirmation} onChange={(v) => update('moveConfirmation', v)} />
+              </div>
+            </div>
+
+            {/* Time Warnings */}
+            <div>
+              <label className="text-xs font-bold text-slate-400 mb-3 block uppercase tracking-wider">Low Time Alerts</label>
+              <div className="space-y-3">
+                <ToggleRow label="Low-Time Sound Warning" desc="Audible alert when time is low" value={settings.lowTimeSound} onChange={(v) => update('lowTimeSound', v)} />
+                <ToggleRow label="Low-Time Haptic Feedback" desc="Vibration alert when time is low" value={settings.lowTimeHaptic} onChange={(v) => update('lowTimeHaptic', v)} />
+              </div>
+            </div>
+
+            {/* Display */}
+            <div>
+              <label className="text-xs font-bold text-slate-400 mb-3 block uppercase tracking-wider">Display</label>
+              <div className="space-y-3">
+                <ToggleRow label="Show Legal Moves" value={settings.showLegalMoves} onChange={(v) => update('showLegalMoves', v)} />
+                <ToggleRow label="Show Last Move" value={settings.showLastMove} onChange={(v) => update('showLastMove', v)} />
+              </div>
+            </div>
 
             {/* Animation Speed */}
             <div>

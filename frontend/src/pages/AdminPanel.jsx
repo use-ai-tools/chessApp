@@ -11,6 +11,9 @@ export default function AdminPanel() {
   const [suspicious, setSuspicious] = useState([]);
   const [liveMatches, setLiveMatches] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [adminUnlocked, setAdminUnlocked] = useState(false);
+  const [adminPassword, setAdminPassword] = useState('');
+  const [adminPwdError, setAdminPwdError] = useState('');
 
   // Create contest form
   const [newRoom, setNewRoom] = useState({ roomId: '', name: '', maxPlayers: 4, entryFee: 49, prizeDistribution: 'top4', startTime: '', endTime: '' });
@@ -186,6 +189,42 @@ export default function AdminPanel() {
     { key: 'transactions', label: '💰 Transactions' },
     { key: 'suspicious', label: '⚠️ Suspicious' },
   ];
+
+  if (!adminUnlocked) {
+    return (
+      <div className="min-h-[calc(100vh-64px)] bg-hero flex items-center justify-center px-4">
+        <div className="card max-w-sm w-full p-8 text-center animate-scale-in">
+          <div className="w-16 h-16 mx-auto rounded-2xl bg-gradient-to-br from-gold-500/20 to-amber-600/20 flex items-center justify-center mb-4">
+            <span className="text-3xl">🔒</span>
+          </div>
+          <h2 className="text-xl font-black text-white mb-2">Admin Access</h2>
+          <p className="text-sm text-slate-400 mb-6">Enter the admin password to continue</p>
+          <form onSubmit={(e) => {
+            e.preventDefault();
+            if (adminPassword === '1234') {
+              setAdminUnlocked(true);
+              setAdminPwdError('');
+            } else {
+              setAdminPwdError('Incorrect password');
+            }
+          }}>
+            <input
+              type="password"
+              value={adminPassword}
+              onChange={(e) => setAdminPassword(e.target.value)}
+              placeholder="Password"
+              className="input-field w-full mb-3"
+              autoFocus
+            />
+            {adminPwdError && (
+              <p className="text-sm text-red-400 mb-3">{adminPwdError}</p>
+            )}
+            <button type="submit" className="btn-primary w-full">Unlock</button>
+          </form>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-[calc(100vh-64px)] bg-hero px-4 py-6">

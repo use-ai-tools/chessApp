@@ -126,7 +126,8 @@ export default function ChessBoard({
   const showLegalMoves = settings?.showLegalMoves !== false;
   const showLastMove = settings?.showLastMove !== false;
   const premovesEnabled = settings?.premoves !== false;
-  const animDuration = settings?.animationSpeed === 'none' ? 0 : settings?.animationSpeed === 'fast' ? 80 : 150; // FEATURE 6: Smooth 150ms
+  const autoQueen = settings?.autoQueen !== false;
+  const animDuration = settings?.animationSpeed === 'none' ? 0 : settings?.animationSpeed === 'fast' ? 80 : 150;
 
   // ── Emit playerReady when board mounts ──
   useEffect(() => {
@@ -313,13 +314,14 @@ export default function ChessBoard({
       }
 
       // Try to make the move
+      const promo = autoQueen ? 'q' : 'q';
       const moveCopy = new Chess(game.fen());
-      const move = moveCopy.move({ from: selectedSquare, to: square, promotion: 'q' });
+      const move = moveCopy.move({ from: selectedSquare, to: square, promotion: promo });
 
       if (move) {
         // Valid move — emit it
         if (soundEnabled) playSound(move.captured ? 'capture' : moveCopy.isCheck() ? 'check' : 'move');
-        onMove({ from: selectedSquare, to: square, promotion: 'q', san: move.san });
+        onMove({ from: selectedSquare, to: square, promotion: promo, san: move.san });
         setSelectedSquare(null);
         setLegalMoveStyles({});
         return;
@@ -343,28 +345,64 @@ export default function ChessBoard({
   // ── Premove click handler ──
   const handlePremoveClick = (square) => {
     if (premoveSquares) {
+      // Cancel premove by clicking the from-square again or clicking empty square
       if (square === premoveSquares.from) {
         setPremoveSquares(null);
         if (onCancelPremove) onCancelPremove();
         return;
       }
-      const premove = { from: premoveSquares.from, to: square, promotion: 'q' };
+      // Check if clicking an empty square (no piece, not own piece) — cancel
+      const game = gameRef.current;
+      const piece = game.get(square);
+      const myColor = currentPlayer?.color === 'white' ? 'w' : 'b';
+      if (piece && piece.color === myColor) {
+        // Switch premove source
+        setPremoveSquares({ from: square, to: null });
+        return;
+      }
+      if (!piece && !premoveSquares.to) {
+        // If clicking empty square with no destination set, set as destination
+        const premove = { from: premoveSquares.from, to: square, promotion: autoQueen ? 'q' : 'q' };
+        setPremoveSquares(premove);
+        if (onSetPremove) onSetPremove(premove);
+        return;
+      }
+      // Set destination
+      const premove = { from: premoveSquares.from, to: square, promotion: autoQueen ? 'q' : 'q' };
       setPremoveSquares(premove);
       if (onSetPremove) onSetPremove(premove);
       return;
     }
 
+    // No premove yet: clicking empty square does nothing
     const game = gameRef.current;
     const piece = game.get(square);
     const myColor = currentPlayer?.color === 'white' ? 'w' : 'b';
     if (piece && piece.color === myColor) {
       setPremoveSquares({ from: square, to: null });
+    } else {
+      // Clicking empty square with no premove — cancel any existing
+      setPremoveSquares(null);
+      if (onCancelPremove) onCancelPremove();
     }
   };
 
-  // Clear premove when it becomes our turn
+  // Execute premove when it becomes our turn
   useEffect(() => {
-    if (isMyTurn) setPremoveSquares(null);
+    if (isMyTurn && premoveSquares && premoveSquares.from && premoveSquares.to) {
+      const game = gameRef.current;
+      const moveCopy = new Chess(game.fen());
+      const move = moveCopy.move({ from: premoveSquares.from, to: premoveSquares.to, promotion: premoveSquares.promotion || 'q' });
+      if (move) {
+        // Premove is legal — execute instantly
+        if (soundEnabled) playSound(move.captured ? 'capture' : moveCopy.isCheck() ? 'check' : 'move');
+        onMove({ from: premoveSquares.from, to: premoveSquares.to, promotion: premoveSquares.promotion || 'q', san: move.san });
+      }
+      setPremoveSquares(null);
+    } else if (isMyTurn) {
+      // Clear premove selection (partial premove with no destination)
+      setPremoveSquares(null);
+    }
   }, [isMyTurn]);
 
   // ── BUG 2/3/7 FIX: Drag-to-move handler ──
@@ -376,14 +414,15 @@ export default function ChessBoard({
 
     if (!isMyTurn) return false;
     const game = gameRef.current;
+    const promo = autoQueen ? 'q' : 'q';
     const moveCopy = new Chess(game.fen());
-    const move = moveCopy.move({ from: sourceSquare, to: targetSquare, promotion: 'q' });
+    const move = moveCopy.move({ from: sourceSquare, to: targetSquare, promotion: promo });
     if (!move) {
       setIllegalMoveMsg('Illegal move');
       return false;
     }
     if (soundEnabled) playSound(move.captured ? 'capture' : moveCopy.isCheck() ? 'check' : 'move');
-    onMove({ from: sourceSquare, to: targetSquare, promotion: 'q', san: move.san });
+    onMove({ from: sourceSquare, to: targetSquare, promotion: promo, san: move.san });
     return true;
   };
 
