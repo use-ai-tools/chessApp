@@ -14,6 +14,7 @@ import Profile from './pages/Profile';
 import Referrals from './pages/Referrals';
 import Tournaments from './pages/Tournaments';
 import Notifications from './pages/Notifications';
+import Puzzles from './pages/Puzzles';
 import BottomNav from './components/BottomNav';
 
 const Protected = ({ children }) => {
@@ -52,6 +53,7 @@ function AppContent() {
         <Route path="/referrals" element={<Protected><Header /><Referrals /></Protected>} />
         <Route path="/tournaments" element={<Protected><Header /><Tournaments /></Protected>} />
         <Route path="/notifications" element={<Protected><Header /><Notifications /></Protected>} />
+        <Route path="/puzzles" element={<Protected><Header /><Puzzles /></Protected>} />
         <Route path="/room" element={<Navigate to="/" />} />
         <Route path="*" element={<Navigate to="/" />} />
       </Routes>

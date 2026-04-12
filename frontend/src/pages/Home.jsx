@@ -15,18 +15,18 @@ export default function Home() {
         <div className="grid md:grid-cols-3 gap-5">
           {/* Practice Play */}
           <div 
-            onClick={() => navigate('/play/free')}
+            onClick={() => navigate('/puzzles')}
             className="contest-card p-6 cursor-pointer hover:-translate-y-1 transition-all"
           >
             <div className="w-14 h-14 rounded-2xl bg-sky-500/10 flex items-center justify-center text-3xl mb-4 border border-sky-500/20 shadow-lg shadow-sky-500/10">
-              🎮
+              🧩
             </div>
-            <h2 className="text-xl font-bold text-white mb-2">Practice Play</h2>
+            <h2 className="text-xl font-bold text-white mb-2">Practice Puzzles</h2>
             <p className="text-slate-400 text-sm mb-4">
-              Free, no entry fee. Just for fun and improving your skills.
+              Master your tactical vision with 100 hand-picked offline puzzles.
             </p>
             <button className="w-full py-2.5 rounded-xl text-sm font-bold bg-sky-600 hover:bg-sky-500 text-white transition-colors">
-              Play for Free
+              Play Puzzles
             </button>
           </div>
 
