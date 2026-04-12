@@ -270,7 +270,20 @@ export default function RoomPage() {
     socket.on('errorMsg', (msg) => console.error('Socket error:', msg));
     socket.on('forceLogout', () => navigate('/login'));
 
-    return () => { };
+    return () => {
+      socket.off('matchStarted');
+      socket.off('gameReady');
+      socket.off('timerStart');
+      socket.off('moveMade');
+      socket.off('matchEnded');
+      socket.off('drawOffer');
+      socket.off('drawDeclined');
+      socket.off('emojiReaction');
+      socket.off('matchChat');
+      socket.off('forceLogout');
+      socket.off('connect');
+      socket.off('errorMsg');
+    };
   }, [contestId, user?.id]);
 
   useEffect(() => {

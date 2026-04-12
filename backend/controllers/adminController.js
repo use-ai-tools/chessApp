@@ -1,31 +1,3 @@
-/**
- * Admin: Add balance to user by username
- * POST /api/admin/add-balance { username, amount }
- */
-exports.addBalanceToUser = async (req, res) => {
-  try {
-    const { username, amount } = req.body;
-    if (!username || typeof amount !== 'number' || amount <= 0) {
-      return res.status(400).json({ message: 'Username and positive amount required' });
-    }
-    const user = await User.findOne({ username });
-    if (!user) return res.status(404).json({ message: 'User not found' });
-    user.wallet = (user.wallet || 0) + amount;
-    await user.save();
-    // Optionally, log transaction
-    await Transaction.create({
-      user: user._id,
-      type: 'admin_credit',
-      amount,
-      description: `Admin credited ₹${amount} to ${username}`,
-      createdAt: new Date(),
-    });
-    res.json({ message: `₹${amount} added to ${username}`, wallet: user.wallet });
-  } catch (err) {
-    console.error('[admin] addBalanceToUser error', err);
-    res.status(500).json({ message: 'Internal server error' });
-  }
-};
 const User = require('../models/User');
 const Room = require('../models/Room');
 const Transaction = require('../models/Transaction');
@@ -256,4 +228,34 @@ exports.analytics = async (req, res) => {
     bannedCount,
     revenue: revenue[0]?.total || 0,
   });
+};
+
+/**
+ * Admin: Add balance to user by username
+ * POST /api/admin/add-balance { username, amount }
+ */
+exports.addBalanceToUser = async (req, res) => {
+  try {
+    const { username, amount } = req.body;
+    if (!username || typeof amount !== 'number' || amount <= 0) {
+      return res.status(400).json({ message: 'Username and positive amount required' });
+    }
+    const user = await User.findOne({ username });
+    if (!user) return res.status(404).json({ message: 'User not found' });
+    user.wallet = (user.wallet || 0) + amount;
+    await user.save();
+    // Log transaction
+    await Transaction.create({
+      userId: user._id,
+      amount,
+      type: 'credit',
+      reason: `Admin credited ₹${amount} to ${username}`,
+      status: 'completed',
+      createdAt: new Date(),
+    });
+    res.json({ message: `₹${amount} added to ${username}`, wallet: user.wallet });
+  } catch (err) {
+    console.error('[admin] addBalanceToUser error', err);
+    res.status(500).json({ message: 'Internal server error' });
+  }
 };
