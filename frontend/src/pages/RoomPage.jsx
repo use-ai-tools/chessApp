@@ -118,12 +118,12 @@ export default function RoomPage() {
     const checkRoomState = async () => {
       if (matchDataRef.current) return;
       try {
-        const res = await fetch(`${API_URL}/api/contests/${contestId}`, {
+        const res = await fetch(`${API_URL}/api/rooms/${contestId}`, {
           headers: { Authorization: `Bearer ${localStorage.getItem('token') || ''}` }
         });
         if (res.ok) {
           const roomData = await res.json();
-          if ((roomData.status === 'playing' || roomData.status === 'completed') && roomData.players?.length >= 2) {
+          if ((roomData.status === 'ongoing' || roomData.status === 'completed') && roomData.players?.length >= 2) {
              const wId = roomData.whitePlayer?._id || roomData.whitePlayer;
              const bId = roomData.blackPlayer?._id || roomData.blackPlayer;
              
@@ -368,7 +368,7 @@ export default function RoomPage() {
                   soundEnabled={settings.moveSound !== false}
                   drawOfferPending={drawOfferPending}
                   gameStatus={gameStatus}
-                  onGameReview={handleOpenGameReview}
+                  onGameReview={(gameStatus === 'finished' || gameStatus === 'ended') ? handleOpenGameReview : null}
                 />
               </div>
             )}
@@ -431,7 +431,7 @@ export default function RoomPage() {
                     soundEnabled={settings.moveSound !== false}
                     drawOfferPending={drawOfferPending}
                     gameStatus={gameStatus}
-                    onGameReview={handleOpenGameReview}
+                    onGameReview={(gameStatus === 'finished' || gameStatus === 'ended') ? handleOpenGameReview : null}
                   />
                 </div>
               </div>
