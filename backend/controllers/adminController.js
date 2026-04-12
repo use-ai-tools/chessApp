@@ -238,24 +238,31 @@ exports.addBalanceToUser = async (req, res) => {
   try {
     const { username, amount } = req.body;
     if (!username || typeof amount !== 'number' || amount <= 0) {
-      return res.status(400).json({ message: 'Username and positive amount required' });
+      return res.status(400).json({ success: false, message: 'Username and positive amount required' });
     }
-    const user = await User.findOne({ username });
-    if (!user) return res.status(404).json({ message: 'User not found' });
-    user.wallet = (user.wallet || 0) + amount;
+
+    // Case-insensitive user search
+    const user = await User.findOne({ username: new RegExp(`^${username}$`, 'i') });
+    
+    if (!user) {
+      return res.status(404).json({ success: false, message: 'User not found' });
+    }
+
+    user.wallet = (user.wallet || 0) + Number(amount);
     await user.save();
+
     // Log transaction
     await Transaction.create({
       userId: user._id,
-      amount,
+      amount: Number(amount),
       type: 'credit',
-      reason: `Admin credited ₹${amount} to ${username}`,
+      reason: `Admin credited ₹${amount} to ${user.username}`,
       status: 'completed',
-      createdAt: new Date(),
     });
-    res.json({ message: `₹${amount} added to ${username}`, wallet: user.wallet });
+
+    res.json({ success: true, message: 'Balance added', wallet: user.wallet });
   } catch (err) {
     console.error('[admin] addBalanceToUser error', err);
-    res.status(500).json({ message: 'Internal server error' });
+    res.status(500).json({ success: false, message: 'Failed to add balance' });
   }
 };
