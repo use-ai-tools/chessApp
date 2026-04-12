@@ -37,6 +37,7 @@ app.use('/api/bonus', require('./routes/bonus'));
 app.use('/api/notifications', require('./routes/notifications'));
 app.use('/api/chat', require('./routes/chat'));
 app.use('/api/profile', require('./routes/profile'));
+app.use('/api/tournaments', require('./routes/tournament'));
 
 // Test route
 app.get("/", (req, res) => res.send("Chess Tournament Server is running"));
@@ -78,4 +79,12 @@ setupSockets(io);
 app.set('io', io);
 
 const PORT = process.env.PORT || 3001;
-server.listen(PORT, () => console.log(`Server listening on ${PORT}`));
+server.listen(PORT, () => {
+    console.log(`Server listening on ${PORT}`);
+    
+    // Check for tournament starts every 60 seconds
+    const { checkAndStartTournaments } = require('./controllers/tournamentController');
+    setInterval(() => {
+      checkAndStartTournaments(io);
+    }, 60000);
+});

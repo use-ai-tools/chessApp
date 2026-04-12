@@ -1,5 +1,7 @@
 const Room = require('../models/Room');
 const User = require('../models/User');
+const Contest = require('../models/Contest');
+const ContestType = require('../models/ContestType');
 
 /**
  * Pair players into matches for a room's current round.
@@ -58,9 +60,25 @@ exports.matchRoom = async (roomId) => {
 
   // Create playing matches
   for (const [p1, p2] of pairs) {
+    // Create a shadow contest for the socket handler to manage the actual chess game
+    let tournamentCT = await ContestType.findOne({ name: 'Tournament Match' });
+    if (!tournamentCT) {
+      tournamentCT = await ContestType.create({ name: 'Tournament Match', entry: 0, payout: 0, platform: 0 });
+    }
+
+    const contest = await Contest.create({
+      contestType: tournamentCT._id,
+      players: [p1, p2],
+      whitePlayer: p1,
+      blackPlayer: p2,
+      status: 'playing',
+      startedAt: new Date(),
+    });
+
     room.matches.push({
       player1: p1,
       player2: p2,
+      contestId: contest._id,
       status: 'playing',
       round: currentRound,
       startedAt: new Date(),

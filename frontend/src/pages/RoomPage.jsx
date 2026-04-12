@@ -9,6 +9,7 @@ import MatchOptions from '../components/MatchOptions';
 import MoveHistory from '../components/MoveHistory';
 import GameReview from '../components/GameReview';
 import MatchSettings from '../components/MatchSettings';
+import TournamentBracket from '../components/TournamentBracket';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001';
 const SOCKET_URL = import.meta.env.VITE_SOCKET_URL || 'http://localhost:3001';
@@ -42,6 +43,10 @@ export default function RoomPage() {
   const [contestType, setContestType] = useState(null);
   const [chatMessages, setChatMessages] = useState([]);
   const chatRef = useRef(null);
+  
+  const [bracket, setBracket] = useState(null);
+  const [showBracket, setShowBracket] = useState(false);
+  const isTournament = contestId?.startsWith('tournament-');
 
   const [settings, setSettings] = useState(() => {
     try { return JSON.parse(localStorage.getItem('chess-settings') || '{}'); } catch { return {}; }
@@ -154,6 +159,17 @@ export default function RoomPage() {
       } catch (err) { }
     };
     checkRoomState();
+
+    const fetchBracket = async () => {
+      if (!isTournament) return;
+      try {
+        const res = await fetch(`${API_URL}/api/rooms/${contestId}/bracket`, {
+          headers: { Authorization: `Bearer ${localStorage.getItem('token') || ''}` }
+        });
+        if (res.ok) setBracket(await res.json());
+      } catch (err) {}
+    };
+    if (isTournament) fetchBracket();
 
     if (!socketRef.current || !socketRef.current.connected) {
       socketRef.current = io(SOCKET_URL, { reconnection: true, reconnectionAttempts: Infinity, reconnectionDelay: 1000 });
@@ -324,13 +340,18 @@ export default function RoomPage() {
               </span>
             </div>
             <p className="text-sm text-slate-400">{status}</p>
-            {contestType && (
-              <p className="text-xs text-slate-500 mt-1">
-                Entry: ₹{contestType.entry} → Prize: <span className="text-chess-green font-bold">₹{contestType.payout}</span>
-              </p>
-            )}
           </div>
-          <button onClick={() => navigate('/')} className="btn-secondary btn-sm">← Lobby</button>
+          <div className="flex items-center gap-2">
+            {isTournament && (
+              <button 
+                onClick={() => setShowBracket(!showBracket)} 
+                className={`btn-sm flex items-center gap-2 font-bold ${showBracket ? 'btn-primary' : 'btn-secondary'}`}
+              >
+                <span>{showBracket ? '♟️ View Board' : '🏆 View Bracket'}</span>
+              </button>
+            )}
+            <button onClick={() => navigate('/')} className="btn-secondary btn-sm">← Lobby</button>
+          </div>
         </div>
 
         {drawOfferReceived && (
@@ -375,8 +396,16 @@ export default function RoomPage() {
           </div>
 
           <div className="lg:col-span-6">
-            <div className="card">
-              {matchDataRef.current ? (
+            {showBracket ? (
+              <div className="card h-full min-h-[400px]">
+                <h2 className="text-xl font-black text-white mb-6 flex items-center gap-2">
+                  <span>🏆</span> Tournament Bracket
+                </h2>
+                <TournamentBracket bracket={bracket} />
+              </div>
+            ) : (
+              <div className="card">
+                {matchDataRef.current ? (
                 <ChessBoard
                   roomId={contestId}
                   matchId={contestId}

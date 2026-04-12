@@ -6,6 +6,8 @@ const { Chess } = require('chess.js');
 const { distributePrize } = require('../services/prizeService');
 const { analyzeGame } = require('../services/gameReviewService');
 const { replenishContests } = require('../scripts/seedContests');
+const { nextRound } = require('../services/tournamentService');
+const Room = require('../models/Room');
 
 // In-Memory Game State
 const games = new Map();         // contestId -> Chess instance + metadata
@@ -76,6 +78,25 @@ module.exports = (io) => {
       }
 
       if (contest.contestType?._id) await replenishContests(contest.contestType._id);
+
+      // ── TOURNAMENT PROGRESSION ──
+      // If this contest was part of a tournament Room, find the room and check for next round
+      const room = await Room.findOne({ "matches.contestId": contestId });
+      if (room) {
+        const matchIndex = room.matches.findIndex(m => m.contestId?.toString() === contestId.toString());
+        if (matchIndex !== -1) {
+          room.matches[matchIndex].status = 'completed';
+          room.matches[matchIndex].winner = winnerId;
+          room.matches[matchIndex].endedAt = new Date();
+          await room.save();
+          
+          // Trigger tournament service to check if the round is finished
+          await nextRound(room.roomId);
+          
+          // Emit update to the tournament room
+          io.to(room.roomId).emit('tournamentUpdated', { roomId: room.roomId });
+        }
+      }
     } catch (err) { console.error('[endContest]', err); }
   };
 

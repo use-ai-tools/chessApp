@@ -1,6 +1,7 @@
 const mongoose = require('mongoose');
 const ContestType = require('../models/ContestType');
 const Contest = require('../models/Contest');
+const Tournament = require('../models/Tournament');
 
 const CONTEST_TYPES = [
   { name: 'Free Match',       entry: 0,   payout: 0,   platform: 0  },
@@ -34,6 +35,34 @@ const seedContests = async () => {
         }
         console.log(`[seed] Created ${toCreate} open slots for ${ct.name}`);
       }
+    }
+
+    // Seed Tournaments if none exist
+    const tCount = await Tournament.countDocuments();
+    if (tCount === 0) {
+      const tomorrow = new Date();
+      tomorrow.setDate(tomorrow.getDate() + 1);
+      tomorrow.setHours(20, 0, 0, 0); // 8 PM tomorrow
+
+      await Tournament.create([
+        {
+          name: 'Grand Master Open',
+          entryFee: 500,
+          prizePool: 7000,
+          maxPlayers: 16,
+          startTime: tomorrow,
+          status: 'upcoming'
+        },
+        {
+          name: 'Weekend Blitz Battle',
+          entryFee: 100,
+          prizePool: 1400,
+          maxPlayers: 16,
+          startTime: new Date(tomorrow.getTime() + 2 * 60 * 60 * 1000), // 10 PM tomorrow
+          status: 'upcoming'
+        }
+      ]);
+      console.log('[seed] Created 2 initial tournaments');
     }
   } catch (err) {
     console.error('[seed error]', err);
