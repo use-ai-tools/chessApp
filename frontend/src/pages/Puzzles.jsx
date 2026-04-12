@@ -228,9 +228,9 @@ export default function Puzzles() {
                   snapToCursor={false}
                   showBoardNotation={true}
                   customNotationStyle={{
-                    color: '#b58863',
-                    fontWeight: 'bold',
-                    fontSize: '12px'
+                    fontSize: '10px',
+                    fontWeight: '400',
+                    opacity: 0.7
                   }}
                 />
                 
@@ -343,7 +343,7 @@ export default function Puzzles() {
         <div className="bg-navy-800/80 backdrop-blur border border-navy-700/50 rounded-2xl p-6 mb-8 flex flex-col md:flex-row items-center justify-between gap-6 shadow-xl">
           <div>
             <h1 className="text-3xl font-black text-white mb-2">Chess Puzzles</h1>
-            <p className="text-slate-400 max-w-md">Master your tactical vision with 100 hand-picked puzzles. Puzzles unlock sequentially. Progress is saved offline.</p>
+            <p className="text-slate-400 max-w-md">Train your tactics. Solve puzzles. Become unbeatable.</p>
           </div>
           
           <div className="w-full md:w-64">
