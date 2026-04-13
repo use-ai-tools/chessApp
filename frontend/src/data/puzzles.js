@@ -4,11 +4,11 @@ export const puzzles = [
   { "id": 3, "difficulty": "EASY", "label": "1 MOVE MATE", "fen": "7k/6pp/8/8/8/6Q1/6PP/6K1 w - - 0 1", "solution": ["Qg8#"], "moves": 1, "hint": "Queen delivers checkmate!" },
   { "id": 4, "difficulty": "EASY", "label": "1 MOVE MATE", "fen": "6k1/6pp/8/8/8/8/6PP/5RK1 w - - 0 1", "solution": ["Rf8#"], "moves": 1, "hint": "Rook to f8 is checkmate!" },
   { "id": 5, "difficulty": "EASY", "label": "1 MOVE MATE", "fen": "3R2k1/5ppp/8/8/8/8/5PPP/6K1 w - - 0 1", "solution": ["Rd8#"], "moves": 1, "hint": "Back rank mate with rook!" },
-  { "id": 6, "fen": "r1bqk1nr/pppp1ppp/2n5/2b1p3/2B1P3/5Q2/PPPP1PPP/RNB1K1NR w KQkq - 0 1", "solution": ["Qxf7#"], "difficulty": "EASY", "moves": 1, "hint": "Scholar's mate variation." },
-  { "id": 7, "fen": "k7/1R6/1K6/8/8/8/8/1R6 w - - 0 1", "solution": ["Ra1#"], "difficulty": "EASY", "moves": 1, "hint": "Rook mate on the file." },
-  { "id": 8, "fen": "r1bqkb1r/pppp1ppp/2n2n2/4p2Q/2B1P3/8/PPPP1PPP/RNB1K1NR w KQkq - 0 1", "solution": ["Qxf7#"], "difficulty": "EASY", "moves": 1, "hint": "Classic attack on f7." },
-  { "id": 9, "fen": "5rk1/5ppp/8/8/8/8/1Q6/6K1 w - - 0 1", "solution": ["Qb8#"], "difficulty": "EASY", "moves": 1, "hint": "Back rank weakness." },
-  { "id": 10, "fen": "2k5/8/2K5/8/8/8/R7/8 w - - 0 1", "solution": ["Ra8#"], "difficulty": "EASY", "moves": 1, "hint": "Checkmate from distance." }
+  { "id": 6, "difficulty": "EASY", "label": "1 MOVE MATE", "fen": "2R5/6k1/5ppp/8/8/8/5PPP/6K1 w - - 0 1", "solution": ["Rc7#"], "moves": 1, "hint": "Rook to 7th rank!" },
+  { "id": 7, "difficulty": "EASY", "label": "1 MOVE MATE", "fen": "6k1/5ppp/8/8/8/8/5PPP/2R3K1 w - - 0 1", "solution": ["Rc8#"], "moves": 1, "hint": "Rook to c8 checkmate!" },
+  { "id": 8, "difficulty": "EASY", "label": "1 MOVE MATE", "fen": "7k/7p/7P/8/8/8/7P/5R1K w - - 0 1", "solution": ["Rf8#"], "moves": 1, "hint": "Rook covers the escape!" },
+  { "id": 9, "difficulty": "EASY", "label": "1 MOVE MATE", "fen": "5k2/5ppp/8/8/8/8/5PPP/3Q1K2 w - - 0 1", "solution": ["Qd8#"], "moves": 1, "hint": "Queen to d8 is checkmate!" },
+  { "id": 10, "difficulty": "EASY", "label": "1 MOVE MATE", "fen": "6k1/5ppp/8/8/8/5Q2/5PPP/6K1 w - - 0 1", "solution": ["Qg8#"], "moves": 1, "hint": "Queen diagonal checkmate!" }
 ];
 
 // Add 90 more simple but valid back-rank mates to reach 100
