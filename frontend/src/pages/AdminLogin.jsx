@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 
 const API_URL = (import.meta.env.VITE_API_URL || 'http://localhost:3001') + '/api';
@@ -9,6 +9,20 @@ export default function AdminLogin() {
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    try {
+      const userStr = localStorage.getItem('user');
+      if (userStr) {
+        const user = JSON.parse(userStr);
+        if (user.username === 'kabir' || user.isAdmin || user.role === 'admin') {
+          navigate('/admin/panel');
+        }
+      }
+    } catch (err) {
+      console.error('Error evaluating admin status:', err);
+    }
+  }, [navigate]);
 
   const handleLogin = async (e) => {
     e.preventDefault();
