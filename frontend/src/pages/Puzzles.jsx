@@ -119,32 +119,25 @@ export default function Puzzles() {
     setSelectedSquare(null);
     setLegalMoveStyles({});
 
-    const expectedSan = activePuzzle.solution[moveIndex];
-    let isCorrect = false;
+    setGame(moveCopy);
 
-    if (expectedSan && (moveStr.san === expectedSan || moveStr.san.replace(/[+#]/g, '') === expectedSan.replace(/[+#]/g, ''))) {
-      isCorrect = true;
-    }
-    
-    if (isCorrect) {
-      // Correct Move!
-      setGame(moveCopy);
-      
-      const isFinalMove = (moveIndex === activePuzzle.solution.length - 1);
-      
-      if (isFinalMove) {
-        // Solved
+    const nextMoveIndex = moveIndex + 1;
+    const totalMoves = activePuzzle.solution.length;
+    const isFinalMove = nextMoveIndex >= totalMoves;
+
+    if (isFinalMove) {
+      if (moveCopy.isCheckmate()) {
         let finalStars = 3;
         if (hintUsed) finalStars = 1;
         else if (attempts > 0) finalStars = 2;
 
         setFeedback({ type: 'complete', text: 'Puzzle Solved!' });
-        
+
         setProgress(prev => {
           const completedSet = new Set(prev.completed);
           completedSet.add(activePuzzle.id);
           const nextCurrent = prev.current === activePuzzle.id ? activePuzzle.id + 1 : prev.current;
-          
+
           const newStars = { ...prev.stars };
           if (!newStars[activePuzzle.id] || newStars[activePuzzle.id] < finalStars) {
             newStars[activePuzzle.id] = finalStars;
@@ -159,36 +152,17 @@ export default function Puzzles() {
           };
         });
       } else {
-        // Correct but more moves
-        setFeedback({ type: 'success', text: 'Correct! Keep going...' });
-        setMoveIndex(prev => prev + 1);
-        
-        // Opponent's automated response (the next move in solution array)
-        setTimeout(() => {
-           const opMoveSan = activePuzzle.solution[moveIndex + 1];
-           const opCopy = new Chess(moveCopy.fen());
-           opCopy.move(opMoveSan);
-           setGame(opCopy);
-           setMoveIndex(prev => prev + 1);
-           setFeedback({ type: '', text: '' });
-        }, 600);
+        setAttempts(prev => prev + 1);
+        setFeedback({ type: 'error', text: 'Failed! Try again' });
       }
+      setMoveIndex(nextMoveIndex);
       return true;
-    } else {
-      // Wrong move
-      setAttempts(prev => prev + 1);
-      setWrongMoveSquare(targetSquare);
-      setFeedback({ type: 'error', text: 'Not quite, try again' });
-      setTimeout(() => {
-        // Reset to initial position of the puzzle
-        const resetGame = new Chess(activePuzzle.fen);
-        setGame(resetGame);
-        setMoveIndex(0);
-        setFeedback({ type: '', text: '' });
-        setWrongMoveSquare(null);
-      }, 500);
-      return false; // don't visually drop the piece
     }
+
+    // Intermediate moves are not validated; player can continue freely.
+    setMoveIndex(nextMoveIndex);
+    setFeedback({ type: '', text: '' });
+    return true;
   };
 
   const currentLevelColor = (diff) => {
