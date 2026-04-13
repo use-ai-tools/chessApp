@@ -449,7 +449,7 @@ export default function RoomPage() {
         <div className="flex flex-col lg:flex-row gap-8 items-start">
           {/* Main Board Column */}
           <div className="w-full lg:w-auto flex-shrink-0 mx-auto lg:mx-0">
-            <div className="card relative aspect-square overflow-hidden" style={{ maxHeight: '70vh', maxWidth: '70vh', width: '100%', padding: '0px' }}>
+            <div className="card relative aspect-square overflow-hidden" style={{ maxHeight: '70vh', maxWidth: '70vh', width: '100%', padding: '0px', borderRadius: 0 }}>
               <div className="absolute top-2 right-2 z-10 hidden sm:block">
                 <PingIndicator customSocket={socketRef.current} />
               </div>
