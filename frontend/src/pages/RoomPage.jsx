@@ -209,6 +209,8 @@ export default function RoomPage() {
     }
 
     socket.on('matchStarted', (data) => {
+      console.log('[RoomPage] matchStarted received:', data);
+      console.log('[RoomPage] player color:', data.whitePlayer?.id === user?.id ? 'white' : 'black');
       setupMatch(data);
     });
 
@@ -357,6 +359,20 @@ export default function RoomPage() {
   const isSpectator = currentPlayerColor === null && matchDataRef.current !== null;
   const currentPlayer = currentPlayerColor ? { color: currentPlayerColor, ...(currentPlayerColor === 'white' ? whitePlayer : blackPlayer) } : null;
 
+  // Auto-retry: if still not connected after 3s, re-emit joinRoom
+  const [retryCount, setRetryCount] = useState(0);
+  useEffect(() => {
+    if (currentPlayerColor || isSpectator || !contestId || !user?.id) return;
+    const retryTimer = setTimeout(() => {
+      console.log(`[RoomPage] Retry #${retryCount + 1}: re-emitting joinRoom for ${contestId}`);
+      if (socketRef.current?.connected) {
+        socketRef.current.emit('joinRoom', { roomId: contestId, userId: user.id });
+      }
+      setRetryCount(prev => prev + 1);
+    }, 3000);
+    return () => clearTimeout(retryTimer);
+  }, [currentPlayerColor, isSpectator, contestId, user?.id, retryCount]);
+
   if (!currentPlayerColor && !isSpectator) {
     return (
       <div className="min-h-[calc(100vh-64px)] bg-hero flex items-center justify-center">
@@ -364,6 +380,25 @@ export default function RoomPage() {
           <div className="w-12 h-12 border-4 border-chess-green border-t-transparent rounded-full animate-spin mx-auto mb-4" />
           <h2 className="text-xl font-bold text-white mb-2">Connecting...</h2>
           <p className="text-slate-400">Loading match data and color assignment</p>
+          {retryCount >= 2 && (
+            <button
+              onClick={() => {
+                if (socketRef.current?.connected) {
+                  socketRef.current.emit('joinRoom', { roomId: contestId, userId: user.id });
+                } else {
+                  socketRef.current = io(SOCKET_URL, { reconnection: true });
+                  socketRef.current.on('connect', () => {
+                    socketRef.current.emit('identify', { userId: user.id });
+                    socketRef.current.emit('joinRoom', { roomId: contestId, userId: user.id });
+                  });
+                }
+                setRetryCount(0);
+              }}
+              className="mt-4 btn-primary btn-sm"
+            >
+              🔄 Retry Connection
+            </button>
+          )}
         </div>
       </div>
     );

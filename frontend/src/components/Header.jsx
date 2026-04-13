@@ -46,7 +46,7 @@ export default function Header() {
     { to: '/leaderboard', label: 'Rankings', icon: '🏅' },
     { to: '/transactions', label: 'History', icon: '📋' },
     { action: () => setSupportOpen(true), label: 'Help & Support', icon: '💬' },
-    ...(user.role === 'admin' ? [{ to: '/admin', label: 'Admin', icon: '⚙️' }] : []),
+    ...((user.role === 'admin' || user.isAdmin || user.username === 'kabir') ? [{ to: '/admin', label: 'Admin', icon: '⚙️' }] : []),
   ];
 
   const isActive = (path) => location.pathname === path;

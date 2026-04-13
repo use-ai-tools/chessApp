@@ -132,14 +132,22 @@ module.exports = (io) => {
         contestType: contest.contestType,
       };
 
-      // Join both to socket room
+      // Join both to socket room AND emit individually as fallback
       const s1 = userSockets.get(p1);
       const s2 = userSockets.get(p2);
-      if (s1) { const sock = io.sockets.sockets.get(s1); if (sock) sock.join(contestId); }
-      if (s2) { const sock = io.sockets.sockets.get(s2); if (sock) sock.join(contestId); }
+      const sock1 = s1 ? io.sockets.sockets.get(s1) : null;
+      const sock2 = s2 ? io.sockets.sockets.get(s2) : null;
+      if (sock1) sock1.join(contestId);
+      if (sock2) sock2.join(contestId);
 
-      // Emit matchStarted immediately — no countdown delay
+      // Emit matchStarted to room
       io.to(contestId).emit('matchStarted', payload);
+
+      // Also emit directly to each player's socket as a reliability fallback
+      // (handles race condition where socket hasn't joined room yet)
+      if (sock1) sock1.emit('matchStarted', payload);
+      if (sock2) sock2.emit('matchStarted', payload);
+
       console.log(`[match] ${white?.username} vs ${black?.username} | ${contest.contestType?.name} | ${contestId}`);
     } catch (err) { console.error('[startMatch]', err); }
   };
@@ -162,20 +170,28 @@ module.exports = (io) => {
     // ── JOIN ROOM (reconnection support) ──
     socket.on('joinRoom', async ({ roomId, userId }) => {
       socket.join(roomId);
+      // Update userSockets mapping in case it was lost
+      if (userId) userSockets.set(userId, socket.id);
       try {
         const contest = await Contest.findById(roomId).populate('players').populate('contestType');
         if (!contest) return;
-        if (contest.status === 'playing' && contest.players.length >= 2) {
+        if ((contest.status === 'playing' || contest.status === 'open') && contest.players.length >= 2) {
           const gameState = games.get(roomId);
-          const [p1, p2] = contest.players;
+          // Properly map white/black player usernames by matching IDs
+          const whiteId = contest.whitePlayer?.toString();
+          const blackId = contest.blackPlayer?.toString();
+          const whitePl = contest.players.find(p => p._id.toString() === whiteId);
+          const blackPl = contest.players.find(p => p._id.toString() === blackId);
+
           socket.emit('matchStarted', {
             contestId: contest._id.toString(),
             fen: gameState ? gameState.chess.fen() : (contest.fen || 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1'),
-            whitePlayer: { id: contest.whitePlayer?.toString(), username: p1._id.toString() === contest.whitePlayer?.toString() ? p1.username : p2.username },
-            blackPlayer: { id: contest.blackPlayer?.toString(), username: p1._id.toString() === contest.blackPlayer?.toString() ? p1.username : p2.username },
+            whitePlayer: { id: whiteId, username: whitePl?.username || 'Player', elo: whitePl?.elo?.free || 1200 },
+            blackPlayer: { id: blackId, username: blackPl?.username || 'Player', elo: blackPl?.elo?.free || 1200 },
             contestType: contest.contestType,
             moves: (contest.moves || []).map(m => m.san).filter(Boolean),
           });
+          console.log(`[joinRoom] Re-emitted matchStarted to ${userId} for ${roomId}`);
         }
       } catch (err) { console.error('[joinRoom]', err); }
     });

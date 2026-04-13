@@ -240,7 +240,7 @@ export default function Puzzles() {
 
           <div className="grid md:grid-cols-12 gap-6">
             <div className="md:col-span-8">
-              <div className="shadow-2xl relative">
+              <div className="max-w-[480px] w-full shadow-2xl relative">
                 <Chessboard 
                   customBoardStyle={{ borderRadius: '0px' }}
                   position={game.fen()}

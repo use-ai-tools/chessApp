@@ -307,15 +307,11 @@ export const puzzles = [
   },
   {
     "id": 36,
-    "fen": "6k1/5pp1/7p/8/8/4B3/5PPP/4R1K1 w - - 0 1",
-    "solution": [
-      "Bh6",
-      "gxh6",
-      "Re8#"
-    ],
-    "difficulty": "medium",
+    "fen": "6k1/5ppp/8/8/8/8/5PPP/4R1K1 w - - 0 1",
+    "solution": ["Re8#"],
+    "difficulty": "hard",
     "moves": 2,
-    "hint": "Sacrifice the bishop to open lines for the rook."
+    "hint": "White to move - find the checkmate"
   },
   {
     "id": 37,
