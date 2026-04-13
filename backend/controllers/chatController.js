@@ -56,7 +56,7 @@ exports.processChat = async (req, res) => {
   if (apiKey && !apiKey.startsWith('your_')) {
     try {
       const response = await fetch(
-        `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`,
+        `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`,
         {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -74,8 +74,7 @@ exports.processChat = async (req, res) => {
           return res.json({ reply });
         }
       }
-      // If API fails (expired key, quota, etc.) → fall through to built-in
-      console.log('[chat] Gemini API failed, using built-in fallback');
+      // If API fails (expired key, quota, etc.) -> fall through to built-in
     } catch (err) {
       console.log('[chat] Gemini API error, using built-in fallback:', err.message);
     }

@@ -446,11 +446,63 @@ export default function RoomPage() {
           </div>
         )}
 
-        <div className="grid lg:grid-cols-12 gap-6">
-          <div className="lg:col-span-3 hidden lg:block">
-            {matchDataRef.current && <MoveHistory moves={moveHistory} currentIndex={previewIndex} onClickMove={setPreviewIndex} />}
-            {currentPlayerColor && (
-              <div className="mt-4">
+        <div className="flex flex-col lg:flex-row gap-8 items-start">
+          {/* Main Board Column */}
+          <div className="w-full lg:w-auto flex-shrink-0 mx-auto lg:mx-0">
+            <div className="card relative aspect-square overflow-hidden" style={{ maxHeight: '70vh', maxWidth: '70vh', width: '100%', padding: '0px' }}>
+              <div className="absolute top-2 right-2 z-10 hidden sm:block">
+                <PingIndicator customSocket={socketRef.current} />
+              </div>
+              {matchDataRef.current ? (
+                <ChessBoard
+                  roomId={contestId}
+                  matchId={contestId}
+                  fen={displayFen}
+                  onMove={handleMove}
+                  onPlayerReady={handlePlayerReady}
+                  currentPlayer={previewIndex === -1 ? currentPlayer : null}
+                  whitePlayer={whitePlayer}
+                  blackPlayer={blackPlayer}
+                  isSpectator={isSpectator || previewIndex !== -1}
+                  isReview={false}
+                  gameStatus={previewIndex !== -1 ? 'preview' : gameStatus}
+                  boardOrientation={boardOrientation}
+                  timerData={timerData}
+                  floatingEmoji={floatingEmoji}
+                  lastMove={lastMove}
+                  settings={settings}
+                  username={user?.username}
+                />
+              ) : (
+                <div className="flex flex-col items-center justify-center gap-4 py-20">
+                  <div className="w-16 h-16 rounded-full bg-navy-700/50 flex items-center justify-center">
+                    <div className="w-8 h-8 border-2 border-chess-green border-t-transparent rounded-full animate-spin" />
+                    {invalidMsg && (
+                      <p className="text-red-400 text-sm font-bold text-center mt-3 animate-fade-in">{invalidMsg}</p>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {previewIndex !== -1 && (
+                <div className="absolute bottom-0 left-0 right-0 p-2 bg-sky-500/10 border-t border-sky-500/20 flex items-center justify-between z-10 backdrop-blur-md">
+                  <p className="text-[10px] text-sky-400 font-bold">📖 Previewing move {previewIndex + 1}/{moveHistory.length}</p>
+                  <button onClick={() => setPreviewIndex(-1)} className="text-[10px] text-sky-400 font-black hover:text-sky-300">LIVE</button>
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Controls & Sidebar Column */}
+          <div className="flex-1 w-full space-y-6">
+            <div className="grid sm:grid-cols-2 lg:grid-cols-1 gap-4">
+              {matchDataRef.current && (
+                <div className="lg:max-h-[300px] overflow-hidden">
+                   <MoveHistory moves={moveHistory} currentIndex={previewIndex} onClickMove={setPreviewIndex} />
+                </div>
+              )}
+              
+              {currentPlayerColor && (
                 <MatchOptions
                   onResign={handleResign}
                   onDrawOffer={handleDrawOffer}
@@ -467,113 +519,38 @@ export default function RoomPage() {
                   gameStatus={gameStatus}
                   onGameReview={(gameStatus === 'finished' || gameStatus === 'ended') ? handleOpenGameReview : null}
                 />
-              </div>
-            )}
-          </div>
+              )}
+            </div>
 
-          <div className="lg:col-span-6">
-            {showBracket ? (
-              <div className="card h-full min-h-[400px]">
-                <h2 className="text-xl font-black text-white mb-6 flex items-center gap-2">
-                  <span>🏆</span> Tournament Bracket
-                </h2>
-                <TournamentBracket bracket={bracket} />
-              </div>
-            ) : (
-              <div className="card relative">
-                <div className="absolute top-2 right-2 z-10 hidden sm:block">
-                  <PingIndicator customSocket={socketRef.current} />
-                </div>
-                {matchDataRef.current ? (
-                  <ChessBoard
-                    roomId={contestId}
-                    matchId={contestId}
-                    fen={displayFen}
-                    onMove={handleMove}
-                    onPlayerReady={handlePlayerReady}
-                    currentPlayer={previewIndex === -1 ? currentPlayer : null}
-                    whitePlayer={whitePlayer}
-                    blackPlayer={blackPlayer}
-                    isSpectator={isSpectator || previewIndex !== -1}
-                    isReview={false}
-                    gameStatus={previewIndex !== -1 ? 'preview' : gameStatus}
-                    boardOrientation={boardOrientation}
-                    timerData={timerData}
-                    floatingEmoji={floatingEmoji}
-                    lastMove={lastMove}
-                    settings={settings}
-                    username={user?.username}
-                  />
-                ) : (
-                  <div className="flex flex-col items-center justify-center gap-4 py-20">
-                    <div className="w-16 h-16 rounded-full bg-navy-700/50 flex items-center justify-center">
-                      <div className="w-8 h-8 border-2 border-chess-green border-t-transparent rounded-full animate-spin" />
+            <div className="grid sm:grid-cols-2 lg:grid-cols-1 gap-6">
+              {(whitePlayer || blackPlayer) && (
+                <div className="card">
+                  <h3 className="text-sm font-bold text-slate-300 mb-3">Players</h3>
+                  {[whitePlayer, blackPlayer].filter(Boolean).map((p, i) => (
+                    <div key={i} className={`flex items-center gap-3 p-2.5 rounded-xl mb-2 ${p.id === user?.id ? 'bg-chess-green/5 border border-chess-green/10' : 'bg-navy-900/30'
+                      }`}>
+                      <div className={`w-3 h-3 rounded-full ${i === 0 ? 'bg-white border border-slate-400' : 'bg-slate-800 border border-slate-600'}`} />
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium text-white truncate">{p.username}</p>
+                        <p className="text-[10px] text-slate-500">ELO {p.elo || 1200}</p>
+                      </div>
+                      {p.id === user?.id && <span className="text-[10px] text-chess-green font-bold">YOU</span>}
                     </div>
-                    <p className="text-slate-400 text-sm">Waiting for match data...</p>
-                  </div>
-                )}
-
-                {previewIndex !== -1 && (
-                  <div className="mt-2 p-2 rounded-lg bg-sky-500/10 border border-sky-500/20 flex items-center justify-between">
-                    <p className="text-xs text-sky-400">📖 Previewing move {previewIndex + 1}/{moveHistory.length}</p>
-                    <button onClick={() => setPreviewIndex(-1)} className="text-xs text-sky-400 font-bold hover:text-sky-300">← Live</button>
-                  </div>
-                )}
-              </div>
-            )}
-            {currentPlayerColor && (
-              <div className="lg:hidden mt-4">
-                <MoveHistory moves={moveHistory} currentIndex={previewIndex} onClickMove={setPreviewIndex} />
-                <div className="mt-3">
-                  <MatchOptions
-                    onResign={handleResign}
-                    onDrawOffer={handleDrawOffer}
-                    onEmojiReaction={handleEmojiReaction}
-                    onToggleSound={() => {
-                      const ns = { ...settings, moveSound: !settings.moveSound };
-                      setSettings(ns);
-                      localStorage.setItem('chess-settings', JSON.stringify(ns));
-                    }}
-                    onFlipBoard={handleFlipBoard}
-                    onOpenSettings={() => setShowSettings(true)}
-                    soundEnabled={settings.moveSound !== false}
-                    drawOfferPending={drawOfferPending}
-                    gameStatus={gameStatus}
-                    onGameReview={(gameStatus === 'finished' || gameStatus === 'ended') ? handleOpenGameReview : null}
-                  />
+                  ))}
                 </div>
-              </div>
-            )}
-          </div>
+              )}
 
-          <div className="lg:col-span-3 hidden lg:block space-y-4">
-            {(whitePlayer || blackPlayer) && (
-              <div className="card">
-                <h3 className="text-sm font-bold text-slate-300 mb-3">Players</h3>
-                {[whitePlayer, blackPlayer].filter(Boolean).map((p, i) => (
-                  <div key={i} className={`flex items-center gap-3 p-2.5 rounded-xl mb-2 ${p.id === user?.id ? 'bg-chess-green/5 border border-chess-green/10' : 'bg-navy-900/30'
-                    }`}>
-                    <div className={`w-3 h-3 rounded-full ${i === 0 ? 'bg-white border border-slate-400' : 'bg-slate-800 border border-slate-600'}`} />
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium text-white truncate">{p.username}</p>
-                      <p className="text-[10px] text-slate-500">ELO {p.elo || 1200}</p>
-                    </div>
-                    {p.id === user?.id && <span className="text-[10px] text-chess-green font-bold">YOU</span>}
+              {contestType && (
+                <div className="card">
+                  <h3 className="text-sm font-bold text-slate-300 mb-3">Contest Info</h3>
+                  <div className="space-y-2 text-sm">
+                    <div className="flex justify-between"><span className="text-slate-500">Entry</span><span className="text-white font-bold">₹{contestType.entry}</span></div>
+                    <div className="flex justify-between"><span className="text-slate-500">Prize</span><span className="text-chess-green font-bold">₹{contestType.payout}</span></div>
+                    <div className="flex justify-between"><span className="text-slate-500">Platform</span><span className="text-slate-400">₹{contestType.platform}</span></div>
                   </div>
-                ))}
-              </div>
-            )}
-
-            {contestType && (
-              <div className="card">
-                <h3 className="text-sm font-bold text-slate-300 mb-3">Contest Info</h3>
-                <div className="space-y-2 text-sm">
-                  <div className="flex justify-between"><span className="text-slate-500">Entry</span><span className="text-white font-bold">₹{contestType.entry}</span></div>
-                  <div className="flex justify-between"><span className="text-slate-500">Prize</span><span className="text-chess-green font-bold">₹{contestType.payout}</span></div>
-                  <div className="flex justify-between"><span className="text-slate-500">Platform</span><span className="text-slate-400">₹{contestType.platform}</span></div>
                 </div>
-              </div>
-            )}
+              )}
+            </div>
 
             {gameStatus === 'playing' && (
               <div className="card flex flex-col h-64">
