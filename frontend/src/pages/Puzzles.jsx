@@ -24,13 +24,12 @@ export default function Puzzles() {
   
   // Game State
   const [game, setGame] = useState(new Chess());
-  const [moveIndex, setMoveIndex] = useState(0); // Which step in the solution array we are on
+  const [moveCount, setMoveCount] = useState(0); // Number of player moves made in current puzzle
   const [hintUsed, setHintUsed] = useState(false);
   const [attempts, setAttempts] = useState(0);
   const [feedback, setFeedback] = useState({ type: '', text: '' }); // type: 'success', 'error', 'complete'
   const [showHint, setShowHint] = useState(false);
   const [selectedSquare, setSelectedSquare] = useState(null);
-  const [wrongMoveSquare, setWrongMoveSquare] = useState(null);
   const [legalMoveStyles, setLegalMoveStyles] = useState({});
   const [invalidMsg, setInvalidMsg] = useState('');
 
@@ -45,13 +44,12 @@ export default function Puzzles() {
     const newGame = new Chess(puzzle.fen);
     setGame(newGame);
     setActivePuzzle(puzzle);
-    setMoveIndex(0);
+    setMoveCount(0);
     setHintUsed(false);
     setAttempts(0);
     setFeedback({ type: '', text: '' });
     setShowHint(false);
     setSelectedSquare(null);
-    setWrongMoveSquare(null);
     setLegalMoveStyles({});
     setInvalidMsg('');
   };
@@ -121,9 +119,9 @@ export default function Puzzles() {
 
     setGame(moveCopy);
 
-    const nextMoveIndex = moveIndex + 1;
+    const nextMoveCount = moveCount + 1;
     const totalMoves = activePuzzle.solution.length;
-    const isFinalMove = nextMoveIndex >= totalMoves;
+    const isFinalMove = nextMoveCount === totalMoves;
 
     if (isFinalMove) {
       if (moveCopy.isCheckmate()) {
@@ -155,12 +153,12 @@ export default function Puzzles() {
         setAttempts(prev => prev + 1);
         setFeedback({ type: 'error', text: 'Failed! Try again' });
       }
-      setMoveIndex(nextMoveIndex);
+      setMoveCount(nextMoveCount);
       return true;
     }
 
     // Intermediate moves are not validated; player can continue freely.
-    setMoveIndex(nextMoveIndex);
+    setMoveCount(nextMoveCount);
     setFeedback({ type: '', text: '' });
     return true;
   };
@@ -224,8 +222,7 @@ export default function Puzzles() {
                   boardOrientation={boardOrientation}
                   animationDuration={200}
                   customSquareStyles={{
-                    ...legalMoveStyles,
-                    ...(feedback.type === 'error' && wrongMoveSquare ? { [wrongMoveSquare]: { backgroundColor: 'rgba(239,68,68,0.5)' } } : {})
+                    ...legalMoveStyles
                   }}
                   customLightSquareStyle={{ backgroundColor: theme.light }}
                   customDarkSquareStyle={{ backgroundColor: theme.dark }}
@@ -303,7 +300,7 @@ export default function Puzzles() {
                   onClick={() => {
                     const resetGame = new Chess(activePuzzle.fen);
                     setGame(resetGame);
-                    setMoveIndex(0);
+                    setMoveCount(0);
                     setFeedback({ type: '', text: '' });
                   }}
                   className="btn-secondary w-full flex items-center justify-center gap-2"
