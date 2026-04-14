@@ -7,7 +7,7 @@ export const puzzles = [
   { "id": 6, "difficulty": "EASY", "label": "1 MOVE MATE", "fen": "2R5/6k1/5ppp/8/8/8/5PPP/6K1 w - - 0 1", "solution": ["Rc7#"], "moves": 1, "hint": "Rook to 7th rank!" },
   { "id": 7, "difficulty": "EASY", "label": "1 MOVE MATE", "fen": "6k1/5ppp/8/8/8/8/5PPP/2R3K1 w - - 0 1", "solution": ["Rc8#"], "moves": 1, "hint": "Rook to c8 checkmate!" },
   { "id": 8, "difficulty": "EASY", "label": "1 MOVE MATE", "fen": "7k/7p/7P/8/8/8/7P/5R1K w - - 0 1", "solution": ["Rf8#"], "moves": 1, "hint": "Rook covers the escape!" },
-  { "id": 9, "difficulty": "EASY", "label": "1 MOVE MATE", "fen": "6k1/5ppp/8/8/8/8/5PPP/4RQK1 w - - 0 1", "solution": ["Qf8#"], "moves": 1, "hint": "Queen to f8 is checkmate!" },
+  { "id": 9, "difficulty": "EASY", "label": "1 MOVE MATE", "fen": "6k1/5ppp/7P/8/8/8/5PPP/4RQK1 w - - 0 1", "solution": ["Qf8#"], "moves": 1, "hint": "Queen to f8 is checkmate!" },
   { "id": 10, "difficulty": "EASY", "label": "1 MOVE MATE", "fen": "6k1/5ppp/8/8/8/5Q2/5PPP/6K1 w - - 0 1", "solution": ["Qg8#"], "moves": 1, "hint": "Queen diagonal checkmate!" }
 ];
 
