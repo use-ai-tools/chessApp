@@ -23,7 +23,7 @@ export default function Home() {
             </div>
             <h2 className="text-xl font-bold text-white mb-2">Practice Puzzles</h2>
             <p className="text-slate-400 text-sm mb-4">
-              Master your tactical vision with 100 hand-picked offline puzzles.
+              Master your tactical vision with 100 checkmate puzzles.
             </p>
             <button className="w-full py-2.5 rounded-xl text-sm font-bold bg-sky-600 hover:bg-sky-500 text-white transition-colors">
               Play Puzzles

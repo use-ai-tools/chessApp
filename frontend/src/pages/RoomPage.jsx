@@ -186,6 +186,7 @@ export default function RoomPage() {
     // Clear previously attached listeners to avoid duplicates
     socket.off('matchStarted');
     socket.off('gameReady');
+    socket.off('game-start');
     socket.off('timerStart');
     socket.off('moveMade');
     socket.off('matchEnded');
@@ -212,6 +213,17 @@ export default function RoomPage() {
       console.log('[RoomPage] matchStarted received:', data);
       console.log('[RoomPage] player color:', data.whitePlayer?.id === user?.id ? 'white' : 'black');
       setupMatch(data);
+    });
+
+    // Fallback: game-start event with direct color assignment
+    socket.on('game-start', (data) => {
+      console.log('[RoomPage] game-start received:', data);
+      if (data.contestId === contestId && !currentPlayerColor) {
+        setCurrentPlayerColor(data.color);
+        setBoardOrientation(data.color);
+        setGameStatus('playing');
+        setStatus('Match in progress');
+      }
     });
 
     socket.on('gameReady', ({ contestId: cid }) => {
@@ -277,6 +289,7 @@ export default function RoomPage() {
     return () => {
       socket.off('matchStarted');
       socket.off('gameReady');
+      socket.off('game-start');
       socket.off('timerStart');
       socket.off('moveMade');
       socket.off('matchEnded');
@@ -449,7 +462,7 @@ export default function RoomPage() {
         <div className="flex flex-col lg:flex-row gap-8 items-start">
           {/* Main Board Column */}
           <div className="w-full lg:w-auto flex-shrink-0 mx-auto lg:mx-0">
-            <div className="card relative aspect-square overflow-hidden" style={{ maxHeight: '70vh', maxWidth: '70vh', width: '100%', padding: '0px', borderRadius: 0 }}>
+            <div className="bg-navy-800/60 backdrop-blur-sm border border-navy-700/50 relative aspect-square overflow-hidden" style={{ maxHeight: '70vh', maxWidth: '70vh', width: '100%', padding: '0px', borderRadius: 0 }}>
               <div className="absolute top-2 right-2 z-10 hidden sm:block">
                 <PingIndicator customSocket={socketRef.current} />
               </div>

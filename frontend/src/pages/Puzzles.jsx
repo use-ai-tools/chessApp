@@ -1,21 +1,39 @@
-import React, { useState, useEffect, useMemo, useRef } from 'react';
+import React, { useState, useEffect, useRef, useContext } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Chessboard } from 'react-chessboard';
 import { Chess } from 'chess.js';
 import { puzzles } from '../data/puzzles';
+import { AuthContext } from '../contexts/AuthContext';
 
 const STAR_EMOJI = '⭐';
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001';
+const UNLOCK_COST_BY_MOVES = {
+  1: 2,
+  2: 5,
+  3: 10,
+  4: 20,
+};
 
 export default function Puzzles() {
   const navigate = useNavigate();
+  const { token, user, updateWallet } = useContext(AuthContext);
   
   // Progress State
   const [progress, setProgress] = useState(() => {
     try {
       const saved = localStorage.getItem('puzzleProgress');
-      if (saved) return JSON.parse(saved);
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        return {
+          completed: parsed.completed || [],
+          current: parsed.current || 1,
+          lastSolved: parsed.lastSolved || null,
+          stars: parsed.stars || {},
+          unlocked: parsed.unlocked || [],
+        };
+      }
     } catch {}
-    return { completed: [], current: 1, lastSolved: null, stars: {} };
+    return { completed: [], current: 1, lastSolved: null, stars: {}, unlocked: [] };
   });
 
   // UI State
@@ -32,18 +50,19 @@ export default function Puzzles() {
   const [selectedSquare, setSelectedSquare] = useState(null);
   const [legalMoveStyles, setLegalMoveStyles] = useState({});
   const [invalidMsg, setInvalidMsg] = useState('');
+  const [walletNotice, setWalletNotice] = useState('');
+  const [unlockingPuzzleId, setUnlockingPuzzleId] = useState(null);
+  const chess = useRef(new Chess());
 
   // Sync progress to localStorage
   useEffect(() => {
     localStorage.setItem('puzzleProgress', JSON.stringify(progress));
   }, [progress]);
 
-  // Load a puzzle into the board
-  const loadPuzzle = (puzzle) => {
-    if (!puzzle) return;
-    const newGame = new Chess(puzzle.fen);
-    setGame(newGame);
-    setActivePuzzle(puzzle);
+  useEffect(() => {
+    if (!activePuzzle) return;
+    chess.current = new Chess(activePuzzle.fen);
+    setGame(new Chess(activePuzzle.fen));
     setMoveCount(0);
     setHintUsed(false);
     setAttempts(0);
@@ -52,6 +71,75 @@ export default function Puzzles() {
     setSelectedSquare(null);
     setLegalMoveStyles({});
     setInvalidMsg('');
+  }, [activePuzzle?.id]);
+
+  // Load a puzzle into the board
+  const loadPuzzle = (puzzle) => {
+    if (!puzzle) return;
+    setActivePuzzle(puzzle);
+    setWalletNotice('');
+  };
+
+  const getUnlockCost = (puzzle) => UNLOCK_COST_BY_MOVES[puzzle.moves] || 20;
+
+  const handleUnlockPuzzle = async (puzzle) => {
+    const amount = getUnlockCost(puzzle);
+    if (!token) {
+      setWalletNotice('Please login to unlock puzzles.');
+      return;
+    }
+
+    if ((user?.wallet || 0) < amount) {
+      setWalletNotice(`Insufficient balance. Need ₹${amount} to unlock.`);
+      return;
+    }
+
+    setUnlockingPuzzleId(puzzle.id);
+    try {
+      const res = await fetch(`${API_URL}/api/user/deduct-balance`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ amount }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.message || 'Failed to unlock puzzle');
+
+      updateWallet(data.wallet);
+      setProgress(prev => {
+        const unlockedSet = new Set(prev.unlocked || []);
+        unlockedSet.add(puzzle.id);
+        return { ...prev, unlocked: Array.from(unlockedSet) };
+      });
+      setWalletNotice(`Puzzle #${puzzle.id} unlocked for ₹${amount}.`);
+      loadPuzzle(puzzle);
+    } catch (err) {
+      setWalletNotice(err.message || 'Could not unlock puzzle.');
+    } finally {
+      setUnlockingPuzzleId(null);
+    }
+  };
+
+  const handleFinalPuzzleReward = async () => {
+    if (!token) return;
+    try {
+      const res = await fetch(`${API_URL}/api/user/add-balance`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ amount: 100 }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.message || 'Failed to add completion reward');
+      updateWallet(data.wallet);
+      setWalletNotice('Congratulations! You earned ₹100!');
+    } catch (err) {
+      setWalletNotice(err.message || 'Puzzle solved, but reward could not be credited.');
+    }
   };
 
   const handleSquareClick = (square) => {
@@ -131,6 +219,7 @@ export default function Puzzles() {
 
         setFeedback({ type: 'complete', text: 'Puzzle Solved!' });
 
+        const hadSolvedPuzzle100 = progress.completed.includes(100);
         setProgress(prev => {
           const completedSet = new Set(prev.completed);
           completedSet.add(activePuzzle.id);
@@ -149,6 +238,9 @@ export default function Puzzles() {
             stars: newStars
           };
         });
+        if (activePuzzle.id === 100 && !hadSolvedPuzzle100) {
+          handleFinalPuzzleReward();
+        }
       } else {
         setAttempts(prev => prev + 1);
         setFeedback({ type: 'error', text: 'Failed! Try again' });
@@ -212,7 +304,7 @@ export default function Puzzles() {
 
           <div className="grid md:grid-cols-12 gap-6">
             <div className="md:col-span-8">
-              <div className="card shadow-2xl relative p-0 overflow-hidden mx-auto md:mx-0" style={{ maxHeight: '70vh', maxWidth: '70vh', borderRadius: 0 }}>
+              <div className="bg-navy-800/60 backdrop-blur-sm border border-navy-700/50 shadow-2xl relative p-0 overflow-hidden mx-auto md:mx-0" style={{ maxHeight: '70vh', maxWidth: '70vh', borderRadius: 0 }}>
                 <Chessboard 
                   customBoardStyle={{ borderRadius: '0px' }}
                   position={game.fen()}
@@ -324,6 +416,12 @@ export default function Puzzles() {
                     {activePuzzle.hint || 'Look closely at the king\'s defenses.'}
                   </div>
                 )}
+
+                {walletNotice && (
+                  <div className="p-3 bg-amber-500/10 border border-amber-500/30 rounded-lg text-sm text-amber-300 text-center">
+                    {walletNotice}
+                  </div>
+                )}
               </div>
             </div>
           </div>
@@ -386,26 +484,42 @@ export default function Puzzles() {
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
           {filteredPuzzles.map(puzzle => {
             const isCompleted = progress.completed.includes(puzzle.id);
-            const isUnlocked = puzzle.id <= progress.current;
+            const isUnlocked = puzzle.id <= progress.current || progress.unlocked.includes(puzzle.id);
             const stars = progress.stars[puzzle.id] || 0;
+            const unlockCost = getUnlockCost(puzzle);
 
             let cardStyle = "bg-navy-800 border-navy-700 hover:border-navy-500 opacity-60"; // Locked style
             if (isCompleted) cardStyle = "bg-chess-green/10 border-chess-green/30 hover:border-chess-green shadow-[0_0_15px_rgba(118,150,86,0.1)]"; // Completed
             else if (isUnlocked) cardStyle = "bg-gradient-to-br from-gold-500/20 to-gold-700/5 border-gold-500/50 shadow-[0_0_20px_rgba(251,191,36,0.15)] ring-1 ring-gold-500/20"; // Current Unlocked
 
+            if (!isUnlocked) {
+              return (
+                <div
+                  key={puzzle.id}
+                  className={`relative flex flex-col items-center justify-center p-5 rounded-2xl border-2 transition-all duration-300 group ${cardStyle}`}
+                >
+                  <div className="absolute top-3 right-3 text-lg">🔒</div>
+                  <div className="text-lg font-black text-white mb-1">#{puzzle.id}</div>
+                  <div className="text-[10px] uppercase font-bold text-slate-500 mb-3 tracking-wider">
+                    {puzzle.difficulty}
+                  </div>
+                  <button
+                    onClick={() => handleUnlockPuzzle(puzzle)}
+                    disabled={unlockingPuzzleId === puzzle.id}
+                    className="btn-secondary w-full text-xs"
+                  >
+                    {unlockingPuzzleId === puzzle.id ? 'Unlocking...' : `Unlock for ₹${unlockCost}`}
+                  </button>
+                </div>
+              );
+            }
+
             return (
               <button
                 key={puzzle.id}
-                disabled={!isUnlocked}
                 onClick={() => loadPuzzle(puzzle)}
-                className={`relative flex flex-col items-center justify-center p-5 rounded-2xl border-2 transition-all duration-300 group ${cardStyle} ${!isUnlocked ? 'cursor-not-allowed' : 'cursor-pointer hover:-translate-y-1'}`}
+                className={`relative flex flex-col items-center justify-center p-5 rounded-2xl border-2 transition-all duration-300 group ${cardStyle} cursor-pointer hover:-translate-y-1`}
               >
-                {!isUnlocked && (
-                  <div className="absolute inset-0 flex items-center justify-center bg-navy-900/40 rounded-xl backdrop-blur-[1px] z-10">
-                    <span className="text-2xl drop-shadow-md">🔒</span>
-                  </div>
-                )}
-                
                 <div className="text-lg font-black text-white mb-1 group-hover:text-amber-300 transition-colors">
                   #{puzzle.id}
                 </div>
@@ -422,17 +536,20 @@ export default function Puzzles() {
                       </span>
                     ))}
                   </div>
-                ) : isUnlocked ? (
+                ) : (
                   <div className="w-8 h-8 rounded-full bg-gold-500/20 text-gold-500 flex items-center justify-center text-sm ring-1 ring-gold-500/30">
                     ▶
                   </div>
-                ) : (
-                  <div className="w-8 h-8" /> // spacing
                 )}
               </button>
             );
           })}
         </div>
+        {walletNotice && (
+          <div className="mt-4 p-3 bg-amber-500/10 border border-amber-500/30 rounded-lg text-sm text-amber-300 text-center">
+            {walletNotice}
+          </div>
+        )}
         
         {filteredPuzzles.length === 0 && (
           <div className="text-center py-20 text-slate-500">

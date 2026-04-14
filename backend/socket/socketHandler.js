@@ -148,6 +148,10 @@ module.exports = (io) => {
       if (sock1) sock1.emit('matchStarted', payload);
       if (sock2) sock2.emit('matchStarted', payload);
 
+      // Emit game-start with color assignment to each player individually
+      if (sock1) sock1.emit('game-start', { color: p1 === whiteId ? 'white' : 'black', contestId });
+      if (sock2) sock2.emit('game-start', { color: p2 === whiteId ? 'white' : 'black', contestId });
+
       console.log(`[match] ${white?.username} vs ${black?.username} | ${contest.contestType?.name} | ${contestId}`);
     } catch (err) { console.error('[startMatch]', err); }
   };
