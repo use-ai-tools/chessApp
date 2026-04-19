@@ -245,9 +245,9 @@ module.exports = (io) => {
 
         // Atomically find an open contest and add the player
         const contest = await Contest.findOneAndUpdate(
-          { contestType: contestTypeId, status: 'open', $expr: { $lt: [{ $size: '$players' }, 2] } },
+          { contestType: contestTypeId, status: 'open', 'players.1': { $exists: false } },
           { $push: { players: userId } },
-          { new: true, sort: { createdAt: 1 } }
+          { new: true, sort: { createdAt: 1, _id: 1 } }
         ).populate('contestType');
 
         if (!contest) {
