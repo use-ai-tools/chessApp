@@ -125,11 +125,13 @@ module.exports = (io) => {
       const black = await User.findById(blackId).select('username elo').lean();
 
       const payload = {
+        roomId: contestId,
         contestId,
         whitePlayer: { id: whiteId, username: white?.username, elo: white?.elo?.free },
         blackPlayer: { id: blackId, username: black?.username, elo: black?.elo?.free },
         fen: chess.fen(),
         contestType: contest.contestType,
+        moves: [],
       };
 
       // Join both to socket room AND emit individually as fallback
@@ -179,7 +181,7 @@ module.exports = (io) => {
       try {
         const contest = await Contest.findById(roomId).populate('players').populate('contestType');
         if (!contest) return;
-        if ((contest.status === 'playing' || contest.status === 'open') && contest.players.length >= 2) {
+        if ((contest.status === 'playing' || contest.status === 'completed') && contest.players.length >= 2) {
           const gameState = games.get(roomId);
           // Properly map white/black player usernames by matching IDs
           const whiteId = contest.whitePlayer?.toString();
@@ -188,6 +190,7 @@ module.exports = (io) => {
           const blackPl = contest.players.find(p => p._id.toString() === blackId);
 
           socket.emit('matchStarted', {
+            roomId: contest._id.toString(),
             contestId: contest._id.toString(),
             fen: gameState ? gameState.chess.fen() : (contest.fen || 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1'),
             whitePlayer: { id: whiteId, username: whitePl?.username || 'Player', elo: whitePl?.elo?.free || 1200 },
