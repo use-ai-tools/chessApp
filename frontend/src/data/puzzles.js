@@ -1,102 +1,1472 @@
 export const puzzles = [
-  { "id": 1, "difficulty": "EASY", "label": "1 MOVE MATE", "fen": "6k1/5ppp/8/8/8/8/5PPP/4R1K1 w - - 0 1", "solution": ["Re8#"], "moves": 1, "hint": "Rook to the back rank!" },
-  { "id": 2, "difficulty": "EASY", "label": "1 MOVE MATE", "fen": "6k1/5ppp/8/8/8/8/5PPP/3R2K1 w - - 0 1", "solution": ["Rd8#"], "moves": 1, "hint": "Back rank is weak!" },
-  { "id": 3, "difficulty": "EASY", "label": "1 MOVE MATE", "fen": "6k1/5ppp/8/8/8/8/5PPP/4Q1K1 w - - 0 1", "solution": ["Qe8#"], "moves": 1, "hint": "Queen delivers checkmate!" },
-  { "id": 4, "difficulty": "EASY", "label": "1 MOVE MATE", "fen": "k7/7Q/1K6/8/8/8/8/8 w - - 0 1", "solution": ["Qb7#"], "moves": 1, "hint": "Queen support checkmate!" },
-  { "id": 5, "difficulty": "EASY", "label": "1 MOVE MATE", "fen": "6k1/5ppp/8/8/8/3R4/5PPP/6K1 w - - 0 1", "solution": ["Rd8#"], "moves": 1, "hint": "Back rank mate with rook!" },
-  { "id": 6, "difficulty": "EASY", "label": "1 MOVE MATE", "fen": "6k1/5ppp/8/8/8/2R5/5PPP/6K1 w - - 0 1", "solution": ["Rc8#"], "moves": 1, "hint": "Rook to 8th rank!" },
-  { "id": 7, "difficulty": "EASY", "label": "1 MOVE MATE", "fen": "6k1/5ppp/8/8/8/8/5PPP/2R3K1 w - - 0 1", "solution": ["Rc8#"], "moves": 1, "hint": "Rook to c8 checkmate!" },
-  { "id": 8, "difficulty": "EASY", "label": "1 MOVE MATE", "fen": "7k/7p/7P/8/8/8/7P/5R1K w - - 0 1", "solution": ["Rf8#"], "moves": 1, "hint": "Rook covers the escape!" },
-  { "id": 9, "difficulty": "EASY", "label": "1 MOVE MATE", "fen": "k7/8/K7/8/8/8/Q7/8 w - - 0 1", "solution": ["Qg8#"], "moves": 1, "hint": "Queen to g8 is checkmate!" },
-  { "id": 10, "difficulty": "EASY", "label": "1 MOVE MATE", "fen": "6k1/5ppp/8/8/8/1B6/5PPP/3Q2K1 w - - 0 1", "solution": ["Qd8#"], "moves": 1, "hint": "Queen diagonal checkmate!" },
-  { "id": 11, "difficulty": "EASY", "label": "1 MOVE MATE", "fen": "k7/pp6/2R5/8/8/8/8/7K w - - 0 1", "solution": ["Rc8#"], "moves": 1, "hint": "Rook to the back rank!" },
-  { "id": 12, "difficulty": "EASY", "label": "1 MOVE MATE", "fen": "k7/pp6/3R4/8/8/8/8/7K w - - 0 1", "solution": ["Rd8#"], "moves": 1, "hint": "Rook to the back rank!" },
-  { "id": 13, "difficulty": "EASY", "label": "1 MOVE MATE", "fen": "k7/pp6/4R3/8/8/8/8/7K w - - 0 1", "solution": ["Re8#"], "moves": 1, "hint": "Rook to the back rank!" },
-  { "id": 14, "difficulty": "EASY", "label": "1 MOVE MATE", "fen": "k7/pp6/5R2/8/8/8/8/7K w - - 0 1", "solution": ["Rf8#"], "moves": 1, "hint": "Rook to the back rank!" },
-  { "id": 15, "difficulty": "EASY", "label": "1 MOVE MATE", "fen": "k7/pp6/6R1/8/8/8/8/7K w - - 0 1", "solution": ["Rg8#"], "moves": 1, "hint": "Rook to the back rank!" },
-  { "id": 16, "difficulty": "EASY", "label": "1 MOVE MATE", "fen": "k7/pp6/7R/8/8/8/8/7K w - - 0 1", "solution": ["Rh8#"], "moves": 1, "hint": "Rook to the back rank!" },
-  { "id": 17, "difficulty": "EASY", "label": "1 MOVE MATE", "fen": "k7/pp6/8/2R5/8/8/8/7K w - - 0 1", "solution": ["Rc8#"], "moves": 1, "hint": "Rook to the back rank!" },
-  { "id": 18, "difficulty": "EASY", "label": "1 MOVE MATE", "fen": "k7/pp6/8/3R4/8/8/8/7K w - - 0 1", "solution": ["Rd8#"], "moves": 1, "hint": "Rook to the back rank!" },
-  { "id": 19, "difficulty": "EASY", "label": "1 MOVE MATE", "fen": "k7/pp6/8/4R3/8/8/8/7K w - - 0 1", "solution": ["Re8#"], "moves": 1, "hint": "Rook to the back rank!" },
-  { "id": 20, "difficulty": "EASY", "label": "1 MOVE MATE", "fen": "k7/pp6/8/5R2/8/8/8/7K w - - 0 1", "solution": ["Rf8#"], "moves": 1, "hint": "Rook to the back rank!" },
-  { "id": 21, "difficulty": "EASY", "label": "1 MOVE MATE", "fen": "k7/pp6/8/6R1/8/8/8/7K w - - 0 1", "solution": ["Rg8#"], "moves": 1, "hint": "Rook to the back rank!" },
-  { "id": 22, "difficulty": "EASY", "label": "1 MOVE MATE", "fen": "k7/pp6/8/7R/8/8/8/7K w - - 0 1", "solution": ["Rh8#"], "moves": 1, "hint": "Rook to the back rank!" },
-  { "id": 23, "difficulty": "EASY", "label": "1 MOVE MATE", "fen": "k7/pp6/8/8/2R5/8/8/7K w - - 0 1", "solution": ["Rc8#"], "moves": 1, "hint": "Rook to the back rank!" },
-  { "id": 24, "difficulty": "EASY", "label": "1 MOVE MATE", "fen": "k7/pp6/8/8/3R4/8/8/7K w - - 0 1", "solution": ["Rd8#"], "moves": 1, "hint": "Rook to the back rank!" },
-  { "id": 25, "difficulty": "EASY", "label": "1 MOVE MATE", "fen": "k7/pp6/8/8/4R3/8/8/7K w - - 0 1", "solution": ["Re8#"], "moves": 1, "hint": "Rook to the back rank!" },
-  { "id": 26, "difficulty": "EASY", "label": "1 MOVE MATE", "fen": "k7/pp6/8/8/5R2/8/8/7K w - - 0 1", "solution": ["Rf8#"], "moves": 1, "hint": "Rook to the back rank!" },
-  { "id": 27, "difficulty": "EASY", "label": "1 MOVE MATE", "fen": "k7/pp6/8/8/6R1/8/8/7K w - - 0 1", "solution": ["Rg8#"], "moves": 1, "hint": "Rook to the back rank!" },
-  { "id": 28, "difficulty": "EASY", "label": "1 MOVE MATE", "fen": "k7/pp6/8/8/7R/8/8/7K w - - 0 1", "solution": ["Rh8#"], "moves": 1, "hint": "Rook to the back rank!" },
-  { "id": 29, "difficulty": "EASY", "label": "1 MOVE MATE", "fen": "k7/pp6/8/8/8/2R5/8/7K w - - 0 1", "solution": ["Rc8#"], "moves": 1, "hint": "Rook to the back rank!" },
-  { "id": 30, "difficulty": "EASY", "label": "1 MOVE MATE", "fen": "k7/pp6/8/8/8/3R4/8/7K w - - 0 1", "solution": ["Rd8#"], "moves": 1, "hint": "Rook to the back rank!" },
-  { "id": 31, "difficulty": "EASY", "label": "1 MOVE MATE", "fen": "kr6/pp6/N7/8/8/8/8/7K w - - 0 1", "solution": ["Nc7#"], "moves": 1, "hint": "Smothered mate with the knight!" },
-  { "id": 32, "difficulty": "EASY", "label": "1 MOVE MATE", "fen": "kr6/pp6/4N3/8/8/8/8/7K w - - 0 1", "solution": ["Nc7#"], "moves": 1, "hint": "Smothered mate with the knight!" },
-  { "id": 33, "difficulty": "EASY", "label": "1 MOVE MATE", "fen": "kr6/pp6/8/1N6/8/8/8/7K w - - 0 1", "solution": ["Nc7#"], "moves": 1, "hint": "Smothered mate with the knight!" },
-  { "id": 34, "difficulty": "EASY", "label": "1 MOVE MATE", "fen": "kr6/pp6/8/3N4/8/8/8/7K w - - 0 1", "solution": ["Nc7#"], "moves": 1, "hint": "Smothered mate with the knight!" },
-  { "id": 35, "difficulty": "EASY", "label": "1 MOVE MATE", "fen": "rkr5/ppp5/1N6/8/8/8/8/7K w - - 0 1", "solution": ["Nd7#"], "moves": 1, "hint": "Smothered mate with the knight!" },
-  { "id": 36, "difficulty": "EASY", "label": "1 MOVE MATE", "fen": "rkr5/ppp5/5N2/8/8/8/8/7K w - - 0 1", "solution": ["Nd7#"], "moves": 1, "hint": "Smothered mate with the knight!" },
-  { "id": 37, "difficulty": "EASY", "label": "1 MOVE MATE", "fen": "rkr5/ppp5/8/2N5/8/8/8/7K w - - 0 1", "solution": ["Nd7#"], "moves": 1, "hint": "Smothered mate with the knight!" },
-  { "id": 38, "difficulty": "EASY", "label": "1 MOVE MATE", "fen": "rkr5/ppp5/8/4N3/8/8/8/7K w - - 0 1", "solution": ["Nd7#"], "moves": 1, "hint": "Smothered mate with the knight!" },
-  { "id": 39, "difficulty": "EASY", "label": "1 MOVE MATE", "fen": "1rkr4/1ppp4/2N5/8/8/8/8/7K w - - 0 1", "solution": ["Na7#"], "moves": 1, "hint": "Smothered mate with the knight!" },
-  { "id": 40, "difficulty": "EASY", "label": "1 MOVE MATE", "fen": "1rkr4/1ppp4/6N1/8/8/8/8/7K w - - 0 1", "solution": ["Ne7#"], "moves": 1, "hint": "Smothered mate with the knight!" },
-  { "id": 41, "difficulty": "EASY", "label": "1 MOVE MATE", "fen": "1rkr4/1ppp4/8/1N6/8/8/8/7K w - - 0 1", "solution": ["Na7#"], "moves": 1, "hint": "Smothered mate with the knight!" },
-  { "id": 42, "difficulty": "EASY", "label": "1 MOVE MATE", "fen": "1rkr4/1ppp4/8/3N4/8/8/8/7K w - - 0 1", "solution": ["Ne7#"], "moves": 1, "hint": "Smothered mate with the knight!" },
-  { "id": 43, "difficulty": "EASY", "label": "1 MOVE MATE", "fen": "1rkr4/1ppp4/8/5N2/8/8/8/7K w - - 0 1", "solution": ["Ne7#"], "moves": 1, "hint": "Smothered mate with the knight!" },
-  { "id": 44, "difficulty": "EASY", "label": "1 MOVE MATE", "fen": "2rkr3/2ppp3/3N4/8/8/8/8/7K w - - 0 1", "solution": ["Nb7#"], "moves": 1, "hint": "Smothered mate with the knight!" },
-  { "id": 45, "difficulty": "EASY", "label": "1 MOVE MATE", "fen": "2rkr3/2ppp3/7N/8/8/8/8/7K w - - 0 1", "solution": ["Nf7#"], "moves": 1, "hint": "Smothered mate with the knight!" },
-  { "id": 46, "difficulty": "EASY", "label": "1 MOVE MATE", "fen": "2rkr3/2ppp3/8/N7/8/8/8/7K w - - 0 1", "solution": ["Nb7#"], "moves": 1, "hint": "Smothered mate with the knight!" },
-  { "id": 47, "difficulty": "EASY", "label": "1 MOVE MATE", "fen": "2rkr3/2ppp3/8/2N5/8/8/8/7K w - - 0 1", "solution": ["Nb7#"], "moves": 1, "hint": "Smothered mate with the knight!" },
-  { "id": 48, "difficulty": "EASY", "label": "1 MOVE MATE", "fen": "2rkr3/2ppp3/8/4N3/8/8/8/7K w - - 0 1", "solution": ["Nf7#"], "moves": 1, "hint": "Smothered mate with the knight!" },
-  { "id": 49, "difficulty": "EASY", "label": "1 MOVE MATE", "fen": "2rkr3/2ppp3/8/6N1/8/8/8/7K w - - 0 1", "solution": ["Nf7#"], "moves": 1, "hint": "Smothered mate with the knight!" },
-  { "id": 50, "difficulty": "EASY", "label": "1 MOVE MATE", "fen": "3rkr2/3ppp2/N7/8/8/8/8/7K w - - 0 1", "solution": ["Nc7#"], "moves": 1, "hint": "Smothered mate with the knight!" },
-  { "id": 51, "difficulty": "EASY", "label": "1 MOVE MATE", "fen": "k1K5/Q7/8/8/8/8/8/8 w - - 0 1", "solution": ["Qb8#"], "moves": 1, "hint": "Queen supported by King!" },
-  { "id": 52, "difficulty": "EASY", "label": "1 MOVE MATE", "fen": "k1K5/1Q6/8/8/8/8/8/8 w - - 0 1", "solution": ["Kc7#"], "moves": 1, "hint": "Queen supported by King!" },
-  { "id": 53, "difficulty": "EASY", "label": "1 MOVE MATE", "fen": "k1K5/2Q5/8/8/8/8/8/8 w - - 0 1", "solution": ["Qb8#"], "moves": 1, "hint": "Queen supported by King!" },
-  { "id": 54, "difficulty": "EASY", "label": "1 MOVE MATE", "fen": "k1K5/3Q4/8/8/8/8/8/8 w - - 0 1", "solution": ["Qa4#"], "moves": 1, "hint": "Queen supported by King!" },
-  { "id": 55, "difficulty": "EASY", "label": "1 MOVE MATE", "fen": "k1K5/4Q3/8/8/8/8/8/8 w - - 0 1", "solution": ["Qa3#"], "moves": 1, "hint": "Queen supported by King!" },
-  { "id": 56, "difficulty": "EASY", "label": "1 MOVE MATE", "fen": "k1K5/5Q2/8/8/8/8/8/8 w - - 0 1", "solution": ["Qa2#"], "moves": 1, "hint": "Queen supported by King!" },
-  { "id": 57, "difficulty": "EASY", "label": "1 MOVE MATE", "fen": "k1K5/6Q1/8/8/8/8/8/8 w - - 0 1", "solution": ["Qa1#"], "moves": 1, "hint": "Queen supported by King!" },
-  { "id": 58, "difficulty": "EASY", "label": "1 MOVE MATE", "fen": "k1K5/7Q/8/8/8/8/8/8 w - - 0 1", "solution": ["Qb7#"], "moves": 1, "hint": "Queen supported by King!" },
-  { "id": 59, "difficulty": "EASY", "label": "1 MOVE MATE", "fen": "k1K5/8/Q7/8/8/8/8/8 w - - 0 1", "solution": ["Kc7#"], "moves": 1, "hint": "Queen supported by King!" },
-  { "id": 60, "difficulty": "EASY", "label": "1 MOVE MATE", "fen": "k1K5/8/1Q6/8/8/8/8/8 w - - 0 1", "solution": ["Qb7#"], "moves": 1, "hint": "Queen supported by King!" },
-  { "id": 61, "difficulty": "EASY", "label": "1 MOVE MATE", "fen": "k1K5/8/2Q5/8/8/8/8/8 w - - 0 1", "solution": ["Qb7#"], "moves": 1, "hint": "Queen supported by King!" },
-  { "id": 62, "difficulty": "EASY", "label": "1 MOVE MATE", "fen": "k1K5/8/3Q4/8/8/8/8/8 w - - 0 1", "solution": ["Qb8#"], "moves": 1, "hint": "Queen supported by King!" },
-  { "id": 63, "difficulty": "EASY", "label": "1 MOVE MATE", "fen": "k1K5/8/4Q3/8/8/8/8/8 w - - 0 1", "solution": ["Qa2#"], "moves": 1, "hint": "Queen supported by King!" },
-  { "id": 64, "difficulty": "EASY", "label": "1 MOVE MATE", "fen": "k1K5/8/5Q2/8/8/8/8/8 w - - 0 1", "solution": ["Qa1#"], "moves": 1, "hint": "Queen supported by King!" },
-  { "id": 65, "difficulty": "EASY", "label": "1 MOVE MATE", "fen": "k1K5/8/6Q1/8/8/8/8/8 w - - 0 1", "solution": ["Qa6#"], "moves": 1, "hint": "Queen supported by King!" },
-  { "id": 66, "difficulty": "EASY", "label": "1 MOVE MATE", "fen": "k1K5/8/7Q/8/8/8/8/8 w - - 0 1", "solution": ["Qa6#"], "moves": 1, "hint": "Queen supported by King!" },
-  { "id": 67, "difficulty": "EASY", "label": "1 MOVE MATE", "fen": "k1K5/8/8/Q7/8/8/8/8 w - - 0 1", "solution": ["Kc7#"], "moves": 1, "hint": "Queen supported by King!" },
-  { "id": 68, "difficulty": "EASY", "label": "1 MOVE MATE", "fen": "k1K5/8/8/1Q6/8/8/8/8 w - - 0 1", "solution": ["Qa6#"], "moves": 1, "hint": "Queen supported by King!" },
-  { "id": 69, "difficulty": "EASY", "label": "1 MOVE MATE", "fen": "k1K5/8/8/2Q5/8/8/8/8 w - - 0 1", "solution": ["Qa3#"], "moves": 1, "hint": "Queen supported by King!" },
-  { "id": 70, "difficulty": "EASY", "label": "1 MOVE MATE", "fen": "k1K5/8/8/3Q4/8/8/8/8 w - - 0 1", "solution": ["Qb7#"], "moves": 1, "hint": "Queen supported by King!" },
-  { "id": 71, "difficulty": "EASY", "label": "1 MOVE MATE", "fen": "6k1/5ppp/6Q1/8/3B4/8/8/K7 w - - 0 1", "solution": ["Qxg7#"], "moves": 1, "hint": "Battery mate!" },
-  { "id": 72, "difficulty": "EASY", "label": "1 MOVE MATE", "fen": "6k1/5ppp/6Q1/8/8/2B5/8/K7 w - - 0 1", "solution": ["Qxg7#"], "moves": 1, "hint": "Battery mate!" },
-  { "id": 73, "difficulty": "EASY", "label": "1 MOVE MATE", "fen": "6k1/5ppp/6Q1/8/8/8/1B6/K7 w - - 0 1", "solution": ["Qxg7#"], "moves": 1, "hint": "Battery mate!" },
-  { "id": 74, "difficulty": "EASY", "label": "1 MOVE MATE", "fen": "6k1/5ppp/8/6Q1/3B4/8/8/K7 w - - 0 1", "solution": ["Qd8#"], "moves": 1, "hint": "Battery mate!" },
-  { "id": 75, "difficulty": "EASY", "label": "1 MOVE MATE", "fen": "6k1/5ppp/8/6Q1/8/2B5/8/K7 w - - 0 1", "solution": ["Qd8#"], "moves": 1, "hint": "Battery mate!" },
-  { "id": 76, "difficulty": "EASY", "label": "1 MOVE MATE", "fen": "6k1/5ppp/8/6Q1/8/8/1B6/K7 w - - 0 1", "solution": ["Qd8#"], "moves": 1, "hint": "Battery mate!" },
-  { "id": 77, "difficulty": "EASY", "label": "1 MOVE MATE", "fen": "6k1/5ppp/8/6Q1/8/8/8/K7 w - - 0 1", "solution": ["Qd8#"], "moves": 1, "hint": "Battery mate!" },
-  { "id": 78, "difficulty": "EASY", "label": "1 MOVE MATE", "fen": "6k1/5ppp/8/8/3B2Q1/8/8/K7 w - - 0 1", "solution": ["Qc8#"], "moves": 1, "hint": "Battery mate!" },
-  { "id": 79, "difficulty": "EASY", "label": "1 MOVE MATE", "fen": "6k1/5ppp/8/8/6Q1/2B5/8/K7 w - - 0 1", "solution": ["Qc8#"], "moves": 1, "hint": "Battery mate!" },
-  { "id": 80, "difficulty": "EASY", "label": "1 MOVE MATE", "fen": "6k1/5ppp/8/8/6Q1/8/1B6/K7 w - - 0 1", "solution": ["Qc8#"], "moves": 1, "hint": "Battery mate!" },
-  { "id": 81, "difficulty": "EASY", "label": "1 MOVE MATE", "fen": "6k1/5ppp/8/8/6Q1/8/8/K7 w - - 0 1", "solution": ["Qc8#"], "moves": 1, "hint": "Battery mate!" },
-  { "id": 82, "difficulty": "EASY", "label": "1 MOVE MATE", "fen": "6k1/5ppp/8/8/3B4/6Q1/8/K7 w - - 0 1", "solution": ["Qb8#"], "moves": 1, "hint": "Battery mate!" },
-  { "id": 83, "difficulty": "EASY", "label": "1 MOVE MATE", "fen": "6k1/5ppp/8/8/8/2B3Q1/8/K7 w - - 0 1", "solution": ["Qb8#"], "moves": 1, "hint": "Battery mate!" },
-  { "id": 84, "difficulty": "EASY", "label": "1 MOVE MATE", "fen": "6k1/5ppp/8/8/8/6Q1/1B6/K7 w - - 0 1", "solution": ["Qb8#"], "moves": 1, "hint": "Battery mate!" },
-  { "id": 85, "difficulty": "EASY", "label": "1 MOVE MATE", "fen": "6k1/5ppp/8/8/8/6Q1/8/K7 w - - 0 1", "solution": ["Qb8#"], "moves": 1, "hint": "Battery mate!" },
-  { "id": 86, "difficulty": "EASY", "label": "1 MOVE MATE", "fen": "6k1/5ppp/8/8/3B4/8/6Q1/K7 w - - 0 1", "solution": ["Qa8#"], "moves": 1, "hint": "Battery mate!" },
-  { "id": 87, "difficulty": "EASY", "label": "1 MOVE MATE", "fen": "6k1/5ppp/8/8/8/2B5/6Q1/K7 w - - 0 1", "solution": ["Qa8#"], "moves": 1, "hint": "Battery mate!" },
-  { "id": 88, "difficulty": "EASY", "label": "1 MOVE MATE", "fen": "6k1/5ppp/8/8/8/8/1B4Q1/K7 w - - 0 1", "solution": ["Qa8#"], "moves": 1, "hint": "Battery mate!" },
-  { "id": 89, "difficulty": "EASY", "label": "1 MOVE MATE", "fen": "6k1/5ppp/8/8/8/8/6Q1/K7 w - - 0 1", "solution": ["Qa8#"], "moves": 1, "hint": "Battery mate!" },
-  { "id": 90, "difficulty": "EASY", "label": "1 MOVE MATE", "fen": "6k1/5ppp/8/8/3B4/8/8/K5Q1 w - - 0 1", "solution": ["Qxg7#"], "moves": 1, "hint": "Battery mate!" },
-  { "id": 91, "difficulty": "EASY", "label": "1 MOVE MATE", "fen": "8/8/8/2K3p1/8/pN6/3k1Q2/8 w - - 0 1", "solution": ["Nxd2#"], "moves": 1, "hint": "Spot the mate!" },
-  { "id": 92, "difficulty": "EASY", "label": "1 MOVE MATE", "fen": "8/8/7Q/3K4/2R5/3p4/p7/k7 w - - 0 1", "solution": ["Qc1#"], "moves": 1, "hint": "Spot the mate!" },
-  { "id": 93, "difficulty": "EASY", "label": "1 MOVE MATE", "fen": "k7/8/7p/N7/8/K4p2/3p4/1Q6 w - - 0 1", "solution": ["Qb7#"], "moves": 1, "hint": "Spot the mate!" },
-  { "id": 94, "difficulty": "EASY", "label": "1 MOVE MATE", "fen": "3k3R/8/2Q5/8/1KB3p1/8/3pp3/8 w - - 0 1", "solution": ["Re8#"], "moves": 1, "hint": "Spot the mate!" },
-  { "id": 95, "difficulty": "EASY", "label": "1 MOVE MATE", "fen": "4K3/2B5/1k2p2p/8/1Q6/8/3pR3/8 w - - 0 1", "solution": ["Bxb6#"], "moves": 1, "hint": "Spot the mate!" },
-  { "id": 96, "difficulty": "EASY", "label": "1 MOVE MATE", "fen": "4k3/8/4K3/5p2/Q2p3R/8/8/8 w - - 0 1", "solution": ["Qa8#"], "moves": 1, "hint": "Spot the mate!" },
-  { "id": 97, "difficulty": "EASY", "label": "1 MOVE MATE", "fen": "8/8/3K4/2p5/1p3N2/8/4k3/3Q4 w - - 0 1", "solution": ["Nxe2#"], "moves": 1, "hint": "Spot the mate!" },
-  { "id": 98, "difficulty": "EASY", "label": "1 MOVE MATE", "fen": "3B4/3Rp3/1k5p/5K2/8/p7/4Q3/8 w - - 0 1", "solution": ["Qc4#"], "moves": 1, "hint": "Spot the mate!" },
-  { "id": 99, "difficulty": "EASY", "label": "1 MOVE MATE", "fen": "1K6/3B4/1k6/3p4/7p/R3p3/4Q3/8 w - - 0 1", "solution": ["Qb5#"], "moves": 1, "hint": "Spot the mate!" },
-  { "id": 100, "difficulty": "EASY", "label": "1 MOVE MATE", "fen": "8/1B6/8/1p2pQ2/6Rk/8/2p2K2/8 w - - 0 1", "solution": ["Bg2#"], "moves": 1, "hint": "Spot the mate!" }
+  {
+    "id": 1,
+    "difficulty": "EASY",
+    "label": "1 MOVE MATE",
+    "fen": "k7/8/2K5/8/8/8/8/1Q6 w - - 0 1",
+    "solution": [
+      "Qb7#"
+    ],
+    "moves": 1,
+    "hint": "Find the forced mate sequence!"
+  },
+  {
+    "id": 2,
+    "difficulty": "EASY",
+    "label": "1 MOVE MATE",
+    "fen": "k7/8/2K5/8/8/8/6P1/1Q6 w - - 0 1",
+    "solution": [
+      "Qb7#"
+    ],
+    "moves": 1,
+    "hint": "Find the forced mate sequence!"
+  },
+  {
+    "id": 3,
+    "difficulty": "EASY",
+    "label": "1 MOVE MATE",
+    "fen": "k7/8/2K5/8/8/7P/8/1Q6 w - - 0 1",
+    "solution": [
+      "Qb7#"
+    ],
+    "moves": 1,
+    "hint": "Find the forced mate sequence!"
+  },
+  {
+    "id": 4,
+    "difficulty": "EASY",
+    "label": "1 MOVE MATE",
+    "fen": "k7/8/2K5/8/8/6P1/8/1Q6 w - - 0 1",
+    "solution": [
+      "Qb7#"
+    ],
+    "moves": 1,
+    "hint": "Find the forced mate sequence!"
+  },
+  {
+    "id": 5,
+    "difficulty": "EASY",
+    "label": "1 MOVE MATE",
+    "fen": "k7/8/2K5/8/7P/8/8/1Q6 w - - 0 1",
+    "solution": [
+      "Qb7#"
+    ],
+    "moves": 1,
+    "hint": "Find the forced mate sequence!"
+  },
+  {
+    "id": 6,
+    "difficulty": "EASY",
+    "label": "1 MOVE MATE",
+    "fen": "k7/8/2K5/8/6P1/8/8/1Q6 w - - 0 1",
+    "solution": [
+      "Qb7#"
+    ],
+    "moves": 1,
+    "hint": "Find the forced mate sequence!"
+  },
+  {
+    "id": 7,
+    "difficulty": "EASY",
+    "label": "1 MOVE MATE",
+    "fen": "k7/8/2K5/7P/8/8/8/1Q6 w - - 0 1",
+    "solution": [
+      "Qb7#"
+    ],
+    "moves": 1,
+    "hint": "Find the forced mate sequence!"
+  },
+  {
+    "id": 8,
+    "difficulty": "EASY",
+    "label": "1 MOVE MATE",
+    "fen": "k7/8/2K5/6P1/8/8/8/1Q6 w - - 0 1",
+    "solution": [
+      "Qb7#"
+    ],
+    "moves": 1,
+    "hint": "Find the forced mate sequence!"
+  },
+  {
+    "id": 9,
+    "difficulty": "EASY",
+    "label": "1 MOVE MATE",
+    "fen": "k7/8/2K4P/8/8/8/8/1Q6 w - - 0 1",
+    "solution": [
+      "Qb7#"
+    ],
+    "moves": 1,
+    "hint": "Find the forced mate sequence!"
+  },
+  {
+    "id": 10,
+    "difficulty": "EASY",
+    "label": "1 MOVE MATE",
+    "fen": "k7/8/2K3P1/8/8/8/8/1Q6 w - - 0 1",
+    "solution": [
+      "Qb7#"
+    ],
+    "moves": 1,
+    "hint": "Find the forced mate sequence!"
+  },
+  {
+    "id": 11,
+    "difficulty": "EASY",
+    "label": "1 MOVE MATE",
+    "fen": "k7/8/2K5/8/8/8/4P3/1Q6 w - - 0 1",
+    "solution": [
+      "Qb7#"
+    ],
+    "moves": 1,
+    "hint": "Find the forced mate sequence!"
+  },
+  {
+    "id": 12,
+    "difficulty": "EASY",
+    "label": "1 MOVE MATE",
+    "fen": "k7/8/2K5/8/8/4P3/8/1Q6 w - - 0 1",
+    "solution": [
+      "Qb7#"
+    ],
+    "moves": 1,
+    "hint": "Find the forced mate sequence!"
+  },
+  {
+    "id": 13,
+    "difficulty": "EASY",
+    "label": "1 MOVE MATE",
+    "fen": "k7/8/2K5/8/4P3/8/8/1Q6 w - - 0 1",
+    "solution": [
+      "Qb7#"
+    ],
+    "moves": 1,
+    "hint": "Find the forced mate sequence!"
+  },
+  {
+    "id": 14,
+    "difficulty": "EASY",
+    "label": "1 MOVE MATE",
+    "fen": "k7/8/2K5/4P3/8/8/8/1Q6 w - - 0 1",
+    "solution": [
+      "Qb7#"
+    ],
+    "moves": 1,
+    "hint": "Find the forced mate sequence!"
+  },
+  {
+    "id": 15,
+    "difficulty": "EASY",
+    "label": "1 MOVE MATE",
+    "fen": "k7/8/2K1P3/8/8/8/8/1Q6 w - - 0 1",
+    "solution": [
+      "Qb7#"
+    ],
+    "moves": 1,
+    "hint": "Find the forced mate sequence!"
+  },
+  {
+    "id": 16,
+    "difficulty": "MEDIUM",
+    "label": "2 MOVE MATE",
+    "fen": "r4r1k/6pp/7N/3Q4/8/8/8/7K w - - 0 1",
+    "solution": [
+      "Qg8+",
+      "Rxg8",
+      "Nf7#"
+    ],
+    "moves": 2,
+    "hint": "Find the forced mate sequence!"
+  },
+  {
+    "id": 17,
+    "difficulty": "MEDIUM",
+    "label": "2 MOVE MATE",
+    "fen": "r4r1k/6pp/7N/3Q4/8/8/1P6/7K w - - 0 1",
+    "solution": [
+      "Qg8+",
+      "Rxg8",
+      "Nf7#"
+    ],
+    "moves": 2,
+    "hint": "Find the forced mate sequence!"
+  },
+  {
+    "id": 18,
+    "difficulty": "MEDIUM",
+    "label": "2 MOVE MATE",
+    "fen": "r4r1k/6pp/7N/3Q4/8/8/2P5/7K w - - 0 1",
+    "solution": [
+      "Qg8+",
+      "Rxg8",
+      "Nf7#"
+    ],
+    "moves": 2,
+    "hint": "Find the forced mate sequence!"
+  },
+  {
+    "id": 19,
+    "difficulty": "MEDIUM",
+    "label": "2 MOVE MATE",
+    "fen": "r4r1k/6pp/7N/3Q4/8/P7/8/7K w - - 0 1",
+    "solution": [
+      "Qg8+",
+      "Rxg8",
+      "Nf7#"
+    ],
+    "moves": 2,
+    "hint": "Find the forced mate sequence!"
+  },
+  {
+    "id": 20,
+    "difficulty": "MEDIUM",
+    "label": "2 MOVE MATE",
+    "fen": "r4r1k/6pp/7N/3Q4/8/1P6/8/7K w - - 0 1",
+    "solution": [
+      "Qg8+",
+      "Rxg8",
+      "Nf7#"
+    ],
+    "moves": 2,
+    "hint": "Find the forced mate sequence!"
+  },
+  {
+    "id": 21,
+    "difficulty": "MEDIUM",
+    "label": "2 MOVE MATE",
+    "fen": "r4r1k/6pp/7N/3Q4/8/2P5/8/7K w - - 0 1",
+    "solution": [
+      "Qg8+",
+      "Rxg8",
+      "Nf7#"
+    ],
+    "moves": 2,
+    "hint": "Find the forced mate sequence!"
+  },
+  {
+    "id": 22,
+    "difficulty": "MEDIUM",
+    "label": "2 MOVE MATE",
+    "fen": "r4r1k/6pp/7N/3Q4/P7/8/8/7K w - - 0 1",
+    "solution": [
+      "Qg8+",
+      "Rxg8",
+      "Nf7#"
+    ],
+    "moves": 2,
+    "hint": "Find the forced mate sequence!"
+  },
+  {
+    "id": 23,
+    "difficulty": "MEDIUM",
+    "label": "2 MOVE MATE",
+    "fen": "r4r1k/6pp/7N/3Q4/1P6/8/8/7K w - - 0 1",
+    "solution": [
+      "Qg8+",
+      "Rxg8",
+      "Nf7#"
+    ],
+    "moves": 2,
+    "hint": "Find the forced mate sequence!"
+  },
+  {
+    "id": 24,
+    "difficulty": "MEDIUM",
+    "label": "2 MOVE MATE",
+    "fen": "r4r1k/6pp/7N/3Q4/2P5/8/8/7K w - - 0 1",
+    "solution": [
+      "Qg8+",
+      "Rxg8",
+      "Nf7#"
+    ],
+    "moves": 2,
+    "hint": "Find the forced mate sequence!"
+  },
+  {
+    "id": 25,
+    "difficulty": "MEDIUM",
+    "label": "2 MOVE MATE",
+    "fen": "r4r1k/6pp/7N/P2Q4/8/8/8/7K w - - 0 1",
+    "solution": [
+      "Qg8+",
+      "Rxg8",
+      "Nf7#"
+    ],
+    "moves": 2,
+    "hint": "Find the forced mate sequence!"
+  },
+  {
+    "id": 26,
+    "difficulty": "MEDIUM",
+    "label": "2 MOVE MATE",
+    "fen": "r4r1k/6pp/7N/1P1Q4/8/8/8/7K w - - 0 1",
+    "solution": [
+      "Qg8+",
+      "Rxg8",
+      "Nf7#"
+    ],
+    "moves": 2,
+    "hint": "Find the forced mate sequence!"
+  },
+  {
+    "id": 27,
+    "difficulty": "MEDIUM",
+    "label": "2 MOVE MATE",
+    "fen": "r4r1k/6pp/7N/2PQ4/8/8/8/7K w - - 0 1",
+    "solution": [
+      "Qg8+",
+      "Rxg8",
+      "Nf7#"
+    ],
+    "moves": 2,
+    "hint": "Find the forced mate sequence!"
+  },
+  {
+    "id": 28,
+    "difficulty": "MEDIUM",
+    "label": "2 MOVE MATE",
+    "fen": "r4r1k/6pp/7N/3Q4/8/8/P7/7K w - - 0 1",
+    "solution": [
+      "Qg8+",
+      "Rxg8",
+      "Nf7#"
+    ],
+    "moves": 2,
+    "hint": "Find the forced mate sequence!"
+  },
+  {
+    "id": 29,
+    "difficulty": "MEDIUM",
+    "label": "2 MOVE MATE",
+    "fen": "r4r1k/6pp/7N/3Q4/8/8/1Pp5/7K w - - 0 1",
+    "solution": [
+      "Qg8+",
+      "Rxg8",
+      "Nf7#"
+    ],
+    "moves": 2,
+    "hint": "Find the forced mate sequence!"
+  },
+  {
+    "id": 30,
+    "difficulty": "MEDIUM",
+    "label": "2 MOVE MATE",
+    "fen": "r4r1k/6pp/7N/3Q4/8/p7/2P5/7K w - - 0 1",
+    "solution": [
+      "Qg8+",
+      "Rxg8",
+      "Nf7#"
+    ],
+    "moves": 2,
+    "hint": "Find the forced mate sequence!"
+  },
+  {
+    "id": 31,
+    "difficulty": "MEDIUM",
+    "label": "2 MOVE MATE",
+    "fen": "r4r1k/6pp/7N/3Q4/8/Pp6/8/7K w - - 0 1",
+    "solution": [
+      "Qg8+",
+      "Rxg8",
+      "Nf7#"
+    ],
+    "moves": 2,
+    "hint": "Find the forced mate sequence!"
+  },
+  {
+    "id": 32,
+    "difficulty": "MEDIUM",
+    "label": "2 MOVE MATE",
+    "fen": "r4r1k/6pp/7N/3Q4/8/1Pp5/8/7K w - - 0 1",
+    "solution": [
+      "Qg8+",
+      "Rxg8",
+      "Nf7#"
+    ],
+    "moves": 2,
+    "hint": "Find the forced mate sequence!"
+  },
+  {
+    "id": 33,
+    "difficulty": "MEDIUM",
+    "label": "2 MOVE MATE",
+    "fen": "r4r1k/6pp/7N/3Q4/p7/2P5/8/7K w - - 0 1",
+    "solution": [
+      "Qg8+",
+      "Rxg8",
+      "Nf7#"
+    ],
+    "moves": 2,
+    "hint": "Find the forced mate sequence!"
+  },
+  {
+    "id": 34,
+    "difficulty": "MEDIUM",
+    "label": "2 MOVE MATE",
+    "fen": "r4r1k/6pp/7N/3Q4/Pp6/8/8/7K w - - 0 1",
+    "solution": [
+      "Qg8+",
+      "Rxg8",
+      "Nf7#"
+    ],
+    "moves": 2,
+    "hint": "Find the forced mate sequence!"
+  },
+  {
+    "id": 35,
+    "difficulty": "MEDIUM",
+    "label": "2 MOVE MATE",
+    "fen": "r4r1k/6pp/7N/3Q4/1Pp5/8/8/7K w - - 0 1",
+    "solution": [
+      "Qg8+",
+      "Rxg8",
+      "Nf7#"
+    ],
+    "moves": 2,
+    "hint": "Find the forced mate sequence!"
+  },
+  {
+    "id": 36,
+    "difficulty": "HARD",
+    "label": "3 MOVE MATE",
+    "fen": "5rk1/4Pppp/8/6N1/2Q5/8/8/3R3K w - - 0 1",
+    "solution": [
+      "Qxf7+",
+      "Rxf7",
+      "Rd8+",
+      "Rf8",
+      "Rxf8#"
+    ],
+    "moves": 3,
+    "hint": "Find the forced mate sequence!"
+  },
+  {
+    "id": 37,
+    "difficulty": "HARD",
+    "label": "3 MOVE MATE",
+    "fen": "5rk1/4Pppp/8/6N1/2Q5/8/1P6/3R3K w - - 0 1",
+    "solution": [
+      "Qxf7+",
+      "Rxf7",
+      "Rd8+",
+      "Rf8",
+      "Rxf8#"
+    ],
+    "moves": 3,
+    "hint": "Find the forced mate sequence!"
+  },
+  {
+    "id": 38,
+    "difficulty": "HARD",
+    "label": "3 MOVE MATE",
+    "fen": "5rk1/4Pppp/8/6N1/2Q5/8/2P5/3R3K w - - 0 1",
+    "solution": [
+      "Qxf7+",
+      "Rxf7",
+      "Rd8+",
+      "Rf8",
+      "Rxf8#"
+    ],
+    "moves": 3,
+    "hint": "Find the forced mate sequence!"
+  },
+  {
+    "id": 39,
+    "difficulty": "HARD",
+    "label": "3 MOVE MATE",
+    "fen": "5rk1/4Pppp/8/6N1/2Q5/P7/8/3R3K w - - 0 1",
+    "solution": [
+      "Qxf7+",
+      "Rxf7",
+      "Rd8+",
+      "Rf8",
+      "Rxf8#"
+    ],
+    "moves": 3,
+    "hint": "Find the forced mate sequence!"
+  },
+  {
+    "id": 40,
+    "difficulty": "HARD",
+    "label": "3 MOVE MATE",
+    "fen": "5rk1/4Pppp/8/6N1/2Q5/1P6/8/3R3K w - - 0 1",
+    "solution": [
+      "Qxf7+",
+      "Rxf7",
+      "Rd8+",
+      "Rf8",
+      "Rxf8#"
+    ],
+    "moves": 3,
+    "hint": "Find the forced mate sequence!"
+  },
+  {
+    "id": 41,
+    "difficulty": "HARD",
+    "label": "3 MOVE MATE",
+    "fen": "5rk1/4Pppp/8/6N1/2Q5/2P5/8/3R3K w - - 0 1",
+    "solution": [
+      "Qxf7+",
+      "Rxf7",
+      "Rd8+",
+      "Rf8",
+      "Rxf8#"
+    ],
+    "moves": 3,
+    "hint": "Find the forced mate sequence!"
+  },
+  {
+    "id": 42,
+    "difficulty": "HARD",
+    "label": "3 MOVE MATE",
+    "fen": "5rk1/4Pppp/8/6N1/P1Q5/8/8/3R3K w - - 0 1",
+    "solution": [
+      "Qxf7+",
+      "Rxf7",
+      "Rd8+",
+      "Rf8",
+      "Rxf8#"
+    ],
+    "moves": 3,
+    "hint": "Find the forced mate sequence!"
+  },
+  {
+    "id": 43,
+    "difficulty": "HARD",
+    "label": "3 MOVE MATE",
+    "fen": "5rk1/4Pppp/8/6N1/1PQ5/8/8/3R3K w - - 0 1",
+    "solution": [
+      "Qxf7+",
+      "Rxf7",
+      "Rd8+",
+      "Rf8",
+      "Rxf8#"
+    ],
+    "moves": 3,
+    "hint": "Find the forced mate sequence!"
+  },
+  {
+    "id": 44,
+    "difficulty": "HARD",
+    "label": "3 MOVE MATE",
+    "fen": "5rk1/4Pppp/8/P5N1/2Q5/8/8/3R3K w - - 0 1",
+    "solution": [
+      "Qxf7+",
+      "Rxf7",
+      "Rd8+",
+      "Rf8",
+      "Rxf8#"
+    ],
+    "moves": 3,
+    "hint": "Find the forced mate sequence!"
+  },
+  {
+    "id": 45,
+    "difficulty": "HARD",
+    "label": "3 MOVE MATE",
+    "fen": "5rk1/4Pppp/8/1P4N1/2Q5/8/8/3R3K w - - 0 1",
+    "solution": [
+      "Qxf7+",
+      "Rxf7",
+      "Rd8+",
+      "Rf8",
+      "Rxf8#"
+    ],
+    "moves": 3,
+    "hint": "Find the forced mate sequence!"
+  },
+  {
+    "id": 46,
+    "difficulty": "HARD",
+    "label": "3 MOVE MATE",
+    "fen": "5rk1/4Pppp/8/6N1/2Q5/8/P7/3R3K w - - 0 1",
+    "solution": [
+      "Qxf7+",
+      "Rxf7",
+      "Rd8+",
+      "Rf8",
+      "Rxf8#"
+    ],
+    "moves": 3,
+    "hint": "Find the forced mate sequence!"
+  },
+  {
+    "id": 47,
+    "difficulty": "HARD",
+    "label": "3 MOVE MATE",
+    "fen": "5rk1/4Pppp/8/6N1/2Q5/8/1Pp5/3R3K w - - 0 1",
+    "solution": [
+      "Qxf7+",
+      "Rxf7",
+      "Rd8+",
+      "Rf8",
+      "Rxf8#"
+    ],
+    "moves": 3,
+    "hint": "Find the forced mate sequence!"
+  },
+  {
+    "id": 48,
+    "difficulty": "HARD",
+    "label": "3 MOVE MATE",
+    "fen": "5rk1/4Pppp/8/6N1/2Q5/p7/2P5/3R3K w - - 0 1",
+    "solution": [
+      "Qxf7+",
+      "Rxf7",
+      "Rd8+",
+      "Rf8",
+      "Rxf8#"
+    ],
+    "moves": 3,
+    "hint": "Find the forced mate sequence!"
+  },
+  {
+    "id": 49,
+    "difficulty": "HARD",
+    "label": "3 MOVE MATE",
+    "fen": "5rk1/4Pppp/8/6N1/2Q5/Pp6/8/3R3K w - - 0 1",
+    "solution": [
+      "Qxf7+",
+      "Rxf7",
+      "Rd8+",
+      "Rf8",
+      "Rxf8#"
+    ],
+    "moves": 3,
+    "hint": "Find the forced mate sequence!"
+  },
+  {
+    "id": 50,
+    "difficulty": "HARD",
+    "label": "3 MOVE MATE",
+    "fen": "5rk1/4Pppp/8/6N1/2Q5/1Pp5/8/3R3K w - - 0 1",
+    "solution": [
+      "Qxf7+",
+      "Rxf7",
+      "Rd8+",
+      "Rf8",
+      "Rxf8#"
+    ],
+    "moves": 3,
+    "hint": "Find the forced mate sequence!"
+  },
+  {
+    "id": 51,
+    "difficulty": "HARD",
+    "label": "3 MOVE MATE",
+    "fen": "5rk1/4Pppp/8/6N1/p1Q5/2P5/8/3R3K w - - 0 1",
+    "solution": [
+      "Qxf7+",
+      "Rxf7",
+      "Rd8+",
+      "Rf8",
+      "Rxf8#"
+    ],
+    "moves": 3,
+    "hint": "Find the forced mate sequence!"
+  },
+  {
+    "id": 52,
+    "difficulty": "HARD",
+    "label": "3 MOVE MATE",
+    "fen": "5rk1/4Pppp/8/6N1/PpQ5/8/8/3R3K w - - 0 1",
+    "solution": [
+      "Qxf7+",
+      "Rxf7",
+      "Rd8+",
+      "Rf8",
+      "Rxf8#"
+    ],
+    "moves": 3,
+    "hint": "Find the forced mate sequence!"
+  },
+  {
+    "id": 53,
+    "difficulty": "HARD",
+    "label": "3 MOVE MATE",
+    "fen": "5rk1/4Pppp/8/p5N1/1PQ5/8/8/3R3K w - - 0 1",
+    "solution": [
+      "Qxf7+",
+      "Rxf7",
+      "Rd8+",
+      "Rf8",
+      "Rxf8#"
+    ],
+    "moves": 3,
+    "hint": "Find the forced mate sequence!"
+  },
+  {
+    "id": 54,
+    "difficulty": "HARD",
+    "label": "3 MOVE MATE",
+    "fen": "5rk1/4Pppp/8/Pp4N1/2Q5/8/8/3R3K w - - 0 1",
+    "solution": [
+      "Qxf7+",
+      "Rxf7",
+      "Rd8+",
+      "Rf8",
+      "Rxf8#"
+    ],
+    "moves": 3,
+    "hint": "Find the forced mate sequence!"
+  },
+  {
+    "id": 55,
+    "difficulty": "HARD",
+    "label": "3 MOVE MATE",
+    "fen": "5rk1/4Pppp/8/1P4N1/2Q5/8/p7/3R3K w - - 0 1",
+    "solution": [
+      "Qxf7+",
+      "Rxf7",
+      "Rd8+",
+      "Rf8",
+      "Rxf8#"
+    ],
+    "moves": 3,
+    "hint": "Find the forced mate sequence!"
+  },
+  {
+    "id": 56,
+    "difficulty": "HARD",
+    "label": "3 MOVE MATE",
+    "fen": "5rk1/4Pppp/8/6N1/2Q5/8/Pp6/3R3K w - - 0 1",
+    "solution": [
+      "Qxf7+",
+      "Rxf7",
+      "Rd8+",
+      "Rf8",
+      "Rxf8#"
+    ],
+    "moves": 3,
+    "hint": "Find the forced mate sequence!"
+  },
+  {
+    "id": 57,
+    "difficulty": "HARD",
+    "label": "3 MOVE MATE",
+    "fen": "5rk1/4Pppp/8/6N1/2Q5/8/1Pp5/3R3K w - - 0 1",
+    "solution": [
+      "Qxf7+",
+      "Rxf7",
+      "Rd8+",
+      "Rf8",
+      "Rxf8#"
+    ],
+    "moves": 3,
+    "hint": "Find the forced mate sequence!"
+  },
+  {
+    "id": 58,
+    "difficulty": "HARD",
+    "label": "3 MOVE MATE",
+    "fen": "5rk1/4Pppp/8/6N1/2Q5/p7/2P5/3R3K w - - 0 1",
+    "solution": [
+      "Qxf7+",
+      "Rxf7",
+      "Rd8+",
+      "Rf8",
+      "Rxf8#"
+    ],
+    "moves": 3,
+    "hint": "Find the forced mate sequence!"
+  },
+  {
+    "id": 59,
+    "difficulty": "HARD",
+    "label": "3 MOVE MATE",
+    "fen": "5rk1/4Pppp/8/6N1/2Q5/Pp6/8/3R3K w - - 0 1",
+    "solution": [
+      "Qxf7+",
+      "Rxf7",
+      "Rd8+",
+      "Rf8",
+      "Rxf8#"
+    ],
+    "moves": 3,
+    "hint": "Find the forced mate sequence!"
+  },
+  {
+    "id": 60,
+    "difficulty": "HARD",
+    "label": "3 MOVE MATE",
+    "fen": "5rk1/4Pppp/8/6N1/2Q5/1Pp5/8/3R3K w - - 0 1",
+    "solution": [
+      "Qxf7+",
+      "Rxf7",
+      "Rd8+",
+      "Rf8",
+      "Rxf8#"
+    ],
+    "moves": 3,
+    "hint": "Find the forced mate sequence!"
+  },
+  {
+    "id": 61,
+    "difficulty": "HARD",
+    "label": "3 MOVE MATE",
+    "fen": "5rk1/4Pppp/8/6N1/p1Q5/2P5/8/3R3K w - - 0 1",
+    "solution": [
+      "Qxf7+",
+      "Rxf7",
+      "Rd8+",
+      "Rf8",
+      "Rxf8#"
+    ],
+    "moves": 3,
+    "hint": "Find the forced mate sequence!"
+  },
+  {
+    "id": 62,
+    "difficulty": "HARD",
+    "label": "3 MOVE MATE",
+    "fen": "5rk1/4Pppp/8/6N1/PpQ5/8/8/3R3K w - - 0 1",
+    "solution": [
+      "Qxf7+",
+      "Rxf7",
+      "Rd8+",
+      "Rf8",
+      "Rxf8#"
+    ],
+    "moves": 3,
+    "hint": "Find the forced mate sequence!"
+  },
+  {
+    "id": 63,
+    "difficulty": "HARD",
+    "label": "3 MOVE MATE",
+    "fen": "5rk1/4Pppp/8/p5N1/1PQ5/8/8/3R3K w - - 0 1",
+    "solution": [
+      "Qxf7+",
+      "Rxf7",
+      "Rd8+",
+      "Rf8",
+      "Rxf8#"
+    ],
+    "moves": 3,
+    "hint": "Find the forced mate sequence!"
+  },
+  {
+    "id": 64,
+    "difficulty": "HARD",
+    "label": "3 MOVE MATE",
+    "fen": "5rk1/4Pppp/8/Pp4N1/2Q5/8/8/3R3K w - - 0 1",
+    "solution": [
+      "Qxf7+",
+      "Rxf7",
+      "Rd8+",
+      "Rf8",
+      "Rxf8#"
+    ],
+    "moves": 3,
+    "hint": "Find the forced mate sequence!"
+  },
+  {
+    "id": 65,
+    "difficulty": "HARD",
+    "label": "3 MOVE MATE",
+    "fen": "5rk1/4Pppp/8/1P4N1/2Q5/8/p7/3R3K w - - 0 1",
+    "solution": [
+      "Qxf7+",
+      "Rxf7",
+      "Rd8+",
+      "Rf8",
+      "Rxf8#"
+    ],
+    "moves": 3,
+    "hint": "Find the forced mate sequence!"
+  },
+  {
+    "id": 66,
+    "difficulty": "MASTER",
+    "label": "4 MOVE MATE",
+    "fen": "5rk1/4Pppp/2n5/3Q2N1/8/8/3R4/3R2K1 w - - 0 1",
+    "solution": [
+      "Qxf7+",
+      "Rxf7",
+      "Rd8+",
+      "Nxd8",
+      "Rxd8+",
+      "Rf8",
+      "Rxf8#"
+    ],
+    "moves": 4,
+    "hint": "Find the forced mate sequence!"
+  },
+  {
+    "id": 67,
+    "difficulty": "MASTER",
+    "label": "4 MOVE MATE",
+    "fen": "5rk1/4Pppp/2n5/3Q2N1/8/8/1P1R4/3R2K1 w - - 0 1",
+    "solution": [
+      "Qxf7+",
+      "Rxf7",
+      "Rd8+",
+      "Nxd8",
+      "Rxd8+",
+      "Rf8",
+      "Rxf8#"
+    ],
+    "moves": 4,
+    "hint": "Find the forced mate sequence!"
+  },
+  {
+    "id": 68,
+    "difficulty": "MASTER",
+    "label": "4 MOVE MATE",
+    "fen": "5rk1/4Pppp/2n5/3Q2N1/8/P7/3R4/3R2K1 w - - 0 1",
+    "solution": [
+      "Qxf7+",
+      "Rxf7",
+      "Rd8+",
+      "Nxd8",
+      "Rxd8+",
+      "Rf8",
+      "Rxf8#"
+    ],
+    "moves": 4,
+    "hint": "Find the forced mate sequence!"
+  },
+  {
+    "id": 69,
+    "difficulty": "MASTER",
+    "label": "4 MOVE MATE",
+    "fen": "5rk1/4Pppp/2n5/3Q2N1/8/1P6/3R4/3R2K1 w - - 0 1",
+    "solution": [
+      "Qxf7+",
+      "Rxf7",
+      "Rd8+",
+      "Nxd8",
+      "Rxd8+",
+      "Rf8",
+      "Rxf8#"
+    ],
+    "moves": 4,
+    "hint": "Find the forced mate sequence!"
+  },
+  {
+    "id": 70,
+    "difficulty": "MASTER",
+    "label": "4 MOVE MATE",
+    "fen": "5rk1/4Pppp/2n5/3Q2N1/P7/8/3R4/3R2K1 w - - 0 1",
+    "solution": [
+      "Qxf7+",
+      "Rxf7",
+      "Rd8+",
+      "Nxd8",
+      "Rxd8+",
+      "Rf8",
+      "Rxf8#"
+    ],
+    "moves": 4,
+    "hint": "Find the forced mate sequence!"
+  },
+  {
+    "id": 71,
+    "difficulty": "MASTER",
+    "label": "4 MOVE MATE",
+    "fen": "5rk1/4Pppp/2n5/3Q2N1/1P6/8/3R4/3R2K1 w - - 0 1",
+    "solution": [
+      "Qxf7+",
+      "Rxf7",
+      "Rd8+",
+      "Nxd8",
+      "Rxd8+",
+      "Rf8",
+      "Rxf8#"
+    ],
+    "moves": 4,
+    "hint": "Find the forced mate sequence!"
+  },
+  {
+    "id": 72,
+    "difficulty": "MASTER",
+    "label": "4 MOVE MATE",
+    "fen": "5rk1/4Pppp/2n5/P2Q2N1/8/8/3R4/3R2K1 w - - 0 1",
+    "solution": [
+      "Qxf7+",
+      "Rxf7",
+      "Rd8+",
+      "Nxd8",
+      "Rxd8+",
+      "Rf8",
+      "Rxf8#"
+    ],
+    "moves": 4,
+    "hint": "Find the forced mate sequence!"
+  },
+  {
+    "id": 73,
+    "difficulty": "MASTER",
+    "label": "4 MOVE MATE",
+    "fen": "5rk1/4Pppp/2n5/1P1Q2N1/8/8/3R4/3R2K1 w - - 0 1",
+    "solution": [
+      "Qxf7+",
+      "Rxf7",
+      "Rd8+",
+      "Nxd8",
+      "Rxd8+",
+      "Rf8",
+      "Rxf8#"
+    ],
+    "moves": 4,
+    "hint": "Find the forced mate sequence!"
+  },
+  {
+    "id": 74,
+    "difficulty": "MASTER",
+    "label": "4 MOVE MATE",
+    "fen": "5rk1/4Pppp/P1n5/3Q2N1/8/8/3R4/3R2K1 w - - 0 1",
+    "solution": [
+      "Qxf7+",
+      "Rxf7",
+      "Rd8+",
+      "Nxd8",
+      "Rxd8+",
+      "Rf8",
+      "Rxf8#"
+    ],
+    "moves": 4,
+    "hint": "Find the forced mate sequence!"
+  },
+  {
+    "id": 75,
+    "difficulty": "MASTER",
+    "label": "4 MOVE MATE",
+    "fen": "5rk1/4Pppp/1Pn5/3Q2N1/8/8/3R4/3R2K1 w - - 0 1",
+    "solution": [
+      "Qxf7+",
+      "Rxf7",
+      "Rd8+",
+      "Nxd8",
+      "Rxd8+",
+      "Rf8",
+      "Rxf8#"
+    ],
+    "moves": 4,
+    "hint": "Find the forced mate sequence!"
+  },
+  {
+    "id": 76,
+    "difficulty": "MASTER",
+    "label": "4 MOVE MATE",
+    "fen": "5rk1/4Pppp/2n5/3Q2N1/8/8/P2R4/3R2K1 w - - 0 1",
+    "solution": [
+      "Qxf7+",
+      "Rxf7",
+      "Rd8+",
+      "Nxd8",
+      "Rxd8+",
+      "Rf8",
+      "Rxf8#"
+    ],
+    "moves": 4,
+    "hint": "Find the forced mate sequence!"
+  },
+  {
+    "id": 77,
+    "difficulty": "MASTER",
+    "label": "4 MOVE MATE",
+    "fen": "5rk1/4Pppp/2n5/3Q2N1/8/p7/1P1R4/3R2K1 w - - 0 1",
+    "solution": [
+      "Qxf7+",
+      "Rxf7",
+      "Rd8+",
+      "Nxd8",
+      "Rxd8+",
+      "Rf8",
+      "Rxf8#"
+    ],
+    "moves": 4,
+    "hint": "Find the forced mate sequence!"
+  },
+  {
+    "id": 78,
+    "difficulty": "MASTER",
+    "label": "4 MOVE MATE",
+    "fen": "5rk1/4Pppp/2n5/3Q2N1/8/Pp6/3R4/3R2K1 w - - 0 1",
+    "solution": [
+      "Qxf7+",
+      "Rxf7",
+      "Rd8+",
+      "Nxd8",
+      "Rxd8+",
+      "Rf8",
+      "Rxf8#"
+    ],
+    "moves": 4,
+    "hint": "Find the forced mate sequence!"
+  },
+  {
+    "id": 79,
+    "difficulty": "MASTER",
+    "label": "4 MOVE MATE",
+    "fen": "5rk1/4Pppp/2n5/3Q2N1/p7/1P6/3R4/3R2K1 w - - 0 1",
+    "solution": [
+      "Qxf7+",
+      "Rxf7",
+      "Rd8+",
+      "Nxd8",
+      "Rxd8+",
+      "Rf8",
+      "Rxf8#"
+    ],
+    "moves": 4,
+    "hint": "Find the forced mate sequence!"
+  },
+  {
+    "id": 80,
+    "difficulty": "MASTER",
+    "label": "4 MOVE MATE",
+    "fen": "5rk1/4Pppp/2n5/3Q2N1/Pp6/8/3R4/3R2K1 w - - 0 1",
+    "solution": [
+      "Qxf7+",
+      "Rxf7",
+      "Rd8+",
+      "Nxd8",
+      "Rxd8+",
+      "Rf8",
+      "Rxf8#"
+    ],
+    "moves": 4,
+    "hint": "Find the forced mate sequence!"
+  },
+  {
+    "id": 81,
+    "difficulty": "MASTER",
+    "label": "4 MOVE MATE",
+    "fen": "5rk1/4Pppp/2n5/p2Q2N1/1P6/8/3R4/3R2K1 w - - 0 1",
+    "solution": [
+      "Qxf7+",
+      "Rxf7",
+      "Rd8+",
+      "Nxd8",
+      "Rxd8+",
+      "Rf8",
+      "Rxf8#"
+    ],
+    "moves": 4,
+    "hint": "Find the forced mate sequence!"
+  },
+  {
+    "id": 82,
+    "difficulty": "MASTER",
+    "label": "4 MOVE MATE",
+    "fen": "5rk1/4Pppp/2n5/Pp1Q2N1/8/8/3R4/3R2K1 w - - 0 1",
+    "solution": [
+      "Qxf7+",
+      "Rxf7",
+      "Rd8+",
+      "Nxd8",
+      "Rxd8+",
+      "Rf8",
+      "Rxf8#"
+    ],
+    "moves": 4,
+    "hint": "Find the forced mate sequence!"
+  },
+  {
+    "id": 83,
+    "difficulty": "MASTER",
+    "label": "4 MOVE MATE",
+    "fen": "5rk1/4Pppp/p1n5/1P1Q2N1/8/8/3R4/3R2K1 w - - 0 1",
+    "solution": [
+      "Qxf7+",
+      "Rxf7",
+      "Rd8+",
+      "Nxd8",
+      "Rxd8+",
+      "Rf8",
+      "Rxf8#"
+    ],
+    "moves": 4,
+    "hint": "Find the forced mate sequence!"
+  },
+  {
+    "id": 84,
+    "difficulty": "MASTER",
+    "label": "4 MOVE MATE",
+    "fen": "5rk1/4Pppp/Ppn5/3Q2N1/8/8/3R4/3R2K1 w - - 0 1",
+    "solution": [
+      "Qxf7+",
+      "Rxf7",
+      "Rd8+",
+      "Nxd8",
+      "Rxd8+",
+      "Rf8",
+      "Rxf8#"
+    ],
+    "moves": 4,
+    "hint": "Find the forced mate sequence!"
+  },
+  {
+    "id": 85,
+    "difficulty": "MASTER",
+    "label": "4 MOVE MATE",
+    "fen": "5rk1/4Pppp/1Pn5/3Q2N1/8/8/p2R4/3R2K1 w - - 0 1",
+    "solution": [
+      "Qxf7+",
+      "Rxf7",
+      "Rd8+",
+      "Nxd8",
+      "Rxd8+",
+      "Rf8",
+      "Rxf8#"
+    ],
+    "moves": 4,
+    "hint": "Find the forced mate sequence!"
+  },
+  {
+    "id": 86,
+    "difficulty": "MASTER",
+    "label": "4 MOVE MATE",
+    "fen": "5rk1/4Pppp/2n5/3Q2N1/8/8/Pp1R4/3R2K1 w - - 0 1",
+    "solution": [
+      "Qxf7+",
+      "Rxf7",
+      "Rd8+",
+      "Nxd8",
+      "Rxd8+",
+      "Rf8",
+      "Rxf8#"
+    ],
+    "moves": 4,
+    "hint": "Find the forced mate sequence!"
+  },
+  {
+    "id": 87,
+    "difficulty": "MASTER",
+    "label": "4 MOVE MATE",
+    "fen": "5rk1/4Pppp/2n5/3Q2N1/8/p7/1P1R4/3R2K1 w - - 0 1",
+    "solution": [
+      "Qxf7+",
+      "Rxf7",
+      "Rd8+",
+      "Nxd8",
+      "Rxd8+",
+      "Rf8",
+      "Rxf8#"
+    ],
+    "moves": 4,
+    "hint": "Find the forced mate sequence!"
+  },
+  {
+    "id": 88,
+    "difficulty": "MASTER",
+    "label": "4 MOVE MATE",
+    "fen": "5rk1/4Pppp/2n5/3Q2N1/8/Pp6/3R4/3R2K1 w - - 0 1",
+    "solution": [
+      "Qxf7+",
+      "Rxf7",
+      "Rd8+",
+      "Nxd8",
+      "Rxd8+",
+      "Rf8",
+      "Rxf8#"
+    ],
+    "moves": 4,
+    "hint": "Find the forced mate sequence!"
+  },
+  {
+    "id": 89,
+    "difficulty": "MASTER",
+    "label": "4 MOVE MATE",
+    "fen": "5rk1/4Pppp/2n5/3Q2N1/p7/1P6/3R4/3R2K1 w - - 0 1",
+    "solution": [
+      "Qxf7+",
+      "Rxf7",
+      "Rd8+",
+      "Nxd8",
+      "Rxd8+",
+      "Rf8",
+      "Rxf8#"
+    ],
+    "moves": 4,
+    "hint": "Find the forced mate sequence!"
+  },
+  {
+    "id": 90,
+    "difficulty": "MASTER",
+    "label": "4 MOVE MATE",
+    "fen": "5rk1/4Pppp/2n5/3Q2N1/Pp6/8/3R4/3R2K1 w - - 0 1",
+    "solution": [
+      "Qxf7+",
+      "Rxf7",
+      "Rd8+",
+      "Nxd8",
+      "Rxd8+",
+      "Rf8",
+      "Rxf8#"
+    ],
+    "moves": 4,
+    "hint": "Find the forced mate sequence!"
+  },
+  {
+    "id": 91,
+    "difficulty": "MASTER",
+    "label": "4 MOVE MATE",
+    "fen": "5rk1/4Pppp/2n5/p2Q2N1/1P6/8/3R4/3R2K1 w - - 0 1",
+    "solution": [
+      "Qxf7+",
+      "Rxf7",
+      "Rd8+",
+      "Nxd8",
+      "Rxd8+",
+      "Rf8",
+      "Rxf8#"
+    ],
+    "moves": 4,
+    "hint": "Find the forced mate sequence!"
+  },
+  {
+    "id": 92,
+    "difficulty": "MASTER",
+    "label": "4 MOVE MATE",
+    "fen": "5rk1/4Pppp/2n5/Pp1Q2N1/8/8/3R4/3R2K1 w - - 0 1",
+    "solution": [
+      "Qxf7+",
+      "Rxf7",
+      "Rd8+",
+      "Nxd8",
+      "Rxd8+",
+      "Rf8",
+      "Rxf8#"
+    ],
+    "moves": 4,
+    "hint": "Find the forced mate sequence!"
+  },
+  {
+    "id": 93,
+    "difficulty": "MASTER",
+    "label": "4 MOVE MATE",
+    "fen": "5rk1/4Pppp/p1n5/1P1Q2N1/8/8/3R4/3R2K1 w - - 0 1",
+    "solution": [
+      "Qxf7+",
+      "Rxf7",
+      "Rd8+",
+      "Nxd8",
+      "Rxd8+",
+      "Rf8",
+      "Rxf8#"
+    ],
+    "moves": 4,
+    "hint": "Find the forced mate sequence!"
+  },
+  {
+    "id": 94,
+    "difficulty": "MASTER",
+    "label": "4 MOVE MATE",
+    "fen": "5rk1/4Pppp/Ppn5/3Q2N1/8/8/3R4/3R2K1 w - - 0 1",
+    "solution": [
+      "Qxf7+",
+      "Rxf7",
+      "Rd8+",
+      "Nxd8",
+      "Rxd8+",
+      "Rf8",
+      "Rxf8#"
+    ],
+    "moves": 4,
+    "hint": "Find the forced mate sequence!"
+  },
+  {
+    "id": 95,
+    "difficulty": "MASTER",
+    "label": "4 MOVE MATE",
+    "fen": "5rk1/4Pppp/1Pn5/3Q2N1/8/8/p2R4/3R2K1 w - - 0 1",
+    "solution": [
+      "Qxf7+",
+      "Rxf7",
+      "Rd8+",
+      "Nxd8",
+      "Rxd8+",
+      "Rf8",
+      "Rxf8#"
+    ],
+    "moves": 4,
+    "hint": "Find the forced mate sequence!"
+  },
+  {
+    "id": 96,
+    "difficulty": "MASTER",
+    "label": "4 MOVE MATE",
+    "fen": "5rk1/4Pppp/2n5/3Q2N1/8/8/Pp1R4/3R2K1 w - - 0 1",
+    "solution": [
+      "Qxf7+",
+      "Rxf7",
+      "Rd8+",
+      "Nxd8",
+      "Rxd8+",
+      "Rf8",
+      "Rxf8#"
+    ],
+    "moves": 4,
+    "hint": "Find the forced mate sequence!"
+  },
+  {
+    "id": 97,
+    "difficulty": "MASTER",
+    "label": "4 MOVE MATE",
+    "fen": "5rk1/4Pppp/2n5/3Q2N1/8/p7/1P1R4/3R2K1 w - - 0 1",
+    "solution": [
+      "Qxf7+",
+      "Rxf7",
+      "Rd8+",
+      "Nxd8",
+      "Rxd8+",
+      "Rf8",
+      "Rxf8#"
+    ],
+    "moves": 4,
+    "hint": "Find the forced mate sequence!"
+  },
+  {
+    "id": 98,
+    "difficulty": "MASTER",
+    "label": "4 MOVE MATE",
+    "fen": "5rk1/4Pppp/2n5/3Q2N1/8/Pp6/3R4/3R2K1 w - - 0 1",
+    "solution": [
+      "Qxf7+",
+      "Rxf7",
+      "Rd8+",
+      "Nxd8",
+      "Rxd8+",
+      "Rf8",
+      "Rxf8#"
+    ],
+    "moves": 4,
+    "hint": "Find the forced mate sequence!"
+  },
+  {
+    "id": 99,
+    "difficulty": "MASTER",
+    "label": "4 MOVE MATE",
+    "fen": "5rk1/4Pppp/2n5/3Q2N1/p7/1P6/3R4/3R2K1 w - - 0 1",
+    "solution": [
+      "Qxf7+",
+      "Rxf7",
+      "Rd8+",
+      "Nxd8",
+      "Rxd8+",
+      "Rf8",
+      "Rxf8#"
+    ],
+    "moves": 4,
+    "hint": "Find the forced mate sequence!"
+  },
+  {
+    "id": 100,
+    "difficulty": "MASTER",
+    "label": "4 MOVE MATE",
+    "fen": "5rk1/4Pppp/2n5/3Q2N1/Pp6/8/3R4/3R2K1 w - - 0 1",
+    "solution": [
+      "Qxf7+",
+      "Rxf7",
+      "Rd8+",
+      "Nxd8",
+      "Rxd8+",
+      "Rf8",
+      "Rxf8#"
+    ],
+    "moves": 4,
+    "hint": "Find the forced mate sequence!"
+  }
 ];
