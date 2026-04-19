@@ -52,6 +52,7 @@ export default function Puzzles() {
   const [invalidMsg, setInvalidMsg] = useState('');
   const [walletNotice, setWalletNotice] = useState('');
   const [unlockingPuzzleId, setUnlockingPuzzleId] = useState(null);
+  const [waitingForOpponent, setWaitingForOpponent] = useState(false);
   const chess = useRef(new Chess());
 
   // Sync progress to localStorage
@@ -71,6 +72,46 @@ export default function Puzzles() {
     setSelectedSquare(null);
     setLegalMoveStyles({});
     setInvalidMsg('');
+    setWaitingForOpponent(false);
+  }, [activePuzzle?.id]);
+
+  // BUG 1 FIX: Validate FEN on puzzle load - skip if already in check/checkmate/stalemate
+  useEffect(() => {
+    if (!activePuzzle) return;
+    try {
+      const testGame = new Chess(activePuzzle.fen);
+      if (testGame.isCheckmate() || testGame.isStalemate() || testGame.isDraw() || testGame.isGameOver()) {
+        // Position is already game-over, skip to next puzzle
+        const nextPuzzle = puzzles.find(p => p.id === activePuzzle.id + 1);
+        if (nextPuzzle) {
+          setFeedback({ type: '', text: '' });
+          setActivePuzzle(nextPuzzle);
+        } else {
+          setActivePuzzle(null);
+          setFeedback({ type: 'error', text: 'No more valid puzzles available.' });
+        }
+        return;
+      }
+      // Also check if the position is already in check (king attacked before player moves)
+      if (testGame.isCheck()) {
+        const nextPuzzle = puzzles.find(p => p.id === activePuzzle.id + 1);
+        if (nextPuzzle) {
+          setFeedback({ type: '', text: '' });
+          setActivePuzzle(nextPuzzle);
+        } else {
+          setActivePuzzle(null);
+          setFeedback({ type: 'error', text: 'No more valid puzzles available.' });
+        }
+      }
+    } catch (e) {
+      // Invalid FEN, skip to next
+      const nextPuzzle = puzzles.find(p => p.id === activePuzzle.id + 1);
+      if (nextPuzzle) {
+        setActivePuzzle(nextPuzzle);
+      } else {
+        setActivePuzzle(null);
+      }
+    }
   }, [activePuzzle?.id]);
 
   // Load a puzzle into the board
@@ -142,8 +183,33 @@ export default function Puzzles() {
     }
   };
 
+  // BUG 2 FIX: Play opponent's response move after player's correct intermediate move
+  const playOpponentMove = (currentGame, currentMoveCount) => {
+    if (!activePuzzle) return;
+    const solution = activePuzzle.solution;
+    // The opponent's move is the next move in the solution array
+    const opponentMoveStr = solution[currentMoveCount];
+    if (!opponentMoveStr) return;
+
+    setWaitingForOpponent(true);
+
+    setTimeout(() => {
+      try {
+        const gameCopy = new Chess(currentGame.fen());
+        const result = gameCopy.move(opponentMoveStr);
+        if (result) {
+          setGame(gameCopy);
+          setMoveCount(currentMoveCount + 1);
+        }
+      } catch (e) {
+        // If opponent move fails, just continue
+      }
+      setWaitingForOpponent(false);
+    }, 500);
+  };
+
   const handleSquareClick = (square) => {
-    if (feedback.type === 'complete' || !activePuzzle) return;
+    if (feedback.type === 'complete' || !activePuzzle || waitingForOpponent) return;
 
     // Is it player's turn? The player is the one whose turn it was initially.
     const initialTurn = activePuzzle.fen.split(' ')[1];
@@ -183,7 +249,7 @@ export default function Puzzles() {
 
   // Handle move attempting
   const handlePuzzleMove = (sourceSquare, targetSquare, piece) => {
-    if (feedback.type === 'complete' || !activePuzzle) return false;
+    if (feedback.type === 'complete' || !activePuzzle || waitingForOpponent) return false;
 
     const moveCopy = new Chess(game.fen());
     const promotionPiece = piece ? piece[1].toLowerCase() : 'q';
@@ -249,9 +315,11 @@ export default function Puzzles() {
       return true;
     }
 
-    // Intermediate moves are not validated; player can continue freely.
+    // Intermediate move: player made a correct move but puzzle is not over yet.
+    // Play opponent's response move after a short delay.
     setMoveCount(nextMoveCount);
-    setFeedback({ type: '', text: '' });
+    setFeedback({ type: 'success', text: 'Correct! Opponent is responding...' });
+    playOpponentMove(moveCopy, nextMoveCount);
     return true;
   };
 
@@ -308,7 +376,7 @@ export default function Puzzles() {
                 <Chessboard 
                   customBoardStyle={{ borderRadius: '0px' }}
                   position={game.fen()}
-                  arePiecesDraggable={true}
+                  arePiecesDraggable={!waitingForOpponent}
                   onPieceDrop={handlePuzzleMove}
                   onSquareClick={handleSquareClick}
                   boardOrientation={boardOrientation}
@@ -370,7 +438,7 @@ export default function Puzzles() {
                     ? 'bg-white text-black' 
                     : 'bg-slate-800 text-white border border-slate-600'
                 }`}>
-                  {isWhiteTurn ? 'White to Move' : 'Black to Move'}
+                  {waitingForOpponent ? 'Opponent thinking...' : (isWhiteTurn ? 'White to Move' : 'Black to Move')}
                 </div>
                 
                 <h3 className="text-slate-300 text-sm mb-4">
@@ -394,6 +462,7 @@ export default function Puzzles() {
                     setGame(resetGame);
                     setMoveCount(0);
                     setFeedback({ type: '', text: '' });
+                    setWaitingForOpponent(false);
                   }}
                   className="btn-secondary w-full flex items-center justify-center gap-2"
                 >
