@@ -189,7 +189,7 @@ module.exports = (io) => {
           const whitePl = contest.players.find(p => p._id.toString() === whiteId);
           const blackPl = contest.players.find(p => p._id.toString() === blackId);
 
-          socket.emit('matchStarted', {
+          const payload = {
             roomId: contest._id.toString(),
             contestId: contest._id.toString(),
             fen: gameState ? gameState.chess.fen() : (contest.fen || 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1'),
@@ -197,8 +197,10 @@ module.exports = (io) => {
             blackPlayer: { id: blackId, username: blackPl?.username || 'Player', elo: blackPl?.elo?.free || 1200 },
             contestType: contest.contestType,
             moves: (contest.moves || []).map(m => m.san).filter(Boolean),
-          });
-          console.log(`[joinRoom] Re-emitted matchStarted to ${userId} for ${roomId}`);
+          };
+
+          io.to(roomId).emit('matchStarted', payload);
+          console.log(`[joinRoom] Re-emitted matchStarted to room ${roomId} (triggered by ${userId})`);
         }
       } catch (err) { console.error('[joinRoom]', err); }
     });
@@ -261,6 +263,7 @@ module.exports = (io) => {
 
         if (contest.players.length >= 2) {
           // 2 players → start match!
+          socket.emit('joinedContest', { contestId: contest._id.toString(), waiting: false });
           await startMatch(contest._id.toString());
         } else {
           // 1st player — tell them to wait, navigate to room
