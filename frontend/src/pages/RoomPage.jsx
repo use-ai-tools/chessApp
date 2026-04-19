@@ -5,7 +5,6 @@ import { io } from 'socket.io-client';
 import { Chess } from 'chess.js';
 import ChessBoard from '../components/ChessBoard';
 import ResultModal from '../components/ResultModal';
-import MatchOptions from '../components/MatchOptions';
 import MoveHistory from '../components/MoveHistory';
 import GameReview from '../components/GameReview';
 import MatchSettings from '../components/MatchSettings';
@@ -45,6 +44,7 @@ export default function RoomPage() {
   const [showSettings, setShowSettings] = useState(false);
   const [contestType, setContestType] = useState(null);
   const [chatMessages, setChatMessages] = useState([]);
+  const [confirmResign, setConfirmResign] = useState(false);
   const chatRef = useRef(null);
 
   const [bracket, setBracket] = useState(null);
@@ -330,7 +330,9 @@ export default function RoomPage() {
   };
 
   const handleResign = () => {
+    if (!confirmResign) { setConfirmResign(true); return; }
     socketRef.current?.emit('resign', { contestId, playerId: user.id });
+    setConfirmResign(false);
   };
 
   const handleDrawOffer = () => {
@@ -386,7 +388,7 @@ export default function RoomPage() {
 
   if (!currentPlayerColor && !isSpectator) {
     return (
-      <div className="min-h-[calc(100vh-64px)] bg-hero flex items-center justify-center">
+      <div className="min-h-[calc(100vh-64px)] bg-hero flex items-center justify-center rounded-none">
         <div className="text-center">
           <div className="w-12 h-12 border-4 border-chess-green border-t-transparent rounded-full animate-spin mx-auto mb-4" />
           <h2 className="text-xl font-bold text-white mb-2">Connecting...</h2>
@@ -513,24 +515,67 @@ export default function RoomPage() {
                    <MoveHistory moves={moveHistory} currentIndex={previewIndex} onClickMove={setPreviewIndex} />
                 </div>
               )}
-              
               {currentPlayerColor && (
-                <div className="rounded-none">
-                  <MatchOptions
-                    onResign={handleResign}
-                    onDrawOffer={handleDrawOffer}
-                    onEmojiReaction={handleEmojiReaction}
-                    onToggleSound={() => {
-                      const ns = { ...settings, moveSound: !settings.moveSound };
-                      setSettings(ns);
-                      localStorage.setItem('chess-settings', JSON.stringify(ns));
-                    }}
-                    onOpenSettings={() => setShowSettings(true)}
-                    soundEnabled={settings.moveSound !== false}
-                    drawOfferPending={drawOfferPending}
-                    gameStatus={gameStatus}
-                    onGameReview={(gameStatus === 'finished' || gameStatus === 'ended') ? handleOpenGameReview : null}
-                  />
+                <div className="flex-1 w-full flex flex-col gap-2 mt-2">
+                  <div className="flex gap-2">
+                    <button
+                      onClick={handleResign}
+                      className={`rounded-none flex-1 text-[10px] lg:text-xs py-2 font-bold transition-all ${
+                        confirmResign ? 'bg-red-600 text-white animate-pulse' : 'btn-secondary'
+                      }`}
+                    >
+                      🏳️ {confirmResign ? 'Confirm?' : 'Resign'}
+                    </button>
+                    <button
+                      onClick={handleDrawOffer}
+                      disabled={drawOfferPending}
+                      className="btn-secondary rounded-none flex-1 text-[10px] lg:text-xs py-2 font-bold transition-all"
+                    >
+                      🤝 {drawOfferPending ? 'Sent...' : 'Draw'}
+                    </button>
+                    <button
+                      onClick={() => setShowSettings(true)}
+                      className="btn-secondary rounded-none flex-1 text-[10px] lg:text-xs py-2 font-bold transition-all"
+                    >
+                      ⚙️ Settings
+                    </button>
+                  </div>
+                  
+                  {confirmResign && (
+                    <div className="flex gap-2">
+                      <button onClick={() => setConfirmResign(false)} className="flex-1 py-1 rounded-none bg-navy-700 text-slate-300 text-[10px] font-medium">Cancel</button>
+                      <button onClick={handleResign} className="flex-1 py-1 rounded-none bg-red-600 text-white text-[10px] font-bold">Yes, Resign</button>
+                    </div>
+                  )}
+
+                  <div className="card rounded-none flex flex-col p-2 lg:p-4 gap-2 flex-1">
+                    <select
+                      className="bg-navy-900 border border-navy-700 text-[10px] lg:text-xs rounded-none px-2 py-1.5 text-white outline-none w-full"
+                      onChange={(e) => {
+                        if (e.target.value) {
+                          socketRef.current?.emit('matchChat', { contestId, message: e.target.value, username: user.username });
+                          e.target.value = '';
+                        }
+                      }}
+                    >
+                      <option value="">💬 Quick Chat...</option>
+                      <option value="Good luck!">Good luck!</option>
+                      <option value="Well played!">Well played!</option>
+                      <option value="Thanks!">Thanks!</option>
+                      <option value="Oops!">Oops!</option>
+                      <option value="Nice move!">Nice move!</option>
+                      <option value="You got lucky 😄">You got lucky 😄</option>
+                    </select>
+
+                    <div ref={chatRef} className="h-[10vh] lg:flex-1 overflow-y-auto space-y-1 pr-1">
+                      {chatMessages.map((msg, i) => (
+                        <div key={i} className="text-[10px] lg:text-xs">
+                          <span className="font-bold text-chess-green">{msg.username}: </span>
+                          <span className="text-slate-300">{msg.message}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
                 </div>
               )}
             </div>
@@ -564,41 +609,6 @@ export default function RoomPage() {
                 </div>
               )}
             </div>
-
-            {gameStatus === 'playing' && (
-              <div className="card rounded-none flex flex-col h-[15vh] lg:h-64 p-2 lg:p-4">
-                <h3 className="hidden lg:block text-sm font-bold text-slate-300 mb-2">Quick Chat</h3>
-                <div ref={chatRef} className="flex-1 overflow-y-auto space-y-1 lg:space-y-2 mb-1 lg:mb-2 pr-1">
-                  {chatMessages.length === 0 ? (
-                    <p className="text-xs text-slate-500 italic">Say hi!</p>
-                  ) : (
-                    chatMessages.map((msg, i) => (
-                      <div key={i} className="text-xs lg:text-sm">
-                        <span className="font-bold text-chess-green">{msg.username}: </span>
-                        <span className="text-slate-300">{msg.message}</span>
-                      </div>
-                    ))
-                  )}
-                </div>
-                <select
-                  className="bg-navy-900 border border-navy-700 text-xs lg:text-sm rounded-none px-2 py-1 lg:py-1.5 text-white outline-none"
-                  onChange={(e) => {
-                    if (e.target.value) {
-                      socketRef.current?.emit('matchChat', { contestId, message: e.target.value, username: user.username });
-                      e.target.value = '';
-                    }
-                  }}
-                >
-                  <option value="">Send message...</option>
-                  <option value="Good luck!">Good luck!</option>
-                  <option value="Well played!">Well played!</option>
-                  <option value="Thanks!">Thanks!</option>
-                  <option value="Oops!">Oops!</option>
-                  <option value="Nice move!">Nice move!</option>
-                  <option value="You got lucky 😄">You got lucky 😄</option>
-                </select>
-              </div>
-            )}
           </div>
         </div>
       </div>

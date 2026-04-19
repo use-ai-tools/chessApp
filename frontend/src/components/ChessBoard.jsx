@@ -100,11 +100,9 @@ export default function ChessBoard({
   moveTimeoutMs = 30000,
   username, // FEATURE 5: Screenshot prevention watermark
 }) {
-  // Use useRef for chess instance
   const gameRef = useRef(new Chess());
   const containerRef = useRef(null);
   const readyEmitted = useRef(false);
-  const [boardWidth, setBoardWidth] = useState(400);
   const [whiteTime, setWhiteTime] = useState(30);
   const [blackTime, setBlackTime] = useState(30);
   const [selectedSquare, setSelectedSquare] = useState(null);
@@ -164,18 +162,7 @@ export default function ChessBoard({
     };
   }, [gameStatus]);
 
-  // ── Responsive board sizing ──
-  useEffect(() => {
-    const updateSize = () => {
-      if (containerRef.current) {
-        const w = containerRef.current.offsetWidth;
-        setBoardWidth(Math.min(w - 16, 560));
-      }
-    };
-    updateSize();
-    window.addEventListener('resize', updateSize);
-    return () => window.removeEventListener('resize', updateSize);
-  }, []);
+  // ── Responsive board sizing (handled by container now) ──
 
   // ── Update chess.js when fen changes ──
   useEffect(() => {
@@ -283,12 +270,12 @@ export default function ChessBoard({
       if (m.captured) {
         styles[m.to] = {
           background: 'radial-gradient(circle, transparent 55%, rgba(0,0,0,0.2) 55%)',
-          borderRadius: '50%',
+          borderRadius: '0',
         };
       } else {
         styles[m.to] = {
           background: 'radial-gradient(circle, rgba(0,0,0,0.2) 25%, transparent 25%)',
-          borderRadius: '50%',
+          borderRadius: '0',
         };
       }
     }
@@ -478,7 +465,7 @@ export default function ChessBoard({
           const squareName = `${'abcdefgh'[c]}${8 - r}`;
           return { [squareName]: {
             backgroundColor: 'rgba(239, 68, 68, 0.6)',
-            borderRadius: '50%',
+            borderRadius: '0',
             animation: 'checkPulse 1s ease-in-out infinite',
           }};
         }
@@ -550,17 +537,17 @@ export default function ChessBoard({
       <PlayerTimer player={topPlayer} time={topTime} isActive={isTopTurn && gameStatus === 'playing'} color={topColor} captured={topCaptured} materialAdvantage={topAdv} timerMax={timerMax} gameStatus={gameStatus} />
 
       {gameStatus === 'playing' && isTopTurn && (
-        <div className="w-full progress-bar" style={{ maxWidth: boardWidth }}>
+        <div className="w-full progress-bar">
           <div className="progress-fill bg-gradient-to-r from-red-500 to-gold-500 timer-bar" style={{ width: `${(topTime / timerMax) * 100}%` }} />
         </div>
       )}
 
       {/* Board + Win Probability Bar */}
-      <div className="flex items-center gap-2">
+      <div className="flex items-center gap-2 w-full max-w-[560px]">
         {/* BUG 4 FIX: Only show WinProbabilityBar in review mode */}
-        {isReview && <WinProbabilityBar fen={fen} height={boardWidth} />}
+        {isReview && <WinProbabilityBar fen={fen} height={560} />}
 
-        <div className={`rounded-xl overflow-hidden shadow-2xl shadow-black/50 transition-all duration-300 relative ${
+        <div className={`w-full aspect-square overflow-hidden shadow-2xl shadow-black/50 transition-all duration-300 relative ${
           !isMyTurn && !isSpectator && !isReview && gameStatus === 'playing' ? 'opacity-85' : ''
         } ${boardShake ? 'board-shake' : ''}`}>
           
@@ -579,8 +566,7 @@ export default function ChessBoard({
             onSquareClick={onSquareClick}
             onPieceDragBegin={onPieceDragBegin}
             boardOrientation={boardOrientation}
-            boardWidth={boardWidth - 32}
-            customBoardStyle={{ borderRadius: '12px' }}
+            customBoardStyle={{ borderRadius: '0px' }}
             customDarkSquareStyle={{ backgroundColor: theme.dark }}
             customLightSquareStyle={{ backgroundColor: theme.light }}
             customSquareStyles={customSquareStyles}
@@ -601,7 +587,7 @@ export default function ChessBoard({
       {activePremoveStart && prequeue.length === 0 && <p className="text-[10px] text-sky-400 font-medium">Premove set</p>}
 
       {gameStatus === 'playing' && isBottomTurn && (
-        <div className="w-full progress-bar" style={{ maxWidth: boardWidth }}>
+        <div className="w-full progress-bar">
           <div className="progress-fill bg-gradient-to-r from-chess-green to-emerald-500 timer-bar" style={{ width: `${(bottomTime / timerMax) * 100}%` }} />
         </div>
       )}
@@ -609,12 +595,12 @@ export default function ChessBoard({
       <PlayerTimer player={bottomPlayer} time={bottomTime} isActive={isBottomTurn && gameStatus === 'playing'} color={bottomColor} captured={bottomCaptured} materialAdvantage={bottomAdv} timerMax={timerMax} gameStatus={gameStatus} />
 
       <div className="w-full max-w-[560px] flex items-center justify-between mt-1">
-        {isSpectator && <div className="badge-purple"><span>👁️</span> Spectating</div>}
-        {spectatorCount > 0 && <div className="badge-blue"><span>👁</span> {spectatorCount} watching</div>}
+        {isSpectator && <div className="badge-purple rounded-none"><span>👁️</span> Spectating</div>}
+        {spectatorCount > 0 && <div className="badge-blue rounded-none"><span>👁</span> {spectatorCount} watching</div>}
         <div className="flex gap-1 ml-auto">
           {Object.entries(BOARD_THEMES).map(([key, t]) => (
             <button key={key} onClick={() => setBoardTheme(key)} title={t.label}
-              className={`w-6 h-6 rounded-full border-2 transition-all ${boardTheme === key ? 'border-chess-green scale-110' : 'border-transparent opacity-60 hover:opacity-100'}`}
+              className={`w-6 h-6 rounded-none border-2 transition-all ${boardTheme === key ? 'border-chess-green scale-110' : 'border-transparent opacity-60 hover:opacity-100'}`}
               style={{ background: `linear-gradient(135deg, ${t.light} 50%, ${t.dark} 50%)` }}
             />
           ))}
