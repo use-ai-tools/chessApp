@@ -418,55 +418,36 @@ export default function RoomPage() {
   }
 
   return (
-    <div className="min-h-[calc(100vh-64px)] bg-hero px-2 lg:px-4 py-2 lg:py-6 flex flex-col overflow-x-hidden">
+    <div className="h-[calc(100vh-64px)] bg-hero flex flex-col overflow-hidden">
       <style>{`button[title="Flip Board"] { display: none !important; }`}</style>
-      <div className="max-w-7xl mx-auto w-full">
-        <div className="flex items-center justify-between gap-4 mb-2 lg:mb-6 animate-fade-in">
-          <div>
-            <div className="flex items-center gap-3 mb-1">
-              <h1 className="text-lg lg:text-xl font-bold text-white">{contestType?.name || 'Match'}</h1>
-              <span className={`badge rounded-none ${gameStatus === 'playing' ? 'badge-green' : gameStatus === 'finished' ? 'badge-purple' : 'badge-gold'}`}>
-                {gameStatus === 'playing' ? '🔴 Live' : gameStatus === 'finished' ? 'Ended' : 'Waiting'}
-              </span>
-            </div>
-            <p className="text-sm text-slate-400">{status}</p>
-          </div>
+      <div className="flex-1 flex flex-col overflow-hidden px-2 py-2 lg:px-4 lg:py-4">
+        {/* Header */}
+        <div className="flex items-center justify-between gap-2 mb-2 flex-shrink-0">
           <div className="flex items-center gap-2">
+            <h1 className="text-sm lg:text-xl font-bold text-white">{contestType?.name || 'Match'}</h1>
+            <span className={`badge rounded-none text-[10px] ${gameStatus === 'playing' ? 'badge-green' : gameStatus === 'finished' ? 'badge-purple' : 'badge-gold'}`}>
+              {gameStatus === 'playing' ? '🔴 Live' : gameStatus === 'finished' ? 'Ended' : 'Waiting'}
+            </span>
+          </div>
+          <div className="flex items-center gap-1">
             {isTournament && (
               <button
                 onClick={() => setShowBracket(!showBracket)}
-                className={`btn-sm rounded-none flex items-center gap-2 font-bold ${showBracket ? 'btn-primary' : 'btn-secondary'}`}
+                className="btn-sm rounded-none text-[10px] font-bold btn-secondary"
               >
-                <span>{showBracket ? '♟️ View Board' : '🏆 View Bracket'}</span>
+                {showBracket ? '♟️ Board' : '🏆 Bracket'}
               </button>
             )}
-            <button onClick={() => navigate('/')} className="btn-secondary btn-sm rounded-none">← Lobby</button>
+            <button onClick={() => navigate('/')} className="btn-secondary btn-sm rounded-none text-[10px]">← Lobby</button>
+            <PingIndicator customSocket={socketRef.current} />
           </div>
         </div>
 
-        {drawOfferReceived && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm animate-fade-in">
-            <div className="bg-navy-800 border border-navy-700/50 rounded-none shadow-2xl p-4 lg:p-6 max-w-sm w-full animate-scale-in">
-              <div className="text-center">
-                <div className="text-5xl mb-3">🤝</div>
-                <h3 className="text-lg font-bold text-white mb-2">Draw Offered</h3>
-                <p className="text-sm text-slate-400 mb-5">Your opponent is offering a draw. Entry fee will be refunded.</p>
-                <div className="flex gap-3">
-                  <button onClick={() => handleDrawResponse(false)} className="btn-secondary rounded-none flex-1">Decline</button>
-                  <button onClick={() => handleDrawResponse(true)} className="btn-primary rounded-none flex-1">Accept Draw</button>
-                </div>
-              </div>
-            </div>
-          </div>
-        )}
-
-        <div className="flex flex-col lg:flex-row gap-2 lg:gap-8 items-start">
-          {/* Main Board Column */}
-          <div className="w-full lg:w-auto flex-shrink-0 mx-auto lg:mx-0 flex justify-center">
-            <div className="bg-navy-800/60 backdrop-blur-sm border border-navy-700/50 relative aspect-square overflow-hidden w-full max-w-[45vh] lg:max-w-[70vh]" style={{ padding: '0px', borderRadius: 0 }}>
-              <div className="absolute top-2 right-2 z-10 hidden sm:block">
-                <PingIndicator customSocket={socketRef.current} />
-              </div>
+        {/* Main layout: board + sidebar always side by side */}
+        <div className="flex-1 flex flex-row gap-2 min-h-0 overflow-hidden">
+          {/* Board Column — square, constrained by viewport height */}
+          <div className="flex-shrink-0" style={{ width: 'min(50vw, calc(100vh - 140px))', height: 'min(50vw, calc(100vh - 140px))' }}>
+            <div className="relative w-full h-full" style={{ borderRadius: 0 }}>
               {matchDataRef.current ? (
                 <ChessBoard
                   roomId={contestId}
@@ -488,130 +469,133 @@ export default function RoomPage() {
                   username={user?.username}
                 />
               ) : (
-                <div className="flex flex-col items-center justify-center gap-4 py-20">
-                  <div className="w-16 h-16 rounded-none bg-navy-700/50 flex items-center justify-center">
-                    <div className="w-8 h-8 border-2 border-chess-green border-t-transparent rounded-full animate-spin" />
-                    {invalidMsg && (
-                      <p className="text-red-400 text-sm font-bold text-center mt-3 animate-fade-in">{invalidMsg}</p>
-                    )}
-                  </div>
+                <div className="flex items-center justify-center w-full h-full bg-navy-800/60">
+                  <div className="w-8 h-8 border-2 border-chess-green border-t-transparent rounded-full animate-spin" />
                 </div>
               )}
 
               {previewIndex !== -1 && (
-                <div className="absolute bottom-0 left-0 right-0 p-2 bg-sky-500/10 border-t border-sky-500/20 flex items-center justify-between z-10 backdrop-blur-md">
-                  <p className="text-[10px] text-sky-400 font-bold">📖 Previewing move {previewIndex + 1}/{moveHistory.length}</p>
-                  <button onClick={() => setPreviewIndex(-1)} className="text-[10px] text-sky-400 font-black hover:text-sky-300">LIVE</button>
+                <div className="absolute bottom-0 left-0 right-0 p-1 bg-sky-500/10 border-t border-sky-500/20 flex items-center justify-between z-10">
+                  <p className="text-[9px] text-sky-400 font-bold">📖 Move {previewIndex + 1}/{moveHistory.length}</p>
+                  <button onClick={() => setPreviewIndex(-1)} className="text-[9px] text-sky-400 font-black">LIVE</button>
                 </div>
               )}
             </div>
           </div>
 
-          {/* Controls & Sidebar Column */}
-          <div className="flex-1 w-full space-y-2 lg:space-y-6">
-            <div className="grid sm:grid-cols-2 lg:grid-cols-1 gap-2 lg:gap-4">
-              {matchDataRef.current && (
-                <div className="h-[12vh] lg:h-auto lg:max-h-[300px] overflow-hidden">
-                   <MoveHistory moves={moveHistory} currentIndex={previewIndex} onClickMove={setPreviewIndex} />
-                </div>
-              )}
-              {currentPlayerColor && (
-                <div className="flex-1 w-full flex flex-col gap-2 mt-2">
-                  <div className="flex gap-2">
-                    <button
-                      onClick={handleResign}
-                      className={`rounded-none flex-1 text-[10px] lg:text-xs py-2 font-bold transition-all ${
-                        confirmResign ? 'bg-red-600 text-white animate-pulse' : 'btn-secondary'
-                      }`}
-                    >
-                      🏳️ {confirmResign ? 'Confirm?' : 'Resign'}
-                    </button>
-                    <button
-                      onClick={handleDrawOffer}
-                      disabled={drawOfferPending}
-                      className="btn-secondary rounded-none flex-1 text-[10px] lg:text-xs py-2 font-bold transition-all"
-                    >
-                      🤝 {drawOfferPending ? 'Sent...' : 'Draw'}
-                    </button>
-                    <button
-                      onClick={() => setShowSettings(true)}
-                      className="btn-secondary rounded-none flex-1 text-[10px] lg:text-xs py-2 font-bold transition-all"
-                    >
-                      ⚙️ Settings
-                    </button>
-                  </div>
-                  
-                  {confirmResign && (
-                    <div className="flex gap-2">
-                      <button onClick={() => setConfirmResign(false)} className="flex-1 py-1 rounded-none bg-navy-700 text-slate-300 text-[10px] font-medium">Cancel</button>
-                      <button onClick={handleResign} className="flex-1 py-1 rounded-none bg-red-600 text-white text-[10px] font-bold">Yes, Resign</button>
-                    </div>
-                  )}
-
-                  <div className="card rounded-none flex flex-col p-2 lg:p-4 gap-2 flex-1">
-                    <select
-                      className="bg-navy-900 border border-navy-700 text-[10px] lg:text-xs rounded-none px-2 py-1.5 text-white outline-none w-full"
-                      onChange={(e) => {
-                        if (e.target.value) {
-                          socketRef.current?.emit('matchChat', { contestId, message: e.target.value, username: user.username });
-                          e.target.value = '';
-                        }
-                      }}
-                    >
-                      <option value="">💬 Quick Chat...</option>
-                      <option value="Good luck!">Good luck!</option>
-                      <option value="Well played!">Well played!</option>
-                      <option value="Thanks!">Thanks!</option>
-                      <option value="Oops!">Oops!</option>
-                      <option value="Nice move!">Nice move!</option>
-                      <option value="You got lucky 😄">You got lucky 😄</option>
-                    </select>
-
-                    <div ref={chatRef} className="h-[10vh] lg:flex-1 overflow-y-auto space-y-1 pr-1">
-                      {chatMessages.map((msg, i) => (
-                        <div key={i} className="text-[10px] lg:text-xs">
-                          <span className="font-bold text-chess-green">{msg.username}: </span>
-                          <span className="text-slate-300">{msg.message}</span>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                </div>
-              )}
-            </div>
-
-            <div className="grid grid-cols-2 lg:grid-cols-1 gap-2 lg:gap-6">
+          {/* Sidebar: everything to the right of board */}
+          <div className="flex-1 min-w-0 flex flex-col gap-1 overflow-y-auto overflow-x-hidden min-h-0">
+            {/* Players + Contest Info row */}
+            <div className="flex gap-1 flex-shrink-0">
               {(whitePlayer || blackPlayer) && (
-                <div className="card rounded-none p-2 lg:p-4">
-                  <div className="flex flex-col gap-1">
+                <div className="flex-1 bg-navy-800/60 border border-navy-700/50 p-1.5">
                   {[whitePlayer, blackPlayer].filter(Boolean).map((p, i) => (
-                    <div key={i} className={`flex items-center gap-2 p-1.5 lg:p-2.5 rounded-none mb-0 ${p.id === user?.id ? 'bg-chess-green/5 border border-chess-green/10' : 'bg-navy-900/30'
-                      }`}>
-                      <div className={`w-2 h-2 lg:w-3 lg:h-3 rounded-none ${i === 0 ? 'bg-white border border-slate-400' : 'bg-slate-800 border border-slate-600'}`} />
-                      <div className="flex-1 min-w-0">
-                        <p className="text-xs lg:text-sm font-medium text-white truncate">{p.username}</p>
-                        <p className="text-[9px] lg:text-[10px] text-slate-500">ELO {p.elo || 1200}</p>
-                      </div>
-                      {p.id === user?.id && <span className="text-[9px] lg:text-[10px] text-chess-green font-bold">YOU</span>}
+                    <div key={i} className={`flex items-center gap-1 p-1 rounded-none mb-0.5 last:mb-0 ${
+                      p.id === user?.id ? 'bg-chess-green/5 border border-chess-green/10' : 'bg-navy-900/30'
+                    }`}>
+                      <div className={`w-2 h-2 flex-shrink-0 ${i === 0 ? 'bg-white' : 'bg-slate-700 border border-slate-500'}`} />
+                      <span className="text-[10px] lg:text-xs font-medium text-white truncate flex-1">{p.username}</span>
+                      {p.id === user?.id && <span className="text-[9px] text-chess-green font-bold">YOU</span>}
                     </div>
                   ))}
-                  </div>
                 </div>
               )}
-
               {contestType && (
-                <div className="card rounded-none p-2 lg:p-4 flex flex-col justify-center">
-                  <h3 className="hidden lg:block text-sm font-bold text-slate-300 mb-3">Contest Info</h3>
-                  <div className="space-y-1 lg:space-y-2 text-xs lg:text-sm">
-                    <div className="flex justify-between"><span className="text-slate-500">Entry</span><span className="text-white font-bold">₹{contestType.entry}</span></div>
-                    <div className="flex justify-between"><span className="text-slate-500">Prize</span><span className="text-chess-green font-bold">₹{contestType.payout}</span></div>
-                  </div>
+                <div className="flex-1 bg-navy-800/60 border border-navy-700/50 p-1.5 flex flex-col justify-center gap-0.5">
+                  <div className="flex justify-between text-[10px]"><span className="text-slate-500">Entry</span><span className="text-white font-bold">₹{contestType.entry}</span></div>
+                  <div className="flex justify-between text-[10px]"><span className="text-slate-500">Prize</span><span className="text-chess-green font-bold">₹{contestType.payout}</span></div>
                 </div>
               )}
             </div>
+
+            {/* Move history */}
+            {matchDataRef.current && (
+              <div className="flex-shrink-0 max-h-[22vh] lg:max-h-[250px] overflow-hidden">
+                <MoveHistory moves={moveHistory} currentIndex={previewIndex} onClickMove={setPreviewIndex} />
+              </div>
+            )}
+
+            {/* Game controls: resign/draw/settings + chat */}
+            {currentPlayerColor && gameStatus === 'playing' && (
+              <div className="flex flex-col gap-1 flex-shrink-0">
+                <div className="flex gap-1">
+                  <button
+                    onClick={handleResign}
+                    className={`rounded-none flex-1 text-[10px] py-1.5 font-bold transition-all ${
+                      confirmResign ? 'bg-red-600 text-white animate-pulse' : 'btn-secondary'
+                    }`}
+                  >
+                    🏳️ {confirmResign ? 'Confirm?' : 'Resign'}
+                  </button>
+                  <button
+                    onClick={handleDrawOffer}
+                    disabled={drawOfferPending}
+                    className="btn-secondary rounded-none flex-1 text-[10px] py-1.5 font-bold"
+                  >
+                    🤝 {drawOfferPending ? 'Sent...' : 'Draw'}
+                  </button>
+                  <button
+                    onClick={() => setShowSettings(true)}
+                    className="btn-secondary rounded-none flex-1 text-[10px] py-1.5 font-bold"
+                  >
+                    ⚙️
+                  </button>
+                </div>
+                {confirmResign && (
+                  <div className="flex gap-1">
+                    <button onClick={() => setConfirmResign(false)} className="flex-1 py-1 rounded-none bg-navy-700 text-slate-300 text-[10px] font-medium">Cancel</button>
+                    <button onClick={handleResign} className="flex-1 py-1 rounded-none bg-red-600 text-white text-[10px] font-bold">Yes, Resign</button>
+                  </div>
+                )}
+                {/* Quick Chat */}
+                <div className="bg-navy-800/60 border border-navy-700/50">
+                  <select
+                    className="w-full bg-navy-900 border-b border-navy-700 text-[10px] rounded-none px-2 py-1.5 text-white outline-none"
+                    onChange={(e) => {
+                      if (e.target.value) {
+                        socketRef.current?.emit('matchChat', { contestId, message: e.target.value, username: user.username });
+                        e.target.value = '';
+                      }
+                    }}
+                  >
+                    <option value="">💬 Quick Chat...</option>
+                    <option value="Good luck!">Good luck!</option>
+                    <option value="Well played!">Well played!</option>
+                    <option value="Thanks!">Thanks!</option>
+                    <option value="Oops!">Oops!</option>
+                    <option value="Nice move!">Nice move!</option>
+                    <option value="You got lucky 😄">You got lucky 😄</option>
+                  </select>
+                  <div ref={chatRef} className="max-h-[12vh] overflow-y-auto p-1 space-y-0.5">
+                    {chatMessages.map((msg, i) => (
+                      <div key={i} className="text-[10px]">
+                        <span className="font-bold text-chess-green">{msg.username}: </span>
+                        <span className="text-slate-300">{msg.message}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
         </div>
       </div>
+
+      {drawOfferReceived && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm animate-fade-in">
+          <div className="bg-navy-800 border border-navy-700/50 rounded-none shadow-2xl p-4 max-w-sm w-full animate-scale-in">
+            <div className="text-center">
+              <div className="text-4xl mb-2">🤝</div>
+              <h3 className="text-base font-bold text-white mb-1">Draw Offered</h3>
+              <p className="text-xs text-slate-400 mb-4">Your opponent offers a draw. Entry fee refunded.</p>
+              <div className="flex gap-2">
+                <button onClick={() => handleDrawResponse(false)} className="btn-secondary rounded-none flex-1 text-xs">Decline</button>
+                <button onClick={() => handleDrawResponse(true)} className="btn-primary rounded-none flex-1 text-xs">Accept</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {resultData && (
         <ResultModal

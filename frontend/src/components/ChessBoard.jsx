@@ -103,6 +103,7 @@ export default function ChessBoard({
   const gameRef = useRef(new Chess());
   const containerRef = useRef(null);
   const readyEmitted = useRef(false);
+  const [boardSize, setBoardSize] = useState(360);
   const [whiteTime, setWhiteTime] = useState(30);
   const [blackTime, setBlackTime] = useState(30);
   const [selectedSquare, setSelectedSquare] = useState(null);
@@ -162,7 +163,20 @@ export default function ChessBoard({
     };
   }, [gameStatus]);
 
-  // ── Responsive board sizing (handled by container now) ──
+  // ── Responsive board sizing via ResizeObserver ──
+  useEffect(() => {
+    if (!containerRef.current) return;
+    const ro = new ResizeObserver((entries) => {
+      for (const entry of entries) {
+        const w = entry.contentRect.width;
+        if (w > 0) setBoardSize(Math.floor(w));
+      }
+    });
+    ro.observe(containerRef.current);
+    // Initial measurement
+    setBoardSize(Math.floor(containerRef.current.offsetWidth) || 360);
+    return () => ro.disconnect();
+  }, []);
 
   // ── Update chess.js when fen changes ──
   useEffect(() => {
@@ -543,15 +557,16 @@ export default function ChessBoard({
       )}
 
       {/* Board + Win Probability Bar */}
-      <div className="flex items-center gap-2 w-full max-w-[560px]">
-        {/* BUG 4 FIX: Only show WinProbabilityBar in review mode */}
-        {isReview && <WinProbabilityBar fen={fen} height={560} />}
+      <div className="flex items-center gap-2 w-full">
+        {/* Only show WinProbabilityBar in review mode */}
+        {isReview && <WinProbabilityBar fen={fen} height={boardSize} />}
 
-        <div className={`w-full aspect-square overflow-hidden shadow-2xl shadow-black/50 transition-all duration-300 relative ${
+        <div className={`w-full overflow-hidden shadow-2xl shadow-black/50 transition-all duration-300 relative ${
           !isMyTurn && !isSpectator && !isReview && gameStatus === 'playing' ? 'opacity-85' : ''
-        } ${boardShake ? 'board-shake' : ''}`}>
-          
-          {/* FEATURE 5: Username watermark during live game */}
+        } ${boardShake ? 'board-shake' : ''}`}
+          style={{ width: boardSize, height: boardSize, flexShrink: 0 }}
+        >
+          {/* Username watermark during live game */}
           {gameStatus === 'playing' && username && (
             <div className="absolute inset-0 z-10 pointer-events-none flex items-center justify-center" style={{ opacity: 0.04 }}>
               <p className="text-white text-2xl font-black rotate-[-30deg] select-none whitespace-nowrap">
@@ -566,6 +581,7 @@ export default function ChessBoard({
             onSquareClick={onSquareClick}
             onPieceDragBegin={onPieceDragBegin}
             boardOrientation={boardOrientation}
+            boardWidth={boardSize}
             customBoardStyle={{ borderRadius: '0px' }}
             customDarkSquareStyle={{ backgroundColor: theme.dark }}
             customLightSquareStyle={{ backgroundColor: theme.light }}
