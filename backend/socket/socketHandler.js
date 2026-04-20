@@ -143,6 +143,7 @@ module.exports = (io) => {
       if (sock2) sock2.join(contestId);
 
       // Emit matchStarted to room
+      console.log('[matchStarted] emitting to room:', contestId);
       io.to(contestId).emit('matchStarted', payload);
 
       // Also emit directly to each player's socket as a reliability fallback
