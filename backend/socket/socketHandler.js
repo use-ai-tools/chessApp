@@ -325,7 +325,7 @@ module.exports = (io) => {
 
         const chess = gameState.chess;
         // Check game end
-        if (chess.isCheckmate()) {
+        if (chess.in_checkmate()) {
           const loserColor = chess.turn();
           const winnerId = loserColor === 'w' ? contest.blackPlayer : contest.whitePlayer;
           const loserId = loserColor === 'w' ? contest.whitePlayer : contest.blackPlayer;
@@ -334,22 +334,22 @@ module.exports = (io) => {
           await endContest(contestId, winnerId, loserId, 'checkmate', gameState);
           return;
         }
-        if (chess.isStalemate()) {
+        if (chess.in_stalemate()) {
           io.to(contestId).emit('moveMade', { contestId, from, to, san: move.san, fen: chess.fen() });
           await contest.save(); await endContest(contestId, null, null, 'stalemate', gameState); return;
         }
-        if (chess.isThreefoldRepetition()) {
+        if (chess.in_threefold_repetition()) {
           io.to(contestId).emit('moveMade', { contestId, from, to, san: move.san, fen: chess.fen() });
           await contest.save(); await endContest(contestId, null, null, 'repetition', gameState); return;
         }
-        if (chess.isInsufficientMaterial()) {
+        if (chess.insufficient_material()) {
           io.to(contestId).emit('moveMade', { contestId, from, to, san: move.san, fen: chess.fen() });
           await contest.save(); await endContest(contestId, null, null, 'insufficient', gameState); return;
         }
 
         await contest.save();
         startMoveTimer(contestId, gameState);
-        io.to(contestId).emit('moveMade', { contestId, from, to, san: move.san, fen: chess.fen(), inCheck: chess.isCheck(), captured: move.captured || null });
+        io.to(contestId).emit('moveMade', { contestId, from, to, san: move.san, fen: chess.fen(), inCheck: chess.in_check(), captured: move.captured || null });
       } catch (err) { console.error('[makeMove]', err); }
     });
 
