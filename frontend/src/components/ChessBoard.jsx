@@ -614,12 +614,6 @@ export default function ChessBoard({
         {isSpectator && <div className="badge-purple rounded-none"><span>👁️</span> Spectating</div>}
         {spectatorCount > 0 && <div className="badge-blue rounded-none"><span>👁</span> {spectatorCount} watching</div>}
         <div className="flex gap-1 ml-auto">
-          {Object.entries(BOARD_THEMES).map(([key, t]) => (
-            <button key={key} onClick={() => setBoardTheme(key)} title={t.label}
-              className={`w-6 h-6 rounded-none border-2 transition-all ${boardTheme === key ? 'border-chess-green scale-110' : 'border-transparent opacity-60 hover:opacity-100'}`}
-              style={{ background: `linear-gradient(135deg, ${t.light} 50%, ${t.dark} 50%)` }}
-            />
-          ))}
         </div>
       </div>
     </div>

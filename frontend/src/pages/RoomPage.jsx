@@ -314,7 +314,7 @@ export default function RoomPage() {
   const handleMove = ({ from, to, promotion }) => {
     if (!matchDataRef.current || !currentPlayerColor) return;
     if (previewIndex !== -1) { setPreviewIndex(-1); return; }
-    const chess = chessRef.current;
+    const chess = new Chess(fen);
     const turn = chess.turn();
     if ((turn === 'w' && currentPlayerColor !== 'white') || (turn === 'b' && currentPlayerColor !== 'black')) {
       setStatus('Not your turn');
@@ -443,11 +443,11 @@ export default function RoomPage() {
           </div>
         </div>
 
-        {/* Main layout: board + sidebar always side by side */}
-        <div className="flex-1 flex flex-row gap-2 min-h-0 overflow-hidden">
-          {/* Board Column — square, constrained by viewport height */}
-          <div className="flex-shrink-0" style={{ width: 'min(50vw, calc(100vh - 140px))', height: 'min(50vw, calc(100vh - 140px))' }}>
-            <div className="relative w-full h-full" style={{ borderRadius: 0 }}>
+        {/* Main layout: board + sidebar */}
+        <div className="flex-1 flex flex-col lg:flex-row gap-4 lg:gap-8 min-h-0 overflow-y-auto lg:overflow-hidden justify-center items-center lg:items-start max-w-7xl mx-auto w-full pb-4">
+          {/* Board Column */}
+          <div className="flex flex-col gap-2 flex-shrink-0 w-full" style={{ maxWidth: 'min(100%, 75vh)', minWidth: 'min(100%, min(500px, 100vw - 16px))' }}>
+            <div className="w-full aspect-square relative" style={{ borderRadius: 0 }}>
               {matchDataRef.current ? (
                 <ChessBoard
                   roomId={contestId}
@@ -481,10 +481,45 @@ export default function RoomPage() {
                 </div>
               )}
             </div>
+
+            {/* Game controls: resign/draw/settings below board */}
+            {currentPlayerColor && gameStatus === 'playing' && (
+              <div className="flex flex-col gap-2 w-full mt-2">
+                <div className="flex gap-2">
+                  <button
+                    onClick={handleResign}
+                    className={`rounded-none flex-1 text-xs py-2 lg:py-3 font-bold transition-all ${
+                      confirmResign ? 'bg-red-600 text-white animate-pulse' : 'btn-secondary'
+                    }`}
+                  >
+                    🏳️ {confirmResign ? 'Confirm?' : 'Resign'}
+                  </button>
+                  <button
+                    onClick={handleDrawOffer}
+                    disabled={drawOfferPending}
+                    className="btn-secondary rounded-none flex-1 text-xs py-2 lg:py-3 font-bold"
+                  >
+                    🤝 {drawOfferPending ? 'Sent...' : 'Draw'}
+                  </button>
+                  <button
+                    onClick={() => setShowSettings(true)}
+                    className="btn-secondary rounded-none flex-1 text-xs py-2 lg:py-3 font-bold"
+                  >
+                    ⚙️ Settings
+                  </button>
+                </div>
+                {confirmResign && (
+                  <div className="flex gap-2">
+                    <button onClick={() => setConfirmResign(false)} className="flex-1 py-2 rounded-none bg-navy-700 text-slate-300 text-xs font-medium">Cancel</button>
+                    <button onClick={handleResign} className="flex-1 py-2 rounded-none bg-red-600 text-white text-xs font-bold">Yes, Resign</button>
+                  </div>
+                )}
+              </div>
+            )}
           </div>
 
           {/* Sidebar: everything to the right of board */}
-          <div className="flex-1 min-w-0 flex flex-col gap-1 overflow-y-auto overflow-x-hidden min-h-0">
+          <div className="flex-1 w-full lg:max-w-sm flex flex-col gap-2 overflow-y-auto lg:overflow-hidden min-h-0">
             {/* Players + Contest Info row */}
             <div className="flex gap-1 flex-shrink-0">
               {(whitePlayer || blackPlayer) && (
@@ -502,55 +537,26 @@ export default function RoomPage() {
               )}
               {contestType && (
                 <div className="flex-1 bg-navy-800/60 border border-navy-700/50 p-1.5 flex flex-col justify-center gap-0.5">
-                  <div className="flex justify-between text-[10px]"><span className="text-slate-500">Entry</span><span className="text-white font-bold">₹{contestType.entry}</span></div>
-                  <div className="flex justify-between text-[10px]"><span className="text-slate-500">Prize</span><span className="text-chess-green font-bold">₹{contestType.payout}</span></div>
+                  <div className="flex justify-between text-[10px] lg:text-xs"><span className="text-slate-500">Entry</span><span className="text-white font-bold">₹{contestType.entry}</span></div>
+                  <div className="flex justify-between text-[10px] lg:text-xs"><span className="text-slate-500">Prize</span><span className="text-chess-green font-bold">₹{contestType.payout}</span></div>
                 </div>
               )}
             </div>
 
             {/* Move history */}
             {matchDataRef.current && (
-              <div className="flex-shrink-0 max-h-[22vh] lg:max-h-[250px] overflow-hidden">
+              <div className="flex-shrink-0 max-h-[22vh] lg:max-h-full lg:flex-1 overflow-hidden flex flex-col">
                 <MoveHistory moves={moveHistory} currentIndex={previewIndex} onClickMove={setPreviewIndex} />
               </div>
             )}
 
-            {/* Game controls: resign/draw/settings + chat */}
+            {/* Chat */}
             {currentPlayerColor && gameStatus === 'playing' && (
-              <div className="flex flex-col gap-1 flex-shrink-0">
-                <div className="flex gap-1">
-                  <button
-                    onClick={handleResign}
-                    className={`rounded-none flex-1 text-[10px] py-1.5 font-bold transition-all ${
-                      confirmResign ? 'bg-red-600 text-white animate-pulse' : 'btn-secondary'
-                    }`}
-                  >
-                    🏳️ {confirmResign ? 'Confirm?' : 'Resign'}
-                  </button>
-                  <button
-                    onClick={handleDrawOffer}
-                    disabled={drawOfferPending}
-                    className="btn-secondary rounded-none flex-1 text-[10px] py-1.5 font-bold"
-                  >
-                    🤝 {drawOfferPending ? 'Sent...' : 'Draw'}
-                  </button>
-                  <button
-                    onClick={() => setShowSettings(true)}
-                    className="btn-secondary rounded-none flex-1 text-[10px] py-1.5 font-bold"
-                  >
-                    ⚙️
-                  </button>
-                </div>
-                {confirmResign && (
-                  <div className="flex gap-1">
-                    <button onClick={() => setConfirmResign(false)} className="flex-1 py-1 rounded-none bg-navy-700 text-slate-300 text-[10px] font-medium">Cancel</button>
-                    <button onClick={handleResign} className="flex-1 py-1 rounded-none bg-red-600 text-white text-[10px] font-bold">Yes, Resign</button>
-                  </div>
-                )}
+              <div className="flex flex-col gap-1 flex-shrink-0 mt-auto">
                 {/* Quick Chat */}
                 <div className="bg-navy-800/60 border border-navy-700/50">
                   <select
-                    className="w-full bg-navy-900 border-b border-navy-700 text-[10px] rounded-none px-2 py-1.5 text-white outline-none"
+                    className="w-full bg-navy-900 border-b border-navy-700 text-xs rounded-none px-2 py-2 text-white outline-none"
                     onChange={(e) => {
                       if (e.target.value) {
                         socketRef.current?.emit('matchChat', { contestId, message: e.target.value, username: user.username });
@@ -566,9 +572,9 @@ export default function RoomPage() {
                     <option value="Nice move!">Nice move!</option>
                     <option value="You got lucky 😄">You got lucky 😄</option>
                   </select>
-                  <div ref={chatRef} className="max-h-[12vh] overflow-y-auto p-1 space-y-0.5">
+                  <div ref={chatRef} className="h-[15vh] lg:h-[200px] overflow-y-auto p-2 space-y-1">
                     {chatMessages.map((msg, i) => (
-                      <div key={i} className="text-[10px]">
+                      <div key={i} className="text-xs">
                         <span className="font-bold text-chess-green">{msg.username}: </span>
                         <span className="text-slate-300">{msg.message}</span>
                       </div>
