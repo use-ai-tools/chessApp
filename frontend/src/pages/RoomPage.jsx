@@ -211,8 +211,13 @@ export default function RoomPage() {
 
     socket.on('matchStarted', (data) => {
       console.log('[RoomPage] matchStarted received:', data);
-      console.log('[RoomPage] player color:', data.whitePlayer?.id === user?.id ? 'white' : 'black');
       setupMatch(data);
+      if (data.color) {
+        setCurrentPlayerColor(data.color);
+        setBoardOrientation(data.color);
+        setGameStatus('playing');
+        setStatus('Match in progress');
+      }
     });
 
     // Fallback: game-start event with direct color assignment
@@ -418,9 +423,9 @@ export default function RoomPage() {
   }
 
   return (
-    <div className="h-[calc(100vh-64px)] bg-hero flex flex-col overflow-hidden">
+    <div className="h-[calc(100vh-64px)] bg-hero flex flex-col">
       <style>{`button[title="Flip Board"] { display: none !important; }`}</style>
-      <div className="flex-1 flex flex-col overflow-hidden px-2 py-2 lg:px-4 lg:py-4">
+      <div className="flex-1 flex flex-col px-2 py-2 lg:px-4 lg:py-4">
         {/* Header */}
         <div className="flex items-center justify-between gap-2 mb-2 flex-shrink-0">
           <div className="flex items-center gap-2">
@@ -444,10 +449,10 @@ export default function RoomPage() {
         </div>
 
         {/* Main layout: board + sidebar */}
-        <div className="flex-1 flex flex-col lg:flex-row gap-4 lg:gap-8 min-h-0 overflow-y-auto lg:overflow-hidden justify-center items-center lg:items-start max-w-7xl mx-auto w-full pb-4">
+        <div className="flex-1 flex flex-col lg:flex-row gap-4 lg:gap-8 min-h-0 justify-center items-center max-w-7xl mx-auto w-full pb-4">
           {/* Board Column */}
-          <div className="flex flex-col gap-2 flex-shrink-0 w-full" style={{ maxWidth: 'min(100%, 75vh)', minWidth: 'min(100%, min(500px, 100vw - 16px))' }}>
-            <div className="w-full aspect-square relative" style={{ borderRadius: 0 }}>
+          <div className="flex flex-col gap-2 flex-shrink-0 items-center justify-center" style={{ width: '100%', maxWidth: 'calc(100vh - 120px)' }}>
+            <div className="w-full h-auto aspect-square relative items-center justify-center" style={{ maxHeight: 'calc(100vh - 120px)', borderRadius: 0 }}>
               {matchDataRef.current ? (
                 <ChessBoard
                   roomId={contestId}
