@@ -323,18 +323,33 @@ module.exports = (io) => {
           socket.emit('walletUpdate', { wallet: user.wallet });
         }
 
-        // Atomically find an open contest and add the player
-        const contest = await Contest.findOneAndUpdate(
-          { contestType: contestTypeId, status: 'open', 'players.1': { $exists: false } },
+        // 1. Try to find a room with exactly 1 player waiting
+        let contest = await Contest.findOneAndUpdate(
+          { contestType: contestTypeId, status: 'open', 'players.0': { $exists: true }, 'players.1': { $exists: false } },
           { $push: { players: userId } },
-          { new: true, sort: { createdAt: 1, _id: 1 } }
+          { new: true, sort: { createdAt: 1 } }
         ).populate('contestType');
 
+        // 2. Try to find an empty room
         if (!contest) {
-          // Refund — no open slot found
-          if (ct.entry > 0) { user.wallet += ct.entry; await user.save(); }
-          return socket.emit('contestError', { message: 'No open contests available. Try again.' });
+          contest = await Contest.findOneAndUpdate(
+            { contestType: contestTypeId, status: 'open', 'players.0': { $exists: false } },
+            { $push: { players: userId } },
+            { new: true, sort: { createdAt: 1 } }
+          ).populate('contestType');
         }
+
+        // 3. Fallback: Create a new room
+        if (!contest) {
+          contest = await Contest.create({
+            contestType: contestTypeId,
+            status: 'open',
+            players: [userId]
+          });
+          contest = await contest.populate('contestType');
+        }
+
+        console.log("ROOM:", contest._id.toString(), contest.players.length);
 
         console.log(`[join] ${user.username} → ${ct.name} (${contest.players.length}/2) | ${contest._id}`);
         io.emit('contestUpdated', { contestTypeId: contestTypeId.toString(), players: contest.players.length });
