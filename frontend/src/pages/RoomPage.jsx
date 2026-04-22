@@ -330,6 +330,16 @@ export default function RoomPage() {
       setStatus('Not your turn');
       return;
     }
+
+    // Optimistic UI Update
+    try {
+      const move = chess.move({ from, to, promotion: promotion || 'q' });
+      if (move) {
+        setFen(chess.fen());
+        setLastMove({ from, to });
+      }
+    } catch(e) {}
+
     socketRef.current?.emit('makeMove', {
       contestId, from, to, promotion, playerId: user.id,
     });

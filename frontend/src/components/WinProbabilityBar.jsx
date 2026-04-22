@@ -1,10 +1,19 @@
 import React, { useMemo } from 'react';
+import { Chess } from 'chess.js';
 
 const PIECE_VALUES = { p: 1, n: 3, b: 3, r: 5, q: 9 };
 
 export default function WinProbabilityBar({ fen, height = 300 }) {
-  const { whitePercent, advantage } = useMemo(() => {
+  const { whitePercent, advantage, isMate, winner } = useMemo(() => {
     if (!fen) return { whitePercent: 50, advantage: 0 };
+    
+    try {
+      const chess = new Chess(fen);
+      if (chess.isCheckmate()) {
+        const winner = chess.turn() === 'b' ? 'w' : 'b';
+        return { whitePercent: winner === 'w' ? 100 : 0, advantage: winner === 'w' ? 99 : -99, isMate: true, winner };
+      }
+    } catch(e) {}
     
     const boardPart = fen.split(' ')[0];
     let white = 0, black = 0;
