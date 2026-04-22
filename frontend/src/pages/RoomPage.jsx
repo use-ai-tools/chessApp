@@ -223,31 +223,12 @@ export default function RoomPage() {
 
     socket.on('matchStarted', (data) => {
       console.log('[Socket] matchStarted RECEIVED:', data);
-
-      setGameStatus('playing');
-      setStatus('Match in progress');
-
-      if (data.fen) setFen(data.fen);
-      if (data.players) setPlayers(data.players);
-      
-      const myColor = data.color || (data.whitePlayer?.id === userId ? 'white' : data.blackPlayer?.id === userId ? 'black' : null);
-      if (myColor) {
-        setCurrentPlayerColor(myColor);
-        setBoardOrientation(myColor);
-      }
+      setupMatch(data);
     });
     
     socket.on('gameState', (data) => {
       console.log('[Socket] gameState RECEIVED:', data);
-      setGameStatus(data.status === 'playing' ? 'playing' : data.status === 'completed' ? 'finished' : 'waiting');
-      if (data.status === 'playing') setStatus('Match in progress');
-      if (data.fen) setFen(data.fen);
-      
-      const myColor = data.color || (data.whitePlayer?.id === userId ? 'white' : data.blackPlayer?.id === userId ? 'black' : null);
-      if (myColor) {
-        setCurrentPlayerColor(myColor);
-        setBoardOrientation(myColor);
-      }
+      setupMatch(data);
     });
 
     // Fallback: game-start event with direct color assignment

@@ -146,11 +146,20 @@ module.exports = (io) => {
       // Emit matchStarted to room
       console.log('[matchStarted] emitting to room:', contestId);
       io.to(contestId).emit('matchStarted', payload);
+      
+      const gameStatePayload = { ...payload, status: 'playing' };
+      io.to(contestId).emit('gameState', gameStatePayload);
 
       // Also emit directly to each player's socket as a reliability fallback
       // (handles race condition where socket hasn't joined room yet)
-      if (sock1) sock1.emit('matchStarted', payload);
-      if (sock2) sock2.emit('matchStarted', payload);
+      if (sock1) {
+        sock1.emit('matchStarted', payload);
+        sock1.emit('gameState', gameStatePayload);
+      }
+      if (sock2) {
+        sock2.emit('matchStarted', payload);
+        sock2.emit('gameState', gameStatePayload);
+      }
 
       // Emit game-start with color assignment to each player individually
       if (sock1) sock1.emit('game-start', { color: p1 === whiteId ? 'white' : 'black', contestId });
