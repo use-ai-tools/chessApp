@@ -200,33 +200,53 @@ export default function RoomPage() {
     socket.off('playerRole');
 
     socket.on('connect', () => {
+      console.log('[Socket] Connected!', socket.id);
       if (userId) {
         socket.emit('identify', { userId });
         socket.emit('joinRoom', { roomId: contestId, userId });
+        socket.emit('getContestState', { contestId });
       }
     });
 
     if (socket.connected && userId) {
+      console.log('[Socket] Already connected, joining...', socket.id);
       socket.emit('identify', { userId });
       socket.emit('joinRoom', { roomId: contestId, userId });
+      socket.emit('getContestState', { contestId });
     }
 
     socket.on('playerRole', (role) => {
+      console.log('[Socket] playerRole:', role);
       setCurrentPlayerColor(role);
       setBoardOrientation(role);
     });
 
     socket.on('matchStarted', (data) => {
-      console.log('MATCH STARTED RECEIVED', data);
+      console.log('[Socket] matchStarted RECEIVED:', data);
 
       setGameStatus('playing');
       setStatus('Match in progress');
 
       if (data.fen) setFen(data.fen);
       if (data.players) setPlayers(data.players);
-      if (data.color) {
-        setCurrentPlayerColor(data.color);
-        setBoardOrientation(data.color);
+      
+      const myColor = data.color || (data.whitePlayer?.id === userId ? 'white' : data.blackPlayer?.id === userId ? 'black' : null);
+      if (myColor) {
+        setCurrentPlayerColor(myColor);
+        setBoardOrientation(myColor);
+      }
+    });
+    
+    socket.on('gameState', (data) => {
+      console.log('[Socket] gameState RECEIVED:', data);
+      setGameStatus(data.status === 'playing' ? 'playing' : data.status === 'completed' ? 'finished' : 'waiting');
+      if (data.status === 'playing') setStatus('Match in progress');
+      if (data.fen) setFen(data.fen);
+      
+      const myColor = data.color || (data.whitePlayer?.id === userId ? 'white' : data.blackPlayer?.id === userId ? 'black' : null);
+      if (myColor) {
+        setCurrentPlayerColor(myColor);
+        setBoardOrientation(myColor);
       }
     });
 

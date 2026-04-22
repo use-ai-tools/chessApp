@@ -236,6 +236,30 @@ module.exports = (io) => {
       } catch (err) { console.error('[joinRoom]', err); }
     });
 
+    socket.on('getContestState', async ({ contestId }) => {
+      try {
+        const contest = await Contest.findById(contestId).populate('players contestType');
+        if (!contest) return;
+        const gameState = games.get(contestId);
+        
+        const whiteId = contest.whitePlayer?.toString();
+        const blackId = contest.blackPlayer?.toString();
+        const whitePl = contest.players.find(p => p._id.toString() === whiteId);
+        const blackPl = contest.players.find(p => p._id.toString() === blackId);
+
+        socket.emit('gameState', {
+          roomId: contest._id.toString(),
+          contestId: contest._id.toString(),
+          fen: gameState ? gameState.chess.fen() : (contest.fen || 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1'),
+          whitePlayer: { id: whiteId, username: whitePl?.username, elo: whitePl?.elo?.free },
+          blackPlayer: { id: blackId, username: blackPl?.username, elo: blackPl?.elo?.free },
+          contestType: contest.contestType,
+          moves: (contest.moves || []).map(m => m.san).filter(Boolean),
+          status: contest.status
+        });
+      } catch (err) { console.error('[getContestState]', err); }
+    });
+
     // ═══════════════════════════════════════════════
     // SIMPLE JOIN CONTEST
     // User sends contestTypeId → we find an open contest → add player → if 2 → start
