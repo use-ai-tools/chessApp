@@ -204,7 +204,6 @@ export default function RoomPage() {
       if (userId) {
         socket.emit('identify', { userId });
         socket.emit('joinRoom', { roomId: contestId, userId });
-        socket.emit('getContestState', { contestId });
       }
     });
 
@@ -212,8 +211,12 @@ export default function RoomPage() {
       console.log('[Socket] Already connected, joining...', socket.id);
       socket.emit('identify', { userId });
       socket.emit('joinRoom', { roomId: contestId, userId });
-      socket.emit('getContestState', { contestId });
     }
+
+    socket.on('joinedRoom', () => {
+      console.log('[Socket] joinedRoom received. Requesting state...');
+      socket.emit('getMatchState', { contestId });
+    });
 
     socket.on('playerRole', (role) => {
       console.log('[Socket] playerRole:', role);
@@ -221,25 +224,11 @@ export default function RoomPage() {
       setBoardOrientation(role);
     });
 
-    socket.on('matchStarted', (data) => {
-      console.log('[Socket] matchStarted RECEIVED:', data);
+    socket.on('matchState', (data) => {
+      console.log('[Socket] matchState RECEIVED:', data);
+      setGameStatus(data.status === 'playing' ? 'playing' : data.status === 'completed' ? 'finished' : 'waiting');
+      if (data.status === 'playing') setStatus('Match in progress');
       setupMatch(data);
-    });
-    
-    socket.on('gameState', (data) => {
-      console.log('[Socket] gameState RECEIVED:', data);
-      setupMatch(data);
-    });
-
-    // Fallback: game-start event with direct color assignment
-    socket.on('game-start', (data) => {
-      console.log('[RoomPage] game-start received:', data);
-      if (data.contestId === contestId && !currentPlayerColor) {
-        setCurrentPlayerColor(data.color);
-        setBoardOrientation(data.color);
-        setGameStatus('playing');
-        setStatus('Match in progress');
-      }
     });
 
     socket.on('gameReady', ({ contestId: cid }) => {

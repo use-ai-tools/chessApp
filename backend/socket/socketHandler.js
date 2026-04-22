@@ -143,23 +143,12 @@ module.exports = (io) => {
       if (sock1) sock1.join(contestId);
       if (sock2) sock2.join(contestId);
 
-      // Emit matchStarted to room
+      // Emit matchStarted to room for backwards compatibility (like Lobby navigation)
       console.log('[matchStarted] emitting to room:', contestId);
       io.to(contestId).emit('matchStarted', payload);
       
-      const gameStatePayload = { ...payload, status: 'playing' };
-      io.to(contestId).emit('gameState', gameStatePayload);
-
-      // Also emit directly to each player's socket as a reliability fallback
-      // (handles race condition where socket hasn't joined room yet)
-      if (sock1) {
-        sock1.emit('matchStarted', payload);
-        sock1.emit('gameState', gameStatePayload);
-      }
-      if (sock2) {
-        sock2.emit('matchStarted', payload);
-        sock2.emit('gameState', gameStatePayload);
-      }
+      const matchStatePayload = { ...payload, status: 'playing', players: [whiteId, blackId], turn: chess.turn() };
+      io.to(contestId).emit('matchState', matchStatePayload);
 
       // Emit game-start with color assignment to each player individually
       if (sock1) sock1.emit('game-start', { color: p1 === whiteId ? 'white' : 'black', contestId });
@@ -188,6 +177,7 @@ module.exports = (io) => {
     socket.on('joinRoom', async ({ roomId, userId }) => {
       socket.join(roomId);
       if (userId) userSockets.set(userId, socket.id);
+      socket.emit('joinedRoom', { roomId });
 
       if (!rooms.has(roomId)) {
         rooms.set(roomId, {
@@ -245,7 +235,7 @@ module.exports = (io) => {
       } catch (err) { console.error('[joinRoom]', err); }
     });
 
-    socket.on('getContestState', async ({ contestId }) => {
+    socket.on('getMatchState', async ({ contestId }) => {
       try {
         const contest = await Contest.findById(contestId).populate('players contestType');
         if (!contest) return;
@@ -256,17 +246,19 @@ module.exports = (io) => {
         const whitePl = contest.players.find(p => p._id.toString() === whiteId);
         const blackPl = contest.players.find(p => p._id.toString() === blackId);
 
-        socket.emit('gameState', {
+        io.to(contestId).emit('matchState', {
           roomId: contest._id.toString(),
           contestId: contest._id.toString(),
           fen: gameState ? gameState.chess.fen() : (contest.fen || 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1'),
+          turn: gameState ? gameState.chess.turn() : 'w',
           whitePlayer: { id: whiteId, username: whitePl?.username, elo: whitePl?.elo?.free },
           blackPlayer: { id: blackId, username: blackPl?.username, elo: blackPl?.elo?.free },
           contestType: contest.contestType,
           moves: (contest.moves || []).map(m => m.san).filter(Boolean),
-          status: contest.status
+          status: contest.status,
+          players: contest.players.map(p => p._id.toString())
         });
-      } catch (err) { console.error('[getContestState]', err); }
+      } catch (err) { console.error('[getMatchState]', err); }
     });
 
     // ═══════════════════════════════════════════════
