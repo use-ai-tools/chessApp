@@ -41,6 +41,7 @@ export default function RoomPage() {
   const [lastMove, setLastMove] = useState(null);
   const [showGameReview, setShowGameReview] = useState(false);
   const [reviewData, setReviewData] = useState(null);
+  const [players, setPlayers] = useState([]);
   const [showSettings, setShowSettings] = useState(false);
   const [contestType, setContestType] = useState(null);
   const [chatMessages, setChatMessages] = useState([]);
@@ -179,7 +180,7 @@ export default function RoomPage() {
     if (isTournament) fetchBracket();
 
     if (!socketRef.current || !socketRef.current.connected) {
-      socketRef.current = io(SOCKET_URL, { reconnection: true, reconnectionAttempts: Infinity, reconnectionDelay: 1000 });
+      socketRef.current = io(SOCKET_URL, { reconnection: true, reconnectionAttempts: Infinity, reconnectionDelay: 1000, transports: ['websocket'], timeout: 60000 });
     }
     const socket = socketRef.current;
 
@@ -196,6 +197,7 @@ export default function RoomPage() {
     socket.off('matchChat');
     socket.off('forceLogout');
     socket.off('connect');
+    socket.off('playerRole');
 
     socket.on('connect', () => {
       if (userId) {
@@ -209,14 +211,22 @@ export default function RoomPage() {
       socket.emit('joinRoom', { roomId: contestId, userId });
     }
 
+    socket.on('playerRole', (role) => {
+      setCurrentPlayerColor(role);
+      setBoardOrientation(role);
+    });
+
     socket.on('matchStarted', (data) => {
-      console.log('[RoomPage] matchStarted received:', data);
-      setupMatch(data);
+      console.log('MATCH STARTED RECEIVED', data);
+
+      setGameStatus('playing');
+      setStatus('Match in progress');
+
+      if (data.fen) setFen(data.fen);
+      if (data.players) setPlayers(data.players);
       if (data.color) {
         setCurrentPlayerColor(data.color);
         setBoardOrientation(data.color);
-        setGameStatus('playing');
-        setStatus('Match in progress');
       }
     });
 
@@ -306,6 +316,7 @@ export default function RoomPage() {
       socket.off('disconnect');
       socket.off('connect');
       socket.off('errorMsg');
+      socket.off('playerRole');
     };
   }, [contestId, user?.id]);
 
@@ -404,7 +415,7 @@ export default function RoomPage() {
                 if (socketRef.current?.connected) {
                   socketRef.current.emit('joinRoom', { roomId: contestId, userId: user.id });
                 } else {
-                  socketRef.current = io(SOCKET_URL, { reconnection: true });
+                  socketRef.current = io(SOCKET_URL, { reconnection: true, transports: ['websocket'], timeout: 60000 });
                   socketRef.current.on('connect', () => {
                     socketRef.current.emit('identify', { userId: user.id });
                     socketRef.current.emit('joinRoom', { roomId: contestId, userId: user.id });

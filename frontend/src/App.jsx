@@ -37,12 +37,12 @@ function AppContent() {
   const isAuthPage = location.pathname === '/login' || location.pathname === '/signup' || location.pathname === '/admin/login';
   const { user } = useContext(AuthContext);
 
-  // Backend wake-up ping every 14 min
+  // Backend wake-up ping every 4 min
   useEffect(() => {
     const interval = setInterval(() => {
       fetch('https://chessapp-6tb1.onrender.com/ping')
         .catch(() => {});
-    }, 840000); // 14 min
+    }, 240000); // 4 min
     return () => clearInterval(interval);
   }, []);
 

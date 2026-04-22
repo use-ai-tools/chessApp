@@ -13,6 +13,7 @@ const Room = require('../models/Room');
 const games = new Map();         // contestId -> Chess instance + metadata
 const userSockets = new Map();   // userId -> socketId
 const moveTimers = new Map();    // contestId -> setTimeout handle
+const rooms = new Map();         // roomId -> { players: [], game: new Chess(), started: false }
 const MOVE_TIMEOUT_MS = 30000;
 
 module.exports = (io) => {
@@ -177,8 +178,37 @@ module.exports = (io) => {
     // ── JOIN ROOM (reconnection support) ──
     socket.on('joinRoom', async ({ roomId, userId }) => {
       socket.join(roomId);
-      // Update userSockets mapping in case it was lost
       if (userId) userSockets.set(userId, socket.id);
+
+      if (!rooms.has(roomId)) {
+        rooms.set(roomId, {
+          players: [],
+          game: new Chess(),
+          started: false
+        });
+      }
+
+      const room = rooms.get(roomId);
+
+      if (userId && !room.players.includes(userId) && room.players.length < 2) {
+        room.players.push(userId);
+      }
+
+      const assignedColor = room.players[0] === userId ? "white" : "black";
+      socket.emit("playerRole", assignedColor);
+
+      console.log("JOIN:", roomId, room.players.length);
+
+      if (room.players.length === 2 && !room.started) {
+        room.started = true;
+        io.to(roomId).emit("matchStarted", {
+          roomId,
+          players: room.players,
+          fen: room.game.fen()
+        });
+        console.log("MATCH STARTED:", roomId, room.players);
+      }
+
       try {
         const contest = await Contest.findById(roomId).populate('players').populate('contestType');
         if (!contest) return;

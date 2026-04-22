@@ -22,7 +22,7 @@ export default function Lobby() {
     const iv = setInterval(fetchContests, 5000);
     
     // Setup socket
-    socketRef.current = io(SOCKET_URL);
+    socketRef.current = io(SOCKET_URL, { reconnection: true, transports: ['websocket'], timeout: 60000 });
     const socket = socketRef.current;
 
     if (user?.id) {

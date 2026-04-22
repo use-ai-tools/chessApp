@@ -15,7 +15,7 @@ export default function PingIndicator({ customSocket }) {
 
     if (!socket) {
       if (!globalSocket) {
-        globalSocket = io(SOCKET_URL, { reconnection: true, transports: ['websocket', 'polling'] });
+        globalSocket = io(SOCKET_URL, { reconnection: true, transports: ['websocket'], timeout: 60000 });
       }
       socket = globalSocket;
       isInternalSocket = true;
