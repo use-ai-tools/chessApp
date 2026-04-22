@@ -13,7 +13,6 @@ const Room = require('../models/Room');
 const games = new Map();         // contestId -> Chess instance + metadata
 const userSockets = new Map();   // userId -> socketId
 const moveTimers = new Map();    // contestId -> setTimeout handle
-const rooms = new Map();         // roomId -> { players: [], game: new Chess(), started: false }
 const matchStates = new Map();   // contestId -> full match state for quick sync
 const MOVE_TIMEOUT_MS = 30000;
 
@@ -181,61 +180,7 @@ module.exports = (io) => {
       socket.join(roomId);
       if (userId) userSockets.set(userId, socket.id);
       socket.emit('joinedRoom', { roomId });
-
-      if (!rooms.has(roomId)) {
-        rooms.set(roomId, {
-          players: [],
-          game: new Chess(),
-          started: false
-        });
-      }
-
-      const room = rooms.get(roomId);
-
-      if (userId && !room.players.includes(userId) && room.players.length < 2) {
-        room.players.push(userId);
-      }
-
-      const assignedColor = room.players[0] === userId ? "white" : "black";
-      socket.emit("playerRole", assignedColor);
-
-      console.log("JOIN:", roomId, room.players.length);
-
-      if (room.players.length === 2 && !room.started) {
-        room.started = true;
-        io.to(roomId).emit("matchStarted", {
-          roomId,
-          players: room.players,
-          fen: room.game.fen()
-        });
-        console.log("MATCH STARTED:", roomId, room.players);
-      }
-
-      try {
-        const contest = await Contest.findById(roomId).populate('players').populate('contestType');
-        if (!contest) return;
-        if ((contest.status === 'playing' || contest.status === 'completed') && contest.players.length >= 2) {
-          const gameState = games.get(roomId);
-          // Properly map white/black player usernames by matching IDs
-          const whiteId = contest.whitePlayer?.toString();
-          const blackId = contest.blackPlayer?.toString();
-          const whitePl = contest.players.find(p => p._id.toString() === whiteId);
-          const blackPl = contest.players.find(p => p._id.toString() === blackId);
-
-          const payload = {
-            roomId: contest._id.toString(),
-            contestId: contest._id.toString(),
-            fen: gameState ? gameState.chess.fen() : (contest.fen || 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1'),
-            whitePlayer: { id: whiteId, username: whitePl?.username || 'Player', elo: whitePl?.elo?.free || 1200 },
-            blackPlayer: { id: blackId, username: blackPl?.username || 'Player', elo: blackPl?.elo?.free || 1200 },
-            contestType: contest.contestType,
-            moves: (contest.moves || []).map(m => m.san).filter(Boolean),
-          };
-
-          io.to(roomId).emit('matchStarted', payload);
-          console.log(`[joinRoom] Re-emitted matchStarted to room ${roomId} (triggered by ${userId})`);
-        }
-      } catch (err) { console.error('[joinRoom]', err); }
+      console.log(`[joinRoom] socket ${socket.id} joined room ${roomId}`);
     });
 
     socket.on('getMatchState', async ({ contestId }) => {
