@@ -2,13 +2,14 @@ import React, { useEffect, useState } from 'react';
 import { playSound } from './ChessBoard';
 
 const CLASS_CONFIG = {
-  brilliant: { color: 'text-cyan-400', bg: 'bg-cyan-500/15' },
-  best:      { color: 'text-emerald-400', bg: 'bg-emerald-500/15' },
-  excellent: { color: 'text-green-400', bg: 'bg-green-500/15' },
-  good:      { color: 'text-slate-400', bg: 'bg-slate-500/15' },
-  inaccuracy:{ color: 'text-yellow-400', bg: 'bg-yellow-500/15' },
-  mistake:   { color: 'text-orange-400', bg: 'bg-orange-500/15' },
-  blunder:   { color: 'text-red-400', bg: 'bg-red-500/15' },
+  brilliant: { icon: '‼', label: 'Brilliant', color: 'text-cyan-400', bg: 'bg-cyan-500/15', border: 'border-cyan-500/30' },
+  great:     { icon: '!', label: 'Great', color: 'text-blue-400', bg: 'bg-blue-500/15', border: 'border-blue-500/30' },
+  best:      { icon: '★', label: 'Best', color: 'text-emerald-400', bg: 'bg-emerald-500/15', border: 'border-emerald-500/30' },
+  excellent: { icon: '★', label: 'Excellent', color: 'text-green-400', bg: 'bg-green-500/15', border: 'border-green-500/30' },
+  good:      { icon: '●', label: 'Good', color: 'text-slate-400', bg: 'bg-slate-500/15', border: 'border-slate-500/30' },
+  inaccuracy:{ icon: '?!', label: 'Inaccuracy', color: 'text-yellow-400', bg: 'bg-yellow-500/15', border: 'border-yellow-500/30' },
+  mistake:   { icon: '?', label: 'Mistake', color: 'text-orange-400', bg: 'bg-orange-500/15', border: 'border-orange-500/30' },
+  blunder:   { icon: '??', label: 'Blunder', color: 'text-red-400', bg: 'bg-red-500/15', border: 'border-red-500/30' },
 };
 
 export default function ResultModal({ result, onClose, onBackToLobby, onPlayAgain, onGameReview }) {
@@ -80,20 +81,21 @@ export default function ResultModal({ result, onClose, onBackToLobby, onPlayAgai
             </div>
           )}
 
-          {/* Move Quality Summary */}
+          {/* Move Quality Summary - ONLY TOP 3 */}
           {mySummary && (
             <div className="mb-3">
               <div className="flex justify-center gap-1.5 flex-wrap">
                 {Object.entries(CLASS_CONFIG).map(([key, cfg]) => {
-                  const count = mySummary[key] || 0;
-                  if (count === 0 && ['excellent', 'good'].includes(key)) return null;
-                  return (
-                    <div key={key} className={`px-2 py-1 rounded-lg ${cfg.bg} flex items-center gap-1`}>
-                      <span className={`text-xs font-black ${cfg.color}`}>{count}</span>
-                      <span className="text-[9px] text-slate-400 capitalize">{key.slice(0, 4)}</span>
-                    </div>
-                  );
-                })}
+                  return { key, cfg, count: mySummary[key] || 0 };
+                })
+                .filter(item => item.count > 0 && !['good'].includes(item.key))
+                .slice(0, 3)
+                .map(({ key, cfg, count }) => (
+                  <div key={key} className={`px-2 py-1 rounded-lg ${cfg.bg} flex items-center gap-1`}>
+                    <span className={`text-xs font-black ${cfg.color}`}>{count}</span>
+                    <span className="text-[9px] text-slate-400 capitalize">{key.slice(0, 4)}</span>
+                  </div>
+                ))}
               </div>
             </div>
           )}

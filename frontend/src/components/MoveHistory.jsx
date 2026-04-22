@@ -9,10 +9,10 @@ export default function MoveHistory({
 }) {
   const scrollRef = useRef(null);
 
-  // Auto-scroll to bottom when new moves arrive
+  // Auto-scroll to right when new moves arrive
   useEffect(() => {
     if (scrollRef.current && currentIndex === -1) {
-      scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
+      scrollRef.current.scrollLeft = scrollRef.current.scrollWidth;
     }
   }, [moves.length, currentIndex]);
 
@@ -44,20 +44,20 @@ export default function MoveHistory({
         <span className="text-[10px] text-slate-600">{moves.length} moves</span>
       </div>
 
-      <div ref={scrollRef} className="move-history-panel">
+      <div ref={scrollRef} className="flex overflow-x-auto gap-2 pb-2 scrollbar-thin snap-x">
         {pairs.map((pair) => (
-          <div key={pair.number} className="move-pair">
-            <span className="move-number">{pair.number}.</span>
+          <div key={pair.number} className="flex items-center gap-1 flex-shrink-0 bg-navy-800/50 rounded px-2 py-1 snap-end">
+            <span className="text-slate-500 text-xs font-bold">{pair.number}.</span>
             <button
               onClick={() => onClickMove(pair.white.index)}
-              className={`move-cell white-move ${pair.white.index === activeIndex ? 'active' : ''}`}
+              className={`text-xs px-1.5 py-0.5 rounded transition-colors ${pair.white.index === activeIndex ? 'bg-white/20 text-white font-bold' : 'text-slate-300 hover:text-white hover:bg-white/10'}`}
             >
               {pair.white.san}
             </button>
             {pair.black && (
               <button
                 onClick={() => onClickMove(pair.black.index)}
-                className={`move-cell black-move ${pair.black.index === activeIndex ? 'active' : ''}`}
+                className={`text-xs px-1.5 py-0.5 rounded transition-colors ${pair.black.index === activeIndex ? 'bg-white/20 text-white font-bold' : 'text-slate-300 hover:text-white hover:bg-white/10'}`}
               >
                 {pair.black.san}
               </button>
