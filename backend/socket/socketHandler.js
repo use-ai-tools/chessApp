@@ -435,19 +435,23 @@ module.exports = (io) => {
       for (const [u, s] of userSockets.entries()) { if (s === socket.id) { uid = u; userSockets.delete(u); break; } }
       if (!uid) return;
 
-      // Refund from open contests
-      try {
-        const openContests = await Contest.find({ players: uid, status: 'open' }).populate('contestType');
-        for (const c of openContests) {
-          c.players = c.players.filter(p => p.toString() !== uid);
-          await c.save();
-          if (c.contestType?.entry > 0) {
-            await User.findByIdAndUpdate(uid, { $inc: { wallet: c.contestType.entry } });
-            await Transaction.create({ userId: uid, amount: c.contestType.entry, type: 'credit', reason: `Refund — disconnect`, status: 'completed' });
+      // Delay refund logic by 5 seconds to allow navigation reconnects
+      setTimeout(async () => {
+        if (userSockets.has(uid)) return; // User reconnected with a new socket
+
+        try {
+          const openContests = await Contest.find({ players: uid, status: 'open' }).populate('contestType');
+          for (const c of openContests) {
+            c.players = c.players.filter(p => p.toString() !== uid);
+            await c.save();
+            if (c.contestType?.entry > 0) {
+              await User.findByIdAndUpdate(uid, { $inc: { wallet: c.contestType.entry } });
+              await Transaction.create({ userId: uid, amount: c.contestType.entry, type: 'credit', reason: `Refund — disconnect`, status: 'completed' });
+            }
+            io.emit('contestUpdated', { contestTypeId: c.contestType?._id?.toString() });
           }
-          io.emit('contestUpdated', { contestTypeId: c.contestType?._id?.toString() });
-        }
-      } catch (e) { console.error('[disconnect refund]', e); }
+        } catch (e) { console.error('[disconnect refund]', e); }
+      }, 5000);
 
       // Active games — opponent wins after 15s
       for (const [cid, gs] of games) {
