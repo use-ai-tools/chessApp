@@ -16,7 +16,7 @@ const CLASS_CONFIG = {
 
 function createBadge(icon, color) {
   const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 32 32"><circle cx="16" cy="16" r="14" fill="${color}" stroke="#1e293b" stroke-width="2"/><text x="16" y="21" font-family="Arial" font-size="16" font-weight="bold" fill="white" text-anchor="middle">${icon}</text></svg>`;
-  return `url("data:image/svg+xml;utf8,\${encodeURIComponent(svg)}")`;
+  return `url("data:image/svg+xml;utf8,${encodeURIComponent(svg)}")`;
 }
 
 export default function GameReview({ moves, review, playerColor, onClose }) {
