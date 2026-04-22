@@ -14,6 +14,7 @@ const games = new Map();         // contestId -> Chess instance + metadata
 const userSockets = new Map();   // userId -> socketId
 const moveTimers = new Map();    // contestId -> setTimeout handle
 const rooms = new Map();         // roomId -> { players: [], game: new Chess(), started: false }
+const matchStates = new Map();   // contestId -> full match state for quick sync
 const MOVE_TIMEOUT_MS = 30000;
 
 module.exports = (io) => {
@@ -59,6 +60,7 @@ module.exports = (io) => {
 
       if (moveTimers.has(contestId)) { clearTimeout(moveTimers.get(contestId)); moveTimers.delete(contestId); }
       games.delete(contestId);
+      matchStates.delete(contestId);
 
       const winner = winnerId ? await User.findById(winnerId).select('username elo wallet').lean() : null;
       const loserUser = loserId ? await User.findById(loserId).select('username elo wallet').lean() : null;
@@ -148,6 +150,7 @@ module.exports = (io) => {
       io.to(contestId).emit('matchStarted', payload);
       
       const matchStatePayload = { ...payload, status: 'playing', players: [whiteId, blackId], turn: chess.turn() };
+      matchStates.set(contestId.toString(), matchStatePayload);
       io.to(contestId).emit('matchState', matchStatePayload);
 
       // Emit game-start with color assignment to each player individually
@@ -236,29 +239,48 @@ module.exports = (io) => {
     });
 
     socket.on('getMatchState', async ({ contestId }) => {
-      try {
-        const contest = await Contest.findById(contestId).populate('players contestType');
-        if (!contest) return;
-        const gameState = games.get(contestId);
-        
-        const whiteId = contest.whitePlayer?.toString();
-        const blackId = contest.blackPlayer?.toString();
-        const whitePl = contest.players.find(p => p._id.toString() === whiteId);
-        const blackPl = contest.players.find(p => p._id.toString() === blackId);
+      console.log("GET STATE:", contestId, matchStates.has(contestId.toString()) ? 'exists' : 'missing');
+      
+      if (matchStates.has(contestId.toString())) {
+        const state = matchStates.get(contestId.toString());
+        // sync fen and turn from live game
+        const gs = games.get(contestId.toString());
+        if (gs) {
+           state.fen = gs.chess.fen();
+           state.turn = gs.chess.turn();
+        }
+        console.log("EMIT STATE:", contestId);
+        socket.emit("matchState", state);
+      } else {
+        console.log("NO MATCH STATE for", contestId);
+        // Fallback for extreme cases
+        try {
+          const contest = await Contest.findById(contestId).populate('players contestType');
+          if (!contest) return;
+          const gameState = games.get(contestId);
+          
+          const whiteId = contest.whitePlayer?.toString();
+          const blackId = contest.blackPlayer?.toString();
+          const whitePl = contest.players.find(p => p._id.toString() === whiteId);
+          const blackPl = contest.players.find(p => p._id.toString() === blackId);
 
-        io.to(contestId).emit('matchState', {
-          roomId: contest._id.toString(),
-          contestId: contest._id.toString(),
-          fen: gameState ? gameState.chess.fen() : (contest.fen || 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1'),
-          turn: gameState ? gameState.chess.turn() : 'w',
-          whitePlayer: { id: whiteId, username: whitePl?.username, elo: whitePl?.elo?.free },
-          blackPlayer: { id: blackId, username: blackPl?.username, elo: blackPl?.elo?.free },
-          contestType: contest.contestType,
-          moves: (contest.moves || []).map(m => m.san).filter(Boolean),
-          status: contest.status,
-          players: contest.players.map(p => p._id.toString())
-        });
-      } catch (err) { console.error('[getMatchState]', err); }
+          const fallbackState = {
+            roomId: contest._id.toString(),
+            contestId: contest._id.toString(),
+            fen: gameState ? gameState.chess.fen() : (contest.fen || 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1'),
+            turn: gameState ? gameState.chess.turn() : 'w',
+            whitePlayer: { id: whiteId, username: whitePl?.username, elo: whitePl?.elo?.free },
+            blackPlayer: { id: blackId, username: blackPl?.username, elo: blackPl?.elo?.free },
+            contestType: contest.contestType,
+            moves: (contest.moves || []).map(m => m.san).filter(Boolean),
+            status: contest.status,
+            players: contest.players.map(p => p._id.toString())
+          };
+          matchStates.set(contestId.toString(), fallbackState);
+          console.log("EMIT STATE (fallback):", contestId);
+          socket.emit('matchState', fallbackState);
+        } catch (err) { console.error('[getMatchState]', err); }
+      }
     });
 
     // ═══════════════════════════════════════════════

@@ -42,6 +42,7 @@ export default function RoomPage() {
   const [showGameReview, setShowGameReview] = useState(false);
   const [reviewData, setReviewData] = useState(null);
   const [players, setPlayers] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
   const [showSettings, setShowSettings] = useState(false);
   const [contestType, setContestType] = useState(null);
   const [chatMessages, setChatMessages] = useState([]);
@@ -204,6 +205,7 @@ export default function RoomPage() {
       if (userId) {
         socket.emit('identify', { userId });
         socket.emit('joinRoom', { roomId: contestId, userId });
+        socket.emit('getMatchState', { contestId });
       }
     });
 
@@ -211,6 +213,7 @@ export default function RoomPage() {
       console.log('[Socket] Already connected, joining...', socket.id);
       socket.emit('identify', { userId });
       socket.emit('joinRoom', { roomId: contestId, userId });
+      socket.emit('getMatchState', { contestId });
     }
 
     socket.on('joinedRoom', () => {
@@ -228,6 +231,7 @@ export default function RoomPage() {
       console.log('[Socket] matchState RECEIVED:', data);
       setGameStatus(data.status === 'playing' ? 'playing' : data.status === 'completed' ? 'finished' : 'waiting');
       if (data.status === 'playing') setStatus('Match in progress');
+      setIsLoading(false);
       setupMatch(data);
     });
 
@@ -392,7 +396,7 @@ export default function RoomPage() {
     return () => clearTimeout(retryTimer);
   }, [currentPlayerColor, isSpectator, contestId, user?.id, retryCount]);
 
-  if (!currentPlayerColor && !isSpectator) {
+  if (!currentPlayerColor && !isSpectator && isLoading) {
     return (
       <div className="min-h-[calc(100vh-64px)] bg-hero flex items-center justify-center rounded-none">
         <div className="text-center">
@@ -409,6 +413,7 @@ export default function RoomPage() {
                   socketRef.current.on('connect', () => {
                     socketRef.current.emit('identify', { userId: user.id });
                     socketRef.current.emit('joinRoom', { roomId: contestId, userId: user.id });
+                    socketRef.current.emit('getMatchState', { contestId });
                   });
                 }
                 setRetryCount(0);
