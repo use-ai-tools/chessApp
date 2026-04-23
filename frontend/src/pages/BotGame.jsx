@@ -101,9 +101,9 @@ export default function BotGame() {
       setLastMove({ from, to });
       setMoveHistory(prev => [...prev, move.san]);
       setPreviewIndex(-1);
-      await evaluateAndClassify(chess.fen(), move.san);
       setBotThinking(false);
-      checkGameEnd(chess);
+      if (checkGameEnd(chess)) return;
+      evaluateAndClassify(chess.fen(), move.san);
     } catch (e) {
       setBotThinking(false);
     }
@@ -123,7 +123,7 @@ export default function BotGame() {
       setLastMove({ from, to });
       setMoveHistory(prev => [...prev, move.san]);
       setPreviewIndex(-1);
-      await evaluateAndClassify(chess.fen(), move.san);
+      evaluateAndClassify(chess.fen(), move.san);
       if (!checkGameEnd(chess)) await botMove(chess.fen());
     } catch (e) {}
   }, [fen, gameStatus, botThinking, previewIndex, evaluateAndClassify, checkGameEnd, botMove]);
@@ -238,6 +238,7 @@ export default function BotGame() {
                   settings={settings}
                   username={user?.username}
                   moveTimeoutMs={999999}
+                  hideTimer={true}
                 />
                 {previewIndex !== -1 && (
                   <div className="absolute bottom-0 left-0 right-0 p-1 bg-sky-500/10 border-t border-sky-500/20 flex items-center justify-between z-10">

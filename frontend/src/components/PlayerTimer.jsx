@@ -9,6 +9,7 @@ export default function PlayerTimer({
   captured,
   materialAdvantage,
   gameStatus,
+  hideTimer = false,
 }) {
   const formatTime = (seconds) => {
     const m = Math.floor(seconds / 60);
@@ -69,19 +70,21 @@ export default function PlayerTimer({
       </div>
 
       {/* Timer */}
-      <div
-        className={`px-2 py-1 rounded font-mono text-xs font-bold flex items-center gap-1 transition-all duration-300 ${
-          isActive
-            ? time <= 5
-              ? 'bg-red-500/20 text-red-400 animate-pulse'
-              : time <= 10
-              ? 'bg-yellow-500/15 text-yellow-400'
-              : 'bg-gold-500/15 text-gold-400'
-            : 'bg-navy-700/50 text-slate-400'
-        }`}
-      >
-        🕑 {formatTime(time)}
-      </div>
+      {!hideTimer && (
+        <div
+          className={`px-2 py-1 rounded font-mono text-xs font-bold flex items-center gap-1 transition-all duration-300 ${
+            isActive
+              ? time <= 5
+                ? 'bg-red-500/20 text-red-400 animate-pulse'
+                : time <= 10
+                ? 'bg-yellow-500/15 text-yellow-400'
+                : 'bg-gold-500/15 text-gold-400'
+              : 'bg-navy-700/50 text-slate-400'
+          }`}
+        >
+          🕑 {formatTime(time)}
+        </div>
+      )}
     </div>
   );
 }

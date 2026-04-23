@@ -21,12 +21,25 @@ export default function MoveHistory({
 
   const activeIndex = currentIndex === -1 ? moves.length - 1 : currentIndex;
 
-  // Auto-scroll to keep active move visible
+  // Auto-scroll to keep active move centered
   useEffect(() => {
     if (activeRef.current && containerRef.current) {
-      activeRef.current.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+      activeRef.current.scrollIntoView({ block: 'center', behavior: 'smooth' });
     }
   }, [activeIndex, moves.length]);
+
+  // Navigation handlers
+  const goFirst = () => onClickMove(0);
+  const goPrev = () => {
+    const idx = currentIndex === -1 ? moves.length - 1 : currentIndex;
+    if (idx > 0) onClickMove(idx - 1);
+  };
+  const goNext = () => {
+    const idx = currentIndex === -1 ? moves.length - 1 : currentIndex;
+    if (idx < moves.length - 1) onClickMove(idx + 1);
+    else onClickMove(-1); // back to live
+  };
+  const goLast = () => onClickMove(-1);
 
   if (!moves || moves.length === 0) {
     return (
@@ -85,6 +98,14 @@ export default function MoveHistory({
             )}
           </div>
         ))}
+      </div>
+
+      {/* Navigation buttons */}
+      <div className="flex items-center justify-center gap-1 pt-1.5 mt-1 border-t border-navy-800/30">
+        <button onClick={goFirst} className="px-2 py-1 text-xs text-slate-400 hover:text-white hover:bg-white/5 transition-colors rounded" title="First move">⏮</button>
+        <button onClick={goPrev} className="px-2 py-1 text-xs text-slate-400 hover:text-white hover:bg-white/5 transition-colors rounded" title="Previous move">◀</button>
+        <button onClick={goNext} className="px-2 py-1 text-xs text-slate-400 hover:text-white hover:bg-white/5 transition-colors rounded" title="Next move">▶</button>
+        <button onClick={goLast} className="px-2 py-1 text-xs text-slate-400 hover:text-white hover:bg-white/5 transition-colors rounded" title="Latest move">⏭</button>
       </div>
     </div>
   );

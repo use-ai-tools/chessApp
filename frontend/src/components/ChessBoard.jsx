@@ -107,6 +107,7 @@ export default function ChessBoard({
   settings,
   moveTimeoutMs = 30000,
   username, // FEATURE 5: Screenshot prevention watermark
+  hideTimer = false,
 }) {
   const gameRef = useRef(new Chess());
   const containerRef = useRef(null);
@@ -589,7 +590,7 @@ export default function ChessBoard({
       )}
 
       {/* Top Player */}
-      <PlayerTimer player={topPlayer} time={topTime} isActive={isTopTurn && gameStatus === 'playing'} color={topColor} captured={topCaptured} materialAdvantage={topAdv} timerMax={timerMax} gameStatus={gameStatus} />
+      <PlayerTimer player={topPlayer} time={topTime} isActive={isTopTurn && gameStatus === 'playing'} color={topColor} captured={topCaptured} materialAdvantage={topAdv} timerMax={timerMax} gameStatus={gameStatus} hideTimer={hideTimer} />
 
       {/* Board + Win Probability Bar */}
       <div className="flex items-center gap-2 w-full">
@@ -633,7 +634,7 @@ export default function ChessBoard({
       {prequeue.length > 0 && <p className="text-[10px] text-red-400 font-bold">{prequeue.length} premove{prequeue.length > 1 ? 's' : ''} queued</p>}
       {activePremoveStart && prequeue.length === 0 && <p className="text-[10px] text-red-400/70 font-medium">Select target square...</p>}
 
-      <PlayerTimer player={bottomPlayer} time={bottomTime} isActive={isBottomTurn && gameStatus === 'playing'} color={bottomColor} captured={bottomCaptured} materialAdvantage={bottomAdv} timerMax={timerMax} gameStatus={gameStatus} />
+      <PlayerTimer player={bottomPlayer} time={bottomTime} isActive={isBottomTurn && gameStatus === 'playing'} color={bottomColor} captured={bottomCaptured} materialAdvantage={bottomAdv} timerMax={timerMax} gameStatus={gameStatus} hideTimer={hideTimer} />
 
       <div className="w-full max-w-[560px] flex items-center justify-between mt-1">
         {isSpectator && <div className="badge-purple rounded-none"><span>👁️</span> Spectating</div>}
