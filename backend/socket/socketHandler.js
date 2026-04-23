@@ -332,6 +332,43 @@ module.exports = (io) => {
       } catch (err) { console.error('[leaveContest]', err); }
     });
 
+    // ── LEAVE ROOM (user exits before/during waiting) ──
+    socket.on('leaveRoom', async ({ contestId, userId }) => {
+      try {
+        if (!contestId || !userId) return;
+        socket.leave(contestId);
+        console.log(`[leaveRoom] ${userId} leaving room ${contestId}`);
+
+        const contest = await Contest.findById(contestId).populate('contestType');
+        if (!contest) return;
+
+        // Only allow leaving if match hasn't started (status is 'open')
+        if (contest.status === 'open') {
+          contest.players = contest.players.filter(p => p.toString() !== userId);
+          await contest.save();
+
+          // Refund entry fee
+          const ct = contest.contestType;
+          if (ct && ct.entry > 0) {
+            await User.findByIdAndUpdate(userId, { $inc: { wallet: ct.entry } });
+            await Transaction.create({ userId, amount: ct.entry, type: 'credit', reason: `Refund — left room`, status: 'completed' });
+            const u = await User.findById(userId).select('wallet').lean();
+            if (u) socket.emit('walletUpdate', { wallet: u.wallet });
+          }
+
+          // Clean up in-memory state
+          games.delete(contestId);
+          matchStates.delete(contestId.toString());
+
+          // Notify remaining players
+          io.to(contestId).emit('roomUpdate', { contestId, players: contest.players.length });
+          io.emit('contestUpdated', { contestTypeId: ct?._id?.toString() });
+          socket.emit('roomLeft', { refunded: true });
+          console.log(`[leaveRoom] ${userId} removed from ${contestId}, ${contest.players.length} players remain`);
+        }
+      } catch (err) { console.error('[leaveRoom]', err); }
+    });
+
     // ── PLAYER READY ──
     socket.on('playerReady', async ({ contestId, userId }) => {
       // Game is already started — just start the timer

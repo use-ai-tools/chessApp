@@ -323,8 +323,32 @@ export default function RoomPage() {
     };
   }, [contestId, user?.id]);
 
+  // Emit leaveRoom when navigating away (before match starts)
+  const handleLeaveRoom = useCallback(() => {
+    if (gameStatus === 'waiting' || (!matchDataRef.current)) {
+      socketRef.current?.emit('leaveRoom', { contestId, userId: user?.id });
+      refreshUser();
+    }
+    navigate('/');
+  }, [contestId, user?.id, gameStatus, navigate, refreshUser]);
+
+  // beforeunload — emit leaveRoom when browser tab closes/refreshes
+  useEffect(() => {
+    const handleBeforeUnload = () => {
+      if (gameStatus === 'waiting' || (!matchDataRef.current)) {
+        socketRef.current?.emit('leaveRoom', { contestId, userId: user?.id });
+      }
+    };
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    return () => window.removeEventListener('beforeunload', handleBeforeUnload);
+  }, [contestId, user?.id, gameStatus]);
+
   useEffect(() => {
     return () => {
+      // Emit leaveRoom on component unmount if match hasn't started
+      if (socketRef.current && (!matchDataRef.current || gameStatus === 'waiting')) {
+        socketRef.current.emit('leaveRoom', { contestId, userId: user?.id });
+      }
       if (socketRef.current) { socketRef.current.disconnect(); socketRef.current = null; }
     };
   }, []);
@@ -473,7 +497,7 @@ export default function RoomPage() {
                 {showBracket ? '♟️ Board' : '🏆 Bracket'}
               </button>
             )}
-            <button onClick={() => navigate('/')} className="btn-secondary btn-sm rounded-none text-[10px]">← Lobby</button>
+            <button onClick={handleLeaveRoom} className="btn-secondary btn-sm rounded-none text-[10px]">← Lobby</button>
             <PingIndicator customSocket={socketRef.current} />
           </div>
         </div>
