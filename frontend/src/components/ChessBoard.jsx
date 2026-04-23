@@ -67,6 +67,14 @@ const playSound = (type) => {
         osc.start(ctx.currentTime);
         osc.stop(ctx.currentTime + 0.3);
         break;
+      case 'lowTime':
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(440, ctx.currentTime);
+        gain.gain.setValueAtTime(0.08, ctx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.12);
+        osc.start(ctx.currentTime);
+        osc.stop(ctx.currentTime + 0.12);
+        break;
       default:
         osc.frequency.setValueAtTime(600, ctx.currentTime);
         gain.gain.setValueAtTime(0.1, ctx.currentTime);
@@ -583,12 +591,6 @@ export default function ChessBoard({
       {/* Top Player */}
       <PlayerTimer player={topPlayer} time={topTime} isActive={isTopTurn && gameStatus === 'playing'} color={topColor} captured={topCaptured} materialAdvantage={topAdv} timerMax={timerMax} gameStatus={gameStatus} />
 
-      {gameStatus === 'playing' && isTopTurn && (
-        <div className="w-full progress-bar">
-          <div className="progress-fill bg-gradient-to-r from-red-500 to-gold-500 timer-bar" style={{ width: `${(topTime / timerMax) * 100}%` }} />
-        </div>
-      )}
-
       {/* Board + Win Probability Bar */}
       <div className="flex items-center gap-2 w-full">
         {/* Only show WinProbabilityBar in review mode */}
@@ -630,12 +632,6 @@ export default function ChessBoard({
       {illegalMoveMsg && <p className="illegal-move-text">{illegalMoveMsg}</p>}
       {prequeue.length > 0 && <p className="text-[10px] text-red-400 font-bold">{prequeue.length} premove{prequeue.length > 1 ? 's' : ''} queued</p>}
       {activePremoveStart && prequeue.length === 0 && <p className="text-[10px] text-red-400/70 font-medium">Select target square...</p>}
-
-      {gameStatus === 'playing' && isBottomTurn && (
-        <div className="w-full progress-bar">
-          <div className="progress-fill bg-gradient-to-r from-chess-green to-emerald-500 timer-bar" style={{ width: `${(bottomTime / timerMax) * 100}%` }} />
-        </div>
-      )}
 
       <PlayerTimer player={bottomPlayer} time={bottomTime} isActive={isBottomTurn && gameStatus === 'playing'} color={bottomColor} captured={bottomCaptured} materialAdvantage={bottomAdv} timerMax={timerMax} gameStatus={gameStatus} />
 

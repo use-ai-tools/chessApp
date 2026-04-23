@@ -1,5 +1,4 @@
 import React, { useRef, useEffect } from 'react';
-import { Chess } from 'chess.js';
 
 const CLASS_CONFIG = {
   brilliant:   { icon: '‼', color: 'text-cyan-400' },
@@ -12,31 +11,33 @@ const CLASS_CONFIG = {
 };
 
 export default function MoveHistory({
-  moves,           // array of SAN strings: ['e4', 'e5', 'Nf3', ...]
-  currentIndex,    // which move is "active" (-1 = none, i.e. latest)
-  onClickMove,     // (index) => void — click to preview that position
-  startFen,        // starting FEN (default pos)
-  classifications, // optional: array of { classification: 'best'|'blunder'|... }
+  moves,
+  currentIndex,
+  onClickMove,
+  classifications,
 }) {
-  const scrollRef = useRef(null);
+  const activeRef = useRef(null);
+  const containerRef = useRef(null);
 
-  // Auto-scroll to right when new moves arrive
+  const activeIndex = currentIndex === -1 ? moves.length - 1 : currentIndex;
+
+  // Auto-scroll to keep active move visible
   useEffect(() => {
-    if (scrollRef.current && currentIndex === -1) {
-      scrollRef.current.scrollLeft = scrollRef.current.scrollWidth;
+    if (activeRef.current && containerRef.current) {
+      activeRef.current.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
     }
-  }, [moves.length, currentIndex]);
+  }, [activeIndex, moves.length]);
 
   if (!moves || moves.length === 0) {
     return (
-      <div className="card p-3">
+      <div className="card p-3 h-full flex flex-col">
         <h4 className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Moves</h4>
         <p className="text-xs text-slate-600 text-center py-4">No moves yet</p>
       </div>
     );
   }
 
-  // Group moves into pairs for display
+  // Group moves into pairs
   const pairs = [];
   for (let i = 0; i < moves.length; i += 2) {
     pairs.push({
@@ -46,87 +47,62 @@ export default function MoveHistory({
     });
   }
 
-  const activeIndex = currentIndex === -1 ? moves.length - 1 : currentIndex;
-
   return (
-    <div className="card p-3">
-      <div className="flex items-center justify-between mb-2">
-        <h4 className="text-xs font-bold text-slate-500 uppercase tracking-wider">Moves</h4>
-        <span className="text-[10px] text-slate-600">{moves.length} moves</span>
+    <div className="card p-2 h-full flex flex-col">
+      <div className="flex items-center justify-between mb-1 px-1">
+        <h4 className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Moves</h4>
+        <span className="text-[9px] text-slate-600">{moves.length}</span>
       </div>
 
-      <div ref={scrollRef} className="flex overflow-x-auto gap-2 pb-2 scrollbar-thin snap-x">
+      {/* Vertical scrolling move list */}
+      <div ref={containerRef} className="flex-1 overflow-y-auto overflow-x-hidden scrollbar-thin pr-1">
         {pairs.map((pair) => (
-          <div key={pair.number} className="flex items-center gap-1 flex-shrink-0 bg-navy-800/50 rounded px-2 py-1 snap-end">
-            <span className="text-slate-500 text-xs font-bold">{pair.number}.</span>
-            <MoveBtn
+          <div
+            key={pair.number}
+            className="flex items-center gap-0 text-xs border-b border-navy-800/30 last:border-0"
+          >
+            {/* Move number */}
+            <span className="text-slate-600 font-bold w-6 text-right pr-1 flex-shrink-0 text-[10px]">{pair.number}.</span>
+            {/* White move */}
+            <MoveCell
               san={pair.white.san}
               cls={pair.white.cls}
               isActive={pair.white.index === activeIndex}
               onClick={() => onClickMove(pair.white.index)}
+              ref={pair.white.index === activeIndex ? activeRef : null}
             />
-            {pair.black && (
-              <MoveBtn
+            {/* Black move */}
+            {pair.black ? (
+              <MoveCell
                 san={pair.black.san}
                 cls={pair.black.cls}
                 isActive={pair.black.index === activeIndex}
                 onClick={() => onClickMove(pair.black.index)}
+                ref={pair.black.index === activeIndex ? activeRef : null}
               />
+            ) : (
+              <div className="flex-1" />
             )}
           </div>
         ))}
       </div>
-
-      {/* Navigation buttons */}
-      {moves.length > 0 && (
-        <div className="flex items-center justify-center gap-1 mt-2 pt-2 border-t border-navy-700/30">
-          <NavBtn
-            onClick={() => onClickMove(0)}
-            disabled={activeIndex === 0}
-            title="First move"
-          >
-            ⏮
-          </NavBtn>
-          <NavBtn
-            onClick={() => onClickMove(Math.max(0, activeIndex - 1))}
-            disabled={activeIndex === 0}
-            title="Previous move"
-          >
-            ◀
-          </NavBtn>
-          <NavBtn
-            onClick={() => onClickMove(Math.min(moves.length - 1, activeIndex + 1))}
-            disabled={activeIndex >= moves.length - 1}
-            title="Next move"
-          >
-            ▶
-          </NavBtn>
-          <NavBtn
-            onClick={() => onClickMove(-1)}
-            disabled={currentIndex === -1}
-            title="Latest move"
-          >
-            ⏭
-          </NavBtn>
-        </div>
-      )}
     </div>
   );
 }
 
-function MoveBtn({ san, cls, isActive, onClick }) {
+const MoveCell = React.forwardRef(({ san, cls, isActive, onClick }, ref) => {
   const classification = cls?.classification;
   const cfg = classification ? CLASS_CONFIG[classification] : null;
-  // Show badge for non-good classifications
   const showBadge = cfg && classification !== 'good';
 
   return (
     <button
+      ref={ref}
       onClick={onClick}
-      className={`text-xs px-1.5 py-0.5 rounded transition-colors flex items-center gap-0.5 ${
+      className={`flex-1 text-left px-2 py-1.5 text-xs transition-colors flex items-center gap-1 ${
         isActive
-          ? 'bg-white/20 text-white font-bold'
-          : 'text-slate-300 hover:text-white hover:bg-white/10'
+          ? 'bg-chess-green/20 text-white font-bold'
+          : 'text-slate-300 hover:text-white hover:bg-white/5'
       }`}
     >
       {san}
@@ -135,21 +111,4 @@ function MoveBtn({ san, cls, isActive, onClick }) {
       )}
     </button>
   );
-}
-
-function NavBtn({ children, onClick, disabled, title }) {
-  return (
-    <button
-      onClick={onClick}
-      disabled={disabled}
-      title={title}
-      className={`w-8 h-8 rounded-lg flex items-center justify-center text-xs transition-all ${
-        disabled
-          ? 'text-slate-600 cursor-not-allowed'
-          : 'text-slate-400 hover:text-white hover:bg-white/10'
-      }`}
-    >
-      {children}
-    </button>
-  );
-}
+});
