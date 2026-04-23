@@ -246,9 +246,9 @@ export default function RoomPage() {
 
     socket.on('moveMade', ({ contestId: cid, fen: newFen, san, from, to, isCheckmate }) => {
       if (cid !== contestId) return;
-      // Skip if this is the echo of our own optimistic move
+      // Skip if this is the echo of our own optimistic move (already applied locally)
       const opt = lastOptimisticMoveRef.current;
-      if (opt && opt.from === from && opt.to === to && opt.fen === newFen) {
+      if (opt && opt.from === from && opt.to === to) {
         lastOptimisticMoveRef.current = null;
         return;
       }
@@ -261,6 +261,7 @@ export default function RoomPage() {
       setPreviewIndex(-1);
       if (from && to) setLastMove({ from, to });
     });
+
 
     socket.on('matchEnded', (data) => {
       if (data.contestId !== contestId) return;
@@ -349,7 +350,7 @@ export default function RoomPage() {
         moveSansRef.current.push(move.san);
         setPreviewIndex(-1);
         // Mark this move as optimistic so we skip the server echo
-        lastOptimisticMoveRef.current = { from, to, fen: chess.fen() };
+        lastOptimisticMoveRef.current = { from, to };
       }
     } catch(e) {}
 
