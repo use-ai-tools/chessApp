@@ -58,6 +58,7 @@ export default function RoomPage() {
   });
 
   const moveSansRef = useRef([]);
+  const lastOptimisticMoveRef = useRef(null);
 
   const getPreviewFen = useCallback(() => {
     if (previewIndex === -1 || moveHistory.length === 0) return null;
@@ -245,6 +246,13 @@ export default function RoomPage() {
 
     socket.on('moveMade', ({ contestId: cid, fen: newFen, san, from, to, isCheckmate }) => {
       if (cid !== contestId) return;
+      // Skip if this is the echo of our own optimistic move
+      const opt = lastOptimisticMoveRef.current;
+      if (opt && opt.from === from && opt.to === to && opt.fen === newFen) {
+        lastOptimisticMoveRef.current = null;
+        return;
+      }
+      lastOptimisticMoveRef.current = null;
       setFen(newFen);
       if (san) {
         setMoveHistory(prev => [...prev, san]);
@@ -331,12 +339,17 @@ export default function RoomPage() {
       return;
     }
 
-    // Optimistic UI Update
+    // Optimistic UI Update — apply move instantly before server confirms
     try {
       const move = chess.move({ from, to, promotion: promotion || 'q' });
       if (move) {
         setFen(chess.fen());
         setLastMove({ from, to });
+        setMoveHistory(prev => [...prev, move.san]);
+        moveSansRef.current.push(move.san);
+        setPreviewIndex(-1);
+        // Mark this move as optimistic so we skip the server echo
+        lastOptimisticMoveRef.current = { from, to, fen: chess.fen() };
       }
     } catch(e) {}
 
