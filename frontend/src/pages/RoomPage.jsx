@@ -477,11 +477,11 @@ export default function RoomPage() {
   }
 
   return (
-    <div className="h-[calc(100vh-64px)] bg-hero flex flex-col">
+    <div className="h-[calc(100vh-64px)] bg-hero flex flex-col overflow-hidden">
       <style>{`button[title="Flip Board"] { display: none !important; }`}</style>
-      <div className="flex-1 flex flex-col px-2 py-2 lg:px-4 lg:py-4">
+      <div className="flex-1 flex flex-col px-2 py-2 lg:px-4 lg:py-3 overflow-hidden">
         {/* Header */}
-        <div className="flex items-center justify-between gap-2 mb-2 flex-shrink-0">
+        <div className="flex items-center justify-between gap-2 mb-1 flex-shrink-0">
           <div className="flex items-center gap-2">
             <h1 className="text-sm lg:text-xl font-bold text-white">{contestType?.name || 'Match'}</h1>
             <span className={`badge rounded-none text-[10px] ${gameStatus === 'playing' ? 'badge-green' : gameStatus === 'finished' ? 'badge-purple' : 'badge-gold'}`}>
@@ -503,10 +503,10 @@ export default function RoomPage() {
         </div>
 
         {/* Main layout: board + sidebar */}
-        <div className="flex-1 flex flex-col lg:flex-row gap-4 lg:gap-8 min-h-0 justify-center items-center max-w-7xl mx-auto w-full pb-4">
+        <div className="flex-1 flex flex-col lg:flex-row gap-2 lg:gap-6 min-h-0 justify-center items-center max-w-7xl mx-auto w-full">
           {/* Board Column */}
-          <div className="flex flex-col gap-2 flex-shrink-0 items-center justify-center" style={{ width: '100%', maxWidth: 'calc(100vh - 120px)' }}>
-            <div className="w-full h-auto aspect-square relative items-center justify-center" style={{ maxHeight: 'calc(100vh - 120px)', borderRadius: 0 }}>
+          <div className="flex flex-col gap-1 flex-shrink-0 items-center justify-center" style={{ width: '100%', maxWidth: 'min(calc(100vh - 160px), 600px)' }}>
+            <div className="w-full aspect-square relative" style={{ borderRadius: 0 }}>
               {matchDataRef.current ? (
                 <ChessBoard
                   roomId={contestId}
@@ -578,7 +578,7 @@ export default function RoomPage() {
           </div>
 
           {/* Sidebar: everything to the right of board */}
-          <div className="flex-1 w-full lg:max-w-sm flex flex-col gap-2 overflow-y-auto lg:overflow-hidden min-h-0">
+          <div className="flex-1 w-full lg:max-w-xs flex flex-col gap-2 min-h-0 overflow-hidden">
             {/* Players + Contest Info row */}
             <div className="flex gap-1 flex-shrink-0">
               {(whitePlayer || blackPlayer) && (
