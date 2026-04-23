@@ -120,8 +120,9 @@ export default function ChessBoard({
   const [blackCaptured, setBlackCaptured] = useState([]);
   const [inCheck, setInCheck] = useState(false);
   
-  const [prequeue, setPrequeue] = useState([]); // array: {from, to, promotion}
+  const [prequeue, setPrequeue] = useState([]); // array: {from, to, promotion} — max 2
   const [activePremoveStart, setActivePremoveStart] = useState(null);
+  const prevFenRef = useRef(fen); // track FEN changes for premove execution
   
   const [draggedSquare, setDraggedSquare] = useState(null); // FEATURE 7: Legal move dots on drag
 
@@ -296,7 +297,7 @@ export default function ChessBoard({
     return styles;
   }, [showLegalMoves]);
 
-  // ── BUG 3 FIX: Click-to-move state machine ──
+  // ── Click-to-move state machine ──
   const onSquareClick = (square) => {
     const game = gameRef.current;
 
@@ -310,7 +311,6 @@ export default function ChessBoard({
 
     if (selectedSquare) {
       // STATE 2: Piece already selected
-      // BUG 3 FIX: Check if clicking another own piece → switch selection
       const piece = game.get(square);
       if (piece && piece.color === game.turn() && square !== selectedSquare) {
         setSelectedSquare(square);
@@ -324,7 +324,6 @@ export default function ChessBoard({
       try {
         const move = moveCopy.move({ from: selectedSquare, to: square, promotion: promo });
         if (move) {
-          // Valid move — emit it
           if (soundEnabled) playSound(move.captured ? 'capture' : moveCopy.isCheck() ? 'check' : 'move');
           onMove({ from: selectedSquare, to: square, promotion: promo, san: move.san });
           setSelectedSquare(null);
@@ -333,7 +332,6 @@ export default function ChessBoard({
         }
       } catch(e) {}
 
-      // Illegal move
       setIllegalMoveMsg('Illegal move');
       setSelectedSquare(null);
       setLegalMoveStyles({});
@@ -348,109 +346,140 @@ export default function ChessBoard({
     }
   };
 
-  // ── Premove click handler ──
+  // ── Premove click handler (Chess.com-like) ──
+  // No legality validation when setting premove — only check that source square has your piece
   const handlePremoveClick = (square) => {
+    const myColor = currentPlayer?.color === 'white' ? 'w' : 'b';
+    const game = gameRef.current;
+
     if (!activePremoveStart) {
-      const shadowGame = new Chess(fen);
-      try { for (const m of prequeue) shadowGame.move(m); } catch (e) { setPrequeue([]); return; }
-      
-      const pieceAfter = shadowGame.get(square);
-      const myColor = currentPlayer?.color === 'white' ? 'w' : 'b';
-      
-      if (pieceAfter && pieceAfter.color === myColor) {
+      // Selecting a piece for premove — check if square has your piece
+      const piece = game.get(square);
+      if (piece && piece.color === myColor) {
         setActivePremoveStart(square);
       } else {
-        setPrequeue([]);
-        if (onCancelPremove) onCancelPremove();
+        // Clicked empty or opponent piece — cancel all premoves
+        if (prequeue.length > 0) {
+          setPrequeue([]);
+          setActivePremoveStart(null);
+        }
       }
       return;
     }
 
+    // Clicking the same square again → deselect
     if (square === activePremoveStart) {
       setActivePremoveStart(null);
       return;
     }
 
-    const shadowGame = new Chess(fen);
-    try { for (const m of prequeue) shadowGame.move(m); } catch {}
-    
-    const promo = autoQueen ? 'q' : 'q';
-    try {
-      const move = shadowGame.move({ from: activePremoveStart, to: square, promotion: promo });
-      if (move && prequeue.length < 5) {
-         const pre = { from: activePremoveStart, to: square, promotion: promo };
-         setPrequeue(prev => [...prev, pre]);
-         setActivePremoveStart(null);
-         if (onSetPremove) onSetPremove(pre);
-      } else {
-         const pieceAfter = shadowGame.get(square);
-         const myColor = currentPlayer?.color === 'white' ? 'w' : 'b';
-         setActivePremoveStart(pieceAfter && pieceAfter.color === myColor ? square : null);
-      }
-    } catch {
+    // Clicking another own piece → switch selection
+    const piece = game.get(square);
+    if (piece && piece.color === myColor) {
+      setActivePremoveStart(square);
+      return;
+    }
+
+    // Setting the premove destination — allow any target square (even if currently occupied)
+    // Legality will be checked on execution
+    if (prequeue.length < 2) {
+      const promo = autoQueen ? 'q' : undefined;
+      setPrequeue(prev => [...prev, { from: activePremoveStart, to: square, promotion: promo }]);
       setActivePremoveStart(null);
     }
   };
 
-  // Execute premove when it becomes our turn
+  // Cancel premoves on right-click or Escape
   useEffect(() => {
-    if (isMyTurn && prequeue.length > 0) {
-      const executeNextPremove = async () => {
-         const game = gameRef.current;
-         const moveCopy = new Chess(game.fen());
-         const nextPre = prequeue[0];
-         const promo = nextPre.promotion || (autoQueen ? 'q' : 'q');
-         try {
-           const move = moveCopy.move({ from: nextPre.from, to: nextPre.to, promotion: promo });
-           if (move) {
-              if (soundEnabled) playSound(move.captured ? 'capture' : moveCopy.isCheck() ? 'check' : 'move');
-              onMove({ from: nextPre.from, to: nextPre.to, promotion: promo, san: move.san });
-              setPrequeue(q => q.slice(1));
-           } else {
-              setPrequeue([]);
-           }
-         } catch {
-           setPrequeue([]);
-         }
-      };
-      executeNextPremove();
-    } else if (isMyTurn) {
-      setActivePremoveStart(null);
+    const handleContextMenu = (e) => {
+      if (prequeue.length > 0 || activePremoveStart) {
+        e.preventDefault();
+        setPrequeue([]);
+        setActivePremoveStart(null);
+      }
+    };
+    const handleKeyDown = (e) => {
+      if (e.key === 'Escape' && (prequeue.length > 0 || activePremoveStart)) {
+        setPrequeue([]);
+        setActivePremoveStart(null);
+      }
+    };
+    window.addEventListener('contextmenu', handleContextMenu);
+    window.addEventListener('keydown', handleKeyDown);
+    return () => {
+      window.removeEventListener('contextmenu', handleContextMenu);
+      window.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [prequeue.length, activePremoveStart]);
+
+  // Execute premove INSTANTLY when it becomes our turn (FEN changed = opponent moved)
+  useEffect(() => {
+    if (fen !== prevFenRef.current) {
+      prevFenRef.current = fen;
+    }
+
+    if (!isMyTurn || prequeue.length === 0) {
+      if (isMyTurn) setActivePremoveStart(null);
+      return;
+    }
+
+    // Execute the first premove in queue immediately (0ms)
+    const game = gameRef.current;
+    const nextPre = prequeue[0];
+    const promo = nextPre.promotion || 'q';
+
+    try {
+      const moveCopy = new Chess(game.fen());
+      const move = moveCopy.move({ from: nextPre.from, to: nextPre.to, promotion: promo });
+      if (move) {
+        // Premove is legal — execute instantly!
+        if (soundEnabled) playSound(move.captured ? 'capture' : moveCopy.isCheck() ? 'check' : 'move');
+        onMove({ from: nextPre.from, to: nextPre.to, promotion: promo, san: move.san });
+        setPrequeue(q => q.slice(1));
+      } else {
+        // Premove became illegal — cancel all
+        setPrequeue([]);
+      }
+    } catch {
+      // Invalid premove — cancel all
+      setPrequeue([]);
     }
   }, [isMyTurn, fen]);
 
-  // ── BUG 2/3/7 FIX: Drag-to-move handler ──
+  // Clear premoves when game ends
+  useEffect(() => {
+    if (gameStatus !== 'playing') {
+      setPrequeue([]);
+      setActivePremoveStart(null);
+    }
+  }, [gameStatus]);
+
+  // ── Drag-to-move handler (supports premove via drag) ──
   const onDrop = (sourceSquare, targetSquare) => {
     setSelectedSquare(null);
     setLegalMoveStyles({});
     setDraggedSquare(null);
     
-    const promo = autoQueen ? 'q' : 'q';
+    const promo = autoQueen ? 'q' : undefined;
 
+    // Premove via drag — opponent's turn
     if (!isMyTurn) {
-        if (premovesEnabled) {
-            const shadowGame = new Chess(fen);
-            try { for (const m of prequeue) shadowGame.move(m); } catch {}
-            try {
-                const move = shadowGame.move({ from: sourceSquare, to: targetSquare, promotion: promo });
-                if (move && prequeue.length < 5) {
-                   setPrequeue(prev => [...prev, { from: sourceSquare, to: targetSquare, promotion: promo }]);
-                }
-            } catch {}
-        }
-        return false;
+      if (premovesEnabled && isOpponentTurn && prequeue.length < 2) {
+        setPrequeue(prev => [...prev, { from: sourceSquare, to: targetSquare, promotion: promo }]);
+      }
+      return false;
     }
     
     const game = gameRef.current;
     const moveCopy = new Chess(game.fen());
     try {
-      const move = moveCopy.move({ from: sourceSquare, to: targetSquare, promotion: promo });
+      const move = moveCopy.move({ from: sourceSquare, to: targetSquare, promotion: promo || 'q' });
       if (!move) {
         setIllegalMoveMsg('Illegal move');
         return false;
       }
       if (soundEnabled) playSound(move.captured ? 'capture' : moveCopy.isCheck() ? 'check' : 'move');
-      onMove({ from: sourceSquare, to: targetSquare, promotion: promo, san: move.san });
+      onMove({ from: sourceSquare, to: targetSquare, promotion: promo || 'q', san: move.san });
       return true;
     } catch {
       setIllegalMoveMsg('Illegal move');
@@ -458,8 +487,18 @@ export default function ChessBoard({
     }
   };
 
-  // ── FEATURE 7: Show legal move dots when piece is picked up for dragging ──
+  // ── Show legal move dots when piece is picked up for dragging ──
   const onPieceDragBegin = (piece, sourceSquare) => {
+    // Allow drag for premove during opponent's turn
+    if (isOpponentTurn && premovesEnabled) {
+      const myColor = currentPlayer?.color === 'white' ? 'w' : 'b';
+      const p = gameRef.current.get(sourceSquare);
+      if (p && p.color === myColor) {
+        setDraggedSquare(sourceSquare);
+        return true;
+      }
+      return false;
+    }
     if (!isMyTurn) return false;
     setDraggedSquare(sourceSquare);
     setLegalMoveStyles(showLegalMoveHints(sourceSquare));
@@ -497,23 +536,17 @@ export default function ChessBoard({
     };
   };
 
-  // ── Premove highlight ──
+  // ── Premove highlight (Chess.com red style) ──
   const getPremoveStyles = () => {
     const styles = {};
+    // Active premove start selection — dark red
     if (activePremoveStart) {
-        styles[activePremoveStart] = { backgroundColor: 'rgba(100, 180, 255, 0.35)' };
+      styles[activePremoveStart] = { backgroundColor: 'rgba(170, 0, 0, 0.65)', boxShadow: 'inset 0 0 8px rgba(255,0,0,0.3)' };
     }
-    const colors = [
-      'rgba(255, 100, 100, 0.6)', 
-      'rgba(255, 50, 50, 0.7)',   
-      'rgba(220, 0, 0, 0.8)',     
-      'rgba(180, 0, 0, 0.9)'      
-    ];
-    
-    prequeue.forEach((p, idx) => {
-      const c = idx < 3 ? colors[idx] : colors[3];
-      styles[p.from] = { backgroundColor: c };
-      styles[p.to] = { backgroundColor: c };
+    // Queued premoves — from = dark red, to = lighter red
+    prequeue.forEach((p) => {
+      styles[p.from] = { backgroundColor: 'rgba(170, 0, 0, 0.55)' };
+      styles[p.to] = { backgroundColor: 'rgba(220, 60, 60, 0.55)' };
     });
     return styles;
   };
@@ -586,21 +619,17 @@ export default function ChessBoard({
             customDarkSquareStyle={{ backgroundColor: theme.dark }}
             customLightSquareStyle={{ backgroundColor: theme.light }}
             customSquareStyles={customSquareStyles}
-            customArrows={prequeue.map((p, idx) => {
-              const colors = ['rgba(255, 100, 100, 0.6)', 'rgba(255, 50, 50, 0.7)', 'rgba(220, 0, 0, 0.8)', 'rgba(180, 0, 0, 0.9)'];
-              const c = idx < 3 ? colors[idx] : colors[3];
-              return [p.from, p.to, c];
-            })}
+            customArrows={prequeue.map((p) => [p.from, p.to, 'rgba(200, 40, 40, 0.7)'])}
             animationDuration={animDuration}
-            arePiecesDraggable={isMyTurn}
+            arePiecesDraggable={isMyTurn || (isOpponentTurn && premovesEnabled)}
             snapToCursor={false}
           />
         </div>
       </div>
 
       {illegalMoveMsg && <p className="illegal-move-text">{illegalMoveMsg}</p>}
-      {prequeue.length > 0 && <p className="text-[10px] text-sky-400 font-medium">{prequeue.length} premoves queued</p>}
-      {activePremoveStart && prequeue.length === 0 && <p className="text-[10px] text-sky-400 font-medium">Premove set</p>}
+      {prequeue.length > 0 && <p className="text-[10px] text-red-400 font-bold">{prequeue.length} premove{prequeue.length > 1 ? 's' : ''} queued</p>}
+      {activePremoveStart && prequeue.length === 0 && <p className="text-[10px] text-red-400/70 font-medium">Select target square...</p>}
 
       {gameStatus === 'playing' && isBottomTurn && (
         <div className="w-full progress-bar">

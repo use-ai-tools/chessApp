@@ -1,8 +1,9 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 
 export default function Home() {
   const navigate = useNavigate();
+  const [showBotDifficulty, setShowBotDifficulty] = useState(false);
 
   return (
     <div className="min-h-[calc(100vh-64px)] bg-hero px-4 py-8 pb-24">
@@ -12,8 +13,51 @@ export default function Home() {
         </h1>
         <p className="text-slate-400 text-sm mb-8">Choose how you want to play</p>
 
-        <div className="grid md:grid-cols-3 gap-5">
-          {/* Practice Play */}
+        <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-5">
+          {/* Play vs Bot */}
+          <div
+            className="contest-card p-6 cursor-pointer hover:-translate-y-1 transition-all border-purple-500/30 relative overflow-hidden"
+          >
+            <div className="w-14 h-14 rounded-2xl bg-purple-500/10 flex items-center justify-center text-3xl mb-4 border border-purple-500/20 shadow-lg shadow-purple-500/10">
+              🤖
+            </div>
+            <h2 className="text-xl font-bold text-white mb-2">Play vs Bot</h2>
+            <p className="text-slate-400 text-sm mb-4">
+              Practice against Stockfish engine at different difficulty levels.
+            </p>
+
+            {!showBotDifficulty ? (
+              <button
+                onClick={() => setShowBotDifficulty(true)}
+                className="w-full py-2.5 rounded-xl text-sm font-bold bg-gradient-to-r from-purple-600 to-violet-600 hover:shadow-lg hover:shadow-purple-500/30 text-white transition-all"
+              >
+                Choose Difficulty
+              </button>
+            ) : (
+              <div className="flex flex-col gap-2 animate-fade-in">
+                <button
+                  onClick={() => navigate('/bot?difficulty=5')}
+                  className="w-full py-2 rounded-xl text-sm font-bold bg-emerald-600/20 border border-emerald-500/30 text-emerald-400 hover:bg-emerald-600/30 transition-all"
+                >
+                  🟢 Easy (Depth 5)
+                </button>
+                <button
+                  onClick={() => navigate('/bot?difficulty=10')}
+                  className="w-full py-2 rounded-xl text-sm font-bold bg-amber-600/20 border border-amber-500/30 text-amber-400 hover:bg-amber-600/30 transition-all"
+                >
+                  🟡 Medium (Depth 10)
+                </button>
+                <button
+                  onClick={() => navigate('/bot?difficulty=15')}
+                  className="w-full py-2 rounded-xl text-sm font-bold bg-red-600/20 border border-red-500/30 text-red-400 hover:bg-red-600/30 transition-all"
+                >
+                  🔴 Hard (Depth 15)
+                </button>
+              </div>
+            )}
+          </div>
+
+          {/* Practice Puzzles */}
           <div 
             onClick={() => navigate('/puzzles')}
             className="contest-card p-6 cursor-pointer hover:-translate-y-1 transition-all"

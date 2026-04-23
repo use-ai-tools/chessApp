@@ -15,6 +15,7 @@ import Referrals from './pages/Referrals';
 import Tournaments from './pages/Tournaments';
 import Notifications from './pages/Notifications';
 import Puzzles from './pages/Puzzles';
+import BotGame from './pages/BotGame';
 import BottomNav from './components/BottomNav';
 
 const Protected = ({ children }) => {
@@ -33,7 +34,7 @@ const KabirRoute = ({ children }) => {
 
 function AppContent() {
   const location = useLocation();
-  const isRoomPage = location.pathname.startsWith('/room/');
+  const isRoomPage = location.pathname.startsWith('/room/') || location.pathname.startsWith('/bot');
   const isAuthPage = location.pathname === '/login' || location.pathname === '/signup' || location.pathname === '/admin/login';
   const { user } = useContext(AuthContext);
 
@@ -63,6 +64,7 @@ function AppContent() {
         <Route path="/tournaments" element={<Protected><Header /><Tournaments /></Protected>} />
         <Route path="/notifications" element={<Protected><Header /><Notifications /></Protected>} />
         <Route path="/puzzles" element={<Protected><Header /><Puzzles /></Protected>} />
+        <Route path="/bot" element={<Protected><Header /><BotGame /></Protected>} />
         <Route path="/room" element={<Navigate to="/" />} />
         <Route path="*" element={<Navigate to="/" />} />
       </Routes>

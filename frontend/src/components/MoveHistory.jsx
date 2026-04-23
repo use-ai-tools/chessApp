@@ -1,11 +1,22 @@
 import React, { useRef, useEffect } from 'react';
 import { Chess } from 'chess.js';
 
+const CLASS_CONFIG = {
+  brilliant:   { icon: '‼', color: 'text-cyan-400' },
+  best:        { icon: '★', color: 'text-emerald-400' },
+  excellent:   { icon: '★', color: 'text-green-400' },
+  good:        { icon: '●', color: 'text-slate-500' },
+  inaccuracy:  { icon: '?!', color: 'text-yellow-400' },
+  mistake:     { icon: '?', color: 'text-orange-400' },
+  blunder:     { icon: '??', color: 'text-red-400' },
+};
+
 export default function MoveHistory({
-  moves,         // array of SAN strings: ['e4', 'e5', 'Nf3', ...]
-  currentIndex,  // which move is "active" (-1 = none, i.e. latest)
-  onClickMove,   // (index) => void — click to preview that position
-  startFen,      // starting FEN (default pos)
+  moves,           // array of SAN strings: ['e4', 'e5', 'Nf3', ...]
+  currentIndex,    // which move is "active" (-1 = none, i.e. latest)
+  onClickMove,     // (index) => void — click to preview that position
+  startFen,        // starting FEN (default pos)
+  classifications, // optional: array of { classification: 'best'|'blunder'|... }
 }) {
   const scrollRef = useRef(null);
 
@@ -30,8 +41,8 @@ export default function MoveHistory({
   for (let i = 0; i < moves.length; i += 2) {
     pairs.push({
       number: Math.floor(i / 2) + 1,
-      white: { san: moves[i], index: i },
-      black: i + 1 < moves.length ? { san: moves[i + 1], index: i + 1 } : null,
+      white: { san: moves[i], index: i, cls: classifications?.[i] },
+      black: i + 1 < moves.length ? { san: moves[i + 1], index: i + 1, cls: classifications?.[i + 1] } : null,
     });
   }
 
@@ -48,19 +59,19 @@ export default function MoveHistory({
         {pairs.map((pair) => (
           <div key={pair.number} className="flex items-center gap-1 flex-shrink-0 bg-navy-800/50 rounded px-2 py-1 snap-end">
             <span className="text-slate-500 text-xs font-bold">{pair.number}.</span>
-            <button
+            <MoveBtn
+              san={pair.white.san}
+              cls={pair.white.cls}
+              isActive={pair.white.index === activeIndex}
               onClick={() => onClickMove(pair.white.index)}
-              className={`text-xs px-1.5 py-0.5 rounded transition-colors ${pair.white.index === activeIndex ? 'bg-white/20 text-white font-bold' : 'text-slate-300 hover:text-white hover:bg-white/10'}`}
-            >
-              {pair.white.san}
-            </button>
+            />
             {pair.black && (
-              <button
+              <MoveBtn
+                san={pair.black.san}
+                cls={pair.black.cls}
+                isActive={pair.black.index === activeIndex}
                 onClick={() => onClickMove(pair.black.index)}
-                className={`text-xs px-1.5 py-0.5 rounded transition-colors ${pair.black.index === activeIndex ? 'bg-white/20 text-white font-bold' : 'text-slate-300 hover:text-white hover:bg-white/10'}`}
-              >
-                {pair.black.san}
-              </button>
+              />
             )}
           </div>
         ))}
@@ -100,6 +111,29 @@ export default function MoveHistory({
         </div>
       )}
     </div>
+  );
+}
+
+function MoveBtn({ san, cls, isActive, onClick }) {
+  const classification = cls?.classification;
+  const cfg = classification ? CLASS_CONFIG[classification] : null;
+  // Show badge for non-good classifications
+  const showBadge = cfg && classification !== 'good';
+
+  return (
+    <button
+      onClick={onClick}
+      className={`text-xs px-1.5 py-0.5 rounded transition-colors flex items-center gap-0.5 ${
+        isActive
+          ? 'bg-white/20 text-white font-bold'
+          : 'text-slate-300 hover:text-white hover:bg-white/10'
+      }`}
+    >
+      {san}
+      {showBadge && (
+        <span className={`text-[9px] font-black ${cfg.color}`}>{cfg.icon}</span>
+      )}
+    </button>
   );
 }
 
