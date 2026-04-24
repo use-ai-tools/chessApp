@@ -6,7 +6,7 @@ export default function Home() {
   const [showBotDifficulty, setShowBotDifficulty] = useState(false);
 
   return (
-    <div className="min-h-[calc(100vh-64px)] bg-hero px-4 py-8 pb-24">
+    <div className="w-full bg-hero px-4 py-8">
       <div className="max-w-7xl mx-auto">
         <h1 className="text-3xl font-black text-white mb-2">
           Welcome to <span className="text-gradient-green">Chess Arena</span>

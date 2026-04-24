@@ -499,10 +499,10 @@ export default function RoomPage() {
 
         {/* Main layout: left panel | board (centered) | right sidebar */}
         <div className="flex-1 w-full h-full overflow-hidden pt-10 lg:pt-0">
-          <div className="h-full w-full max-w-7xl mx-auto flex flex-col lg:grid lg:grid-cols-[220px_1fr_300px] lg:gap-4 items-center justify-center px-1 lg:px-2">
+          <div className="h-full w-full max-w-7xl mx-auto flex flex-col xl:grid xl:grid-cols-[180px_1fr_280px] xl:gap-6 items-center justify-center px-1 lg:px-2">
 
             {/* LEFT PANEL — desktop only: game info */}
-            <div className="hidden lg:flex flex-col gap-2 h-full justify-center w-full">
+            <div className="hidden xl:flex flex-col gap-2 h-full justify-center w-full">
               {/* Contest Info */}
               {contestType && (
                 <div className="w-full max-w-[200px] bg-navy-800/60 border border-navy-700/50 p-3 rounded-none">
@@ -549,8 +549,8 @@ export default function RoomPage() {
             </div>
 
             {/* CENTER — Board */}
-            <div className="flex flex-col gap-1 w-full h-full justify-center items-center">
-              <div className="w-full aspect-square relative" style={{ borderRadius: 0 }}>
+            <div className="flex flex-col gap-1 w-full xl:w-auto h-full justify-center items-center flex-1 min-h-0">
+              <div className="relative max-h-[70vh] lg:max-h-[80vh] w-full max-w-[500px] xl:max-w-[600px] flex items-center justify-center">
                 {matchDataRef.current ? (
                   <ChessBoard
                     roomId={contestId}
@@ -587,7 +587,7 @@ export default function RoomPage() {
 
               {/* Game controls below board */}
               {currentPlayerColor && gameStatus === 'playing' && (
-                <div className="flex flex-col gap-1 w-full max-w-[500px] lg:max-w-none lg:w-[min(90vh,600px)]">
+                <div className="flex flex-col gap-1 w-full max-w-[500px] xl:max-w-[600px]">
                   <div className="flex gap-2">
                     <button
                       onClick={handleResign}
@@ -622,7 +622,7 @@ export default function RoomPage() {
             </div>
 
             {/* RIGHT SIDEBAR — move history + chat */}
-            <div className="flex flex-col gap-2 h-full justify-center w-full">
+            <div className="flex flex-col gap-2 h-full justify-center w-full xl:w-[280px]">
               {/* Mobile-only: players row */}
               <div className="lg:hidden flex gap-1 flex-shrink-0">
                 {(whitePlayer || blackPlayer) && (

@@ -189,10 +189,10 @@ export default function BotGame() {
 
         {/* Main layout: left panel | board (centered) | right sidebar */}
         <div className="flex-1 w-full h-full overflow-hidden pt-10 lg:pt-0">
-          <div className="h-full w-full max-w-7xl mx-auto flex flex-col lg:grid lg:grid-cols-[220px_1fr_300px] lg:gap-4 items-center justify-center px-1 lg:px-2">
+          <div className="h-full w-full max-w-7xl mx-auto flex flex-col xl:grid xl:grid-cols-[180px_1fr_280px] xl:gap-6 items-center justify-center px-1 lg:px-2">
 
             {/* LEFT PANEL — desktop only: bot info */}
-            <div className="hidden lg:flex flex-col gap-2 h-full justify-center w-full">
+            <div className="hidden xl:flex flex-col gap-2 h-full justify-center w-full">
               <div className="w-full max-w-[200px] bg-navy-800/60 border border-navy-700/50 p-3 rounded-none">
                 <h4 className="text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-2">Bot Settings</h4>
                 <div className="space-y-1.5">
@@ -216,8 +216,8 @@ export default function BotGame() {
             </div>
 
             {/* CENTER — Board */}
-            <div className="flex flex-col gap-1 w-full h-full justify-center items-center">
-              <div className="w-full aspect-square relative" style={{ borderRadius: 0 }}>
+            <div className="flex flex-col gap-1 w-full xl:w-auto h-full justify-center items-center flex-1 min-h-0">
+              <div className="relative max-h-[70vh] lg:max-h-[80vh] w-full max-w-[500px] xl:max-w-[600px] flex items-center justify-center">
                 <ChessBoard
                   roomId="bot-game"
                   matchId="bot-game"
@@ -246,7 +246,7 @@ export default function BotGame() {
 
               {/* Controls below board */}
               {gameStatus === 'playing' && (
-                <div className="flex gap-2 w-full mt-2">
+                <div className="flex gap-2 w-full max-w-[500px] xl:max-w-[600px] mt-2">
                   <button onClick={handleResign}
                     className={`rounded-none flex-1 text-xs py-2 font-bold transition-all ${confirmResign ? 'bg-red-600 text-white animate-pulse' : 'btn-secondary'}`}
                   >🏳️ {confirmResign ? 'Confirm?' : 'Resign'}</button>
@@ -263,7 +263,7 @@ export default function BotGame() {
             </div>
 
             {/* RIGHT SIDEBAR — players + move history */}
-            <div className="flex flex-col gap-2 h-full justify-center w-full">
+            <div className="flex flex-col gap-2 h-full justify-center w-full xl:w-[280px]">
               <div className="flex gap-1 flex-shrink-0">
                 <div className="flex-1 bg-navy-800/60 border border-navy-700/50 p-1.5">
                   {[{ ...currentPlayer, elo: user?.elo?.free || 1200 }, botPlayer].map((p, i) => (
