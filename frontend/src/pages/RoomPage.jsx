@@ -553,7 +553,7 @@ export default function RoomPage() {
             </div>
 
             {/* CENTER — Board */}
-            <div className="flex flex-col gap-1 flex-shrink-0 items-center justify-center w-full lg:max-w-[700px]">
+            <div className="flex flex-col gap-1 flex-shrink-0 items-center justify-center w-full lg:w-auto">
               <div className="w-full aspect-square relative" style={{ borderRadius: 0 }}>
                 {matchDataRef.current ? (
                   <ChessBoard
@@ -591,7 +591,7 @@ export default function RoomPage() {
 
               {/* Game controls below board */}
               {currentPlayerColor && gameStatus === 'playing' && (
-                <div className="flex flex-col gap-1 w-full">
+                <div className="flex flex-col gap-1 w-full max-w-[500px] lg:max-w-none lg:w-[min(90vh,600px)]">
                   <div className="flex gap-2">
                     <button
                       onClick={handleResign}

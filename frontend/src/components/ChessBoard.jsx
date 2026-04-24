@@ -588,14 +588,14 @@ export default function ChessBoard({
       <PlayerTimer player={topPlayer} time={topTime} isActive={isTopTurn && gameStatus === 'playing'} color={topColor} captured={topCaptured} materialAdvantage={topAdv} timerMax={timerMax} gameStatus={gameStatus} hideTimer={hideTimer} />
 
       {/* Board + Win Probability Bar */}
-      <div className="flex items-center gap-2 w-full">
+      <div className="flex items-center justify-center gap-2 w-full">
         {/* Only show WinProbabilityBar in review mode */}
         {isReview && <WinProbabilityBar fen={fen} height={boardSize} />}
 
-        <div className={`w-full overflow-hidden shadow-2xl shadow-black/50 transition-all duration-300 relative ${
+        <div className={`w-full max-w-[500px] lg:max-w-none lg:w-[min(90vh,600px)] aspect-square overflow-hidden shadow-2xl shadow-black/50 transition-all duration-300 relative ${
           !isMyTurn && !isSpectator && !isReview && gameStatus === 'playing' ? 'opacity-85' : ''
         }`}
-          style={{ width: boardSize, height: boardSize, flexShrink: 0 }}
+          style={{ flexShrink: 0 }}
         >
           {/* Username watermark during live game */}
           {gameStatus === 'playing' && username && (
