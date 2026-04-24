@@ -83,7 +83,7 @@ export default function Lobby() {
   const filteredEntries = selectedEntry === 'ALL' ? ENTRIES : [Number(selectedEntry)];
 
   return (
-    <div className="w-full bg-hero">
+    <div className="w-full bg-hero pb-28 lg:pb-8 min-h-full">
       <div className="max-w-7xl mx-auto px-4 py-6 lg:py-8">
         <h1 className="text-3xl font-black text-white mb-2">Arena Contests</h1>
         <p className="text-slate-400 text-sm mb-6">Select your stakes, format, and time control to dominate.</p>
