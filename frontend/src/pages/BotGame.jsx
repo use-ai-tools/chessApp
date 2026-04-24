@@ -167,11 +167,11 @@ export default function BotGame() {
   useEffect(() => { return () => terminate(); }, [terminate]);
 
   return (
-    <div className="h-[calc(100vh-64px)] bg-hero flex flex-col overflow-hidden">
+    <div className="flex-1 w-full bg-hero flex flex-col overflow-hidden relative">
       <div className="flex-1 flex flex-col px-2 py-2 lg:px-4 lg:py-3 overflow-hidden">
         {/* Header */}
-        <div className="flex items-center justify-between gap-2 mb-1 flex-shrink-0">
-          <div className="flex items-center gap-2">
+        <div className="flex lg:hidden items-center justify-between gap-2 mb-1 flex-shrink-0 absolute top-0 left-0 right-0 p-2 z-10 pointer-events-none">
+          <div className="flex items-center gap-2 pointer-events-auto">
             <h1 className="text-sm lg:text-xl font-bold text-white">🤖 vs Bot</h1>
             <span className={`badge rounded-none text-[10px] font-bold ${
               depth === 5 ? 'badge-green' : depth === 10 ? 'badge-gold' : 'bg-red-500/15 text-red-400 border border-red-500/30'
@@ -185,18 +185,14 @@ export default function BotGame() {
               </span>
             )}
           </div>
-          <div className="flex items-center gap-1">
-            <button onClick={handleNewGame} className="btn-secondary btn-sm rounded-none text-[10px]">🔄 New</button>
-            <button onClick={() => navigate('/')} className="btn-secondary btn-sm rounded-none text-[10px]">← Home</button>
-          </div>
         </div>
 
         {/* Main layout: left panel | board (centered) | right sidebar */}
-        <div className="flex-1 min-h-0 overflow-hidden">
-          <div className="h-full grid grid-cols-1 lg:grid-cols-[1fr_auto_280px] gap-2 lg:gap-4 max-w-7xl mx-auto items-center">
+        <div className="flex-1 w-full h-full overflow-hidden pt-10 lg:pt-0">
+          <div className="h-full w-full max-w-7xl mx-auto flex flex-col lg:grid lg:grid-cols-[220px_1fr_300px] lg:gap-4 items-center justify-center px-1 lg:px-2">
 
             {/* LEFT PANEL — desktop only: bot info */}
-            <div className="hidden lg:flex flex-col gap-2 h-full justify-center items-end pr-2 overflow-hidden">
+            <div className="hidden lg:flex flex-col gap-2 h-full justify-center w-full">
               <div className="w-full max-w-[200px] bg-navy-800/60 border border-navy-700/50 p-3 rounded-none">
                 <h4 className="text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-2">Bot Settings</h4>
                 <div className="space-y-1.5">
@@ -220,7 +216,7 @@ export default function BotGame() {
             </div>
 
             {/* CENTER — Board */}
-            <div className="flex flex-col gap-1 flex-shrink-0 items-center justify-center" style={{ width: '100%', maxWidth: 'min(calc(100vh - 160px), 560px)' }}>
+            <div className="flex flex-col gap-1 w-full h-full justify-center items-center">
               <div className="w-full aspect-square relative" style={{ borderRadius: 0 }}>
                 <ChessBoard
                   roomId="bot-game"
@@ -267,7 +263,7 @@ export default function BotGame() {
             </div>
 
             {/* RIGHT SIDEBAR — players + move history */}
-            <div className="flex flex-col gap-2 min-h-0 overflow-hidden h-full justify-center">
+            <div className="flex flex-col gap-2 h-full justify-center w-full">
               <div className="flex gap-1 flex-shrink-0">
                 <div className="flex-1 bg-navy-800/60 border border-navy-700/50 p-1.5">
                   {[{ ...currentPlayer, elo: user?.elo?.free || 1200 }, botPlayer].map((p, i) => (

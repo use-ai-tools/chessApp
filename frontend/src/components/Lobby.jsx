@@ -10,142 +10,170 @@ export default function Lobby() {
   const { token, user, refreshUser } = useContext(AuthContext);
   const navigate = useNavigate();
 
-  const [contestTypes, setContestTypes] = useState([]);
   const [message, setMessage] = useState('');
   const [msgType, setMsgType] = useState('');
-  const [joiningId, setJoiningId] = useState(null); // which type is currently joining
+  const [joiningId, setJoiningId] = useState(null);
   
+  const [selectedEntry, setSelectedEntry] = useState('ALL');
+  const [selectedPlayers, setSelectedPlayers] = useState('2');
+  const [selectedTime, setSelectedTime] = useState('10');
+
   const socketRef = useRef(null);
 
+  const ENTRIES = [1, 2, 5, 10, 25, 50, 100, 200, 500, 1000, 2000];
+  const PLAYERS = [2, 3, 4, 10];
+  const TIMES = [3, 5, 10];
+
   useEffect(() => {
-    fetchContests();
-    const iv = setInterval(fetchContests, 5000);
-    
-    // Setup socket
     socketRef.current = io(SOCKET_URL, { reconnection: true, transports: ['websocket'], timeout: 60000 });
     const socket = socketRef.current;
 
-    if (user?.id) {
-      socket.emit('identify', { userId: user.id });
-    }
+    if (user?.id) socket.emit('identify', { userId: user.id });
 
-    // Error from join attempt
     socket.on('contestError', (data) => {
       setMessage(data.message || 'Failed to join');
       setMsgType('error');
       setJoiningId(null);
     });
 
-    // Successfully joined — navigate to room
     socket.on('joinedContest', (data) => {
       refreshUser();
       setJoiningId(null);
       navigate(`/room/${data.contestId}`);
     });
 
-    // Match started — navigate to room
     socket.on('matchStarted', (data) => {
       refreshUser();
       setJoiningId(null);
       navigate(`/room/${data.contestId}`);
     });
 
-    // Contest slots updated — refresh list
-    socket.on('contestUpdated', () => {
-      fetchContests();
-    });
-
     return () => {
-      clearInterval(iv);
       if (socketRef.current) socketRef.current.disconnect();
     };
   }, [user, navigate, refreshUser]);
 
-  const fetchContests = async () => {
-    if (!token) return;
-    try {
-      const res = await fetch(`${API_URL}/api/contests`, { headers: { Authorization: `Bearer ${token}` } });
-      if (res.ok) setContestTypes(await res.json());
-    } catch (e) {}
-  };
-
-  const handleJoin = (ct) => {
+  const handleJoin = (entry, playersCount, timeControl) => {
     if (!user) return;
-    if (joiningId) return; // already joining something
+    if (joiningId) return;
 
-    if (ct.entry > 0 && (user.wallet || 0) < ct.entry) {
-      setMessage(`Insufficient balance! Need ₹${ct.entry}, have ₹${user.wallet}`);
+    if (entry > 0 && (user.wallet || 0) < entry) {
+      setMessage(`Insufficient balance! Need ₹${entry}, have ₹${user.wallet}`);
       setMsgType('error');
       return;
     }
 
+    const uniqueId = `${entry}-${playersCount}-${timeControl}`;
     setMessage('');
-    setJoiningId(ct._id);
+    setJoiningId(uniqueId);
 
-    // Send contestTypeId — backend will find an open slot
-    socketRef.current?.emit('joinContest', { contestTypeId: ct._id, userId: user.id });
+    // If players > 2, show coming soon for now
+    if (playersCount > 2) {
+      setTimeout(() => {
+        setMessage(`Multiplayer tournaments (${playersCount} players) are currently being finalized. Try 1v1 for now!`);
+        setMsgType('error');
+        setJoiningId(null);
+      }, 500);
+      return;
+    }
+
+    socketRef.current?.emit('joinDynamicContest', { entry, playersCount, timeControl, userId: user.id });
   };
 
+  const filteredEntries = selectedEntry === 'ALL' ? ENTRIES : [Number(selectedEntry)];
+
   return (
-    <div className="min-h-screen bg-hero">
-      <div className="max-w-7xl mx-auto px-4 py-6">
-        <h1 className="text-3xl font-black text-white mb-2">Chess Arena</h1>
-        <p className="text-slate-400 text-sm mb-6">Pick a contest and play!</p>
+    <div className="min-h-full bg-hero overflow-y-auto pb-24 lg:pb-8">
+      <div className="max-w-7xl mx-auto px-4 py-6 lg:py-8">
+        <h1 className="text-3xl font-black text-white mb-2">Arena Contests</h1>
+        <p className="text-slate-400 text-sm mb-6">Select your stakes, format, and time control to dominate.</p>
 
         {message && (
-          <div className={`mb-4 p-3 rounded-xl border text-sm font-medium animate-slide-down ${
+          <div className={`mb-6 p-4 rounded-xl border text-sm font-bold animate-slide-down shadow-xl ${
             msgType === 'error' ? 'bg-red-500/10 border-red-500/20 text-red-400' : 'bg-emerald-500/10 border-emerald-500/20 text-emerald-400'
           }`}>{message}</div>
         )}
 
+        {/* Filters */}
+        <div className="flex flex-col lg:flex-row gap-4 mb-8 bg-navy-800/40 p-4 rounded-2xl border border-navy-700/50 backdrop-blur-sm">
+          <div className="flex-1">
+            <label className="block text-xs font-bold text-slate-500 mb-2 uppercase tracking-wider">Players</label>
+            <div className="flex flex-wrap gap-2">
+              {PLAYERS.map(p => (
+                <button key={p} onClick={() => setSelectedPlayers(p.toString())} className={`px-4 py-2 rounded-xl text-sm font-bold transition-all ${
+                  selectedPlayers === p.toString() ? 'bg-chess-green text-white shadow-lg shadow-chess-green/20' : 'bg-navy-900/80 text-slate-400 hover:text-white border border-navy-700/50'
+                }`}>{p} Players</button>
+              ))}
+            </div>
+          </div>
+          <div className="flex-1">
+            <label className="block text-xs font-bold text-slate-500 mb-2 uppercase tracking-wider">Time Control</label>
+            <div className="flex flex-wrap gap-2">
+              {TIMES.map(t => (
+                <button key={t} onClick={() => setSelectedTime(t.toString())} className={`px-4 py-2 rounded-xl text-sm font-bold transition-all ${
+                  selectedTime === t.toString() ? 'bg-emerald-500 text-white shadow-lg shadow-emerald-500/20' : 'bg-navy-900/80 text-slate-400 hover:text-white border border-navy-700/50'
+                }`}>{t} Min</button>
+              ))}
+            </div>
+          </div>
+        </div>
 
+        {/* Contest Cards */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+          {filteredEntries.map(entry => {
+            const players = Number(selectedPlayers);
+            const time = Number(selectedTime);
+            const totalPot = entry * players;
+            const fee = Math.floor(totalPot * 0.15);
+            const prize = totalPot - fee;
+            const uniqueId = `${entry}-${players}-${time}`;
+            const isJoining = joiningId === uniqueId;
 
-        <div className="pb-24">
-          <div className="grid sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-            {contestTypes.map((ct) => {
-              const isJoining = joiningId === ct._id;
-              const hasWaiting = ct.waitingCount > 0;
-
-              return (
-                <div key={ct._id} className="contest-card p-5">
-                  <h2 className="text-lg font-bold text-white mb-1">{ct.name}</h2>
-
-                  <div className="flex items-center justify-between mb-2">
-                    <span className="text-slate-400 text-sm">Entry: <b className="text-white">₹{ct.entry}</b></span>
-                    <span className="text-chess-green text-sm font-bold">Win ₹{ct.payout}</span>
+            return (
+              <div key={uniqueId} className="card-hover p-0 overflow-hidden flex flex-col relative group">
+                {/* Decorative top bar */}
+                <div className="h-1.5 w-full bg-gradient-to-r from-chess-green via-emerald-400 to-chess-green"></div>
+                
+                <div className="p-5 flex-1 flex flex-col relative z-10">
+                  <div className="flex justify-between items-start mb-4">
+                    <div>
+                      <h3 className="text-xl font-black text-white">{players}P - {time}m</h3>
+                      <p className="text-xs font-medium text-slate-400 mt-1 uppercase tracking-wider">{players === 2 ? 'Direct Match' : players === 3 ? 'Round Robin' : players === 4 ? 'Semi -> Final' : 'Knockout Bracket'}</p>
+                    </div>
+                    <div className="bg-emerald-500/10 border border-emerald-500/20 px-3 py-1.5 rounded-lg flex flex-col items-center justify-center">
+                      <span className="text-[10px] text-emerald-500 font-bold uppercase tracking-wider">Prize</span>
+                      <span className="text-lg font-black text-emerald-400 leading-none mt-0.5">₹{prize}</span>
+                    </div>
                   </div>
 
-                  <div className="flex items-center justify-between mb-4">
-                    <span className="text-slate-500 text-xs">{ct.openCount || 0} open slots</span>
-                    {hasWaiting && (
-                      <span className="badge-green text-[10px]">⚡ {ct.waitingCount} waiting</span>
-                    )}
+                  <div className="flex flex-col gap-2 mb-6">
+                    <div className="flex justify-between items-center bg-navy-900/40 px-3 py-2 rounded-lg border border-navy-700/30">
+                      <span className="text-xs text-slate-400 font-medium">Entry Fee</span>
+                      <span className="text-sm text-white font-black">₹{entry}</span>
+                    </div>
+                    <div className="flex justify-between items-center bg-navy-900/40 px-3 py-2 rounded-lg border border-navy-700/30">
+                      <span className="text-xs text-slate-400 font-medium">Platform Fee</span>
+                      <span className="text-sm text-red-400 font-black">-₹{fee}</span>
+                    </div>
                   </div>
 
                   <button
-                    className={`w-full py-2.5 rounded-xl text-sm font-bold text-white transition-all active:scale-[0.97] ${
-                      isJoining
-                        ? 'bg-navy-600 text-slate-300 cursor-wait'
-                        : 'bg-gradient-to-r from-chess-green to-emerald-600 hover:shadow-lg hover:shadow-chess-green/30'
-                    }`}
-                    onClick={() => handleJoin(ct)}
+                    onClick={() => handleJoin(entry, players, time)}
                     disabled={isJoining}
+                    className={`mt-auto w-full py-3.5 rounded-xl text-sm font-black text-white transition-all active:scale-[0.98] flex items-center justify-center gap-2 ${
+                      isJoining ? 'bg-navy-600 cursor-wait' : 'bg-gradient-to-r from-chess-green to-emerald-600 hover:shadow-lg hover:shadow-chess-green/20'
+                    }`}
                   >
                     {isJoining ? (
-                      <span className="flex items-center justify-center gap-2">
-                        <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                        Finding match...
-                      </span>
-                    ) : hasWaiting ? (
-                      '⚡ Join Now — Instant Match!'
+                      <><span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" /> Joining...</>
                     ) : (
-                      `Join — ₹${ct.entry}`
+                      `Play for ₹${entry}`
                     )}
                   </button>
                 </div>
-              );
-            })}
-          </div>
+              </div>
+            );
+          })}
         </div>
       </div>
     </div>

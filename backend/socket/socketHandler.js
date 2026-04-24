@@ -313,6 +313,87 @@ module.exports = (io) => {
       }
     });
 
+    // ═══════════════════════════════════════════════
+    // DYNAMIC JOIN CONTEST (For new UI)
+    // ═══════════════════════════════════════════════
+    socket.on('joinDynamicContest', async ({ entry, playersCount, timeControl, userId }) => {
+      try {
+        if (entry === undefined || !playersCount || !timeControl || !userId) return socket.emit('contestError', { message: 'Missing data' });
+
+        let ct = await ContestType.findOne({ entry, playersCount, timeControl });
+        if (!ct) {
+          const totalPot = entry * playersCount;
+          const platformFee = Math.floor(totalPot * 0.15);
+          const payout = totalPot - platformFee;
+          ct = await ContestType.create({
+            name: `${playersCount}P - ${timeControl}m - ₹${entry}`,
+            entry, payout, platform: platformFee, playersCount, timeControl
+          });
+        }
+
+        const user = await User.findById(userId);
+        if (!user) return socket.emit('contestError', { message: 'User not found' });
+        if (user.banned) return socket.emit('contestError', { message: 'Account banned' });
+
+        const existing = await Contest.findOne({
+          contestType: ct._id,
+          players: userId,
+          status: { $in: ['open', 'playing'] },
+        });
+        if (existing) {
+          socket.emit('joinedContest', { contestId: existing._id.toString() });
+          return;
+        }
+
+        if (ct.entry > 0 && user.wallet < ct.entry) {
+          return socket.emit('contestError', { message: `Insufficient balance. Need ₹${ct.entry}, have ₹${user.wallet}` });
+        }
+
+        if (ct.entry > 0) {
+          user.wallet -= ct.entry;
+          await user.save();
+          await Transaction.create({ userId, amount: ct.entry, type: 'debit', reason: `Entry fee — ${ct.name}`, status: 'completed' });
+          socket.emit('walletUpdate', { wallet: user.wallet });
+        }
+
+        let contest = await Contest.findOneAndUpdate(
+          { contestType: ct._id, status: 'open', $expr: { $lt: [{ $size: "$players" }, ct.playersCount || 2] } },
+          { $push: { players: userId } },
+          { new: true, sort: { createdAt: 1 } }
+        ).populate('contestType');
+
+        // Fallback for older mongo without $expr or missing players array
+        if (!contest) {
+          contest = await Contest.findOneAndUpdate(
+            { contestType: ct._id, status: 'open', 'players.1': { $exists: false } },
+            { $push: { players: userId } },
+            { new: true, sort: { createdAt: 1 } }
+          ).populate('contestType');
+        }
+
+        if (!contest) {
+          contest = await Contest.create({
+            contestType: ct._id,
+            status: 'open',
+            players: [userId]
+          });
+          contest = await contest.populate('contestType');
+        }
+
+        io.emit('contestUpdated', { contestTypeId: ct._id.toString(), players: contest.players.length });
+
+        if (contest.players.length >= (ct.playersCount || 2)) {
+          socket.emit('joinedContest', { contestId: contest._id.toString(), waiting: false });
+          await startMatch(contest._id.toString());
+        } else {
+          socket.emit('joinedContest', { contestId: contest._id.toString(), waiting: true });
+        }
+      } catch (err) {
+        console.error('[joinDynamicContest]', err);
+        socket.emit('contestError', { message: err.message || 'Failed to join' });
+      }
+    });
+
     // ── LEAVE CONTEST (before match starts) ──
     socket.on('leaveContest', async ({ contestId, userId }) => {
       try {
