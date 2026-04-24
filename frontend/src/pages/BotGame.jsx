@@ -167,8 +167,8 @@ export default function BotGame() {
   useEffect(() => { return () => terminate(); }, [terminate]);
 
   return (
-    <div className="flex-1 w-full bg-hero flex flex-col overflow-y-auto relative pb-28 lg:pb-0">
-      <div className="flex-1 flex flex-col px-2 py-2 lg:px-4 lg:py-3 lg:overflow-hidden">
+    <div className="flex-1 w-full bg-hero flex flex-col overflow-y-auto relative pb-24 lg:pb-0">
+      <div className="flex-1 flex flex-col px-2 py-2 lg:px-4 lg:py-3">
         {/* Mobile Header */}
         <div className="flex lg:hidden items-center justify-between gap-2 mb-2 flex-shrink-0 z-10">
           <div className="flex items-center gap-2">
@@ -188,8 +188,8 @@ export default function BotGame() {
         </div>
 
         {/* Main layout */}
-        <div className="flex-1 w-full lg:h-full lg:overflow-hidden">
-          <div className="w-full max-w-7xl mx-auto flex flex-col lg:flex-row lg:gap-4 items-center lg:items-start lg:justify-center px-1 lg:px-2 h-full">
+        <div className="flex-1 w-full">
+          <div className="w-full max-w-7xl mx-auto flex flex-col lg:flex-row lg:gap-4 items-center lg:items-start lg:justify-center px-1 lg:px-2">
 
             {/* LEFT PANEL — controls + bot info */}
             <div className="hidden lg:flex flex-col gap-2 justify-center flex-shrink-0 w-[180px] self-center">
@@ -233,7 +233,7 @@ export default function BotGame() {
 
             {/* CENTER — Board */}
             <div className="flex flex-col gap-1 items-center flex-shrink-0 w-full lg:w-auto lg:self-center">
-              <div className="relative w-full max-w-[min(100vw,500px)] lg:max-w-[500px] xl:max-w-[560px] flex items-center justify-center" style={{ aspectRatio: '1/1' }}>
+              <div className="relative w-full max-w-[100vw] lg:max-w-[500px] xl:max-w-[560px] flex items-center justify-center" style={{ aspectRatio: '1/1' }}>
                 <ChessBoard
                   roomId="bot-game"
                   matchId="bot-game"
@@ -259,29 +259,11 @@ export default function BotGame() {
                   </div>
                 )}
               </div>
-
-              {/* Controls below board — mobile only */}
-              <div className="lg:hidden w-full max-w-[500px]">
-                {gameStatus === 'playing' && (
-                  <div className="flex gap-2 w-full mt-2">
-                    <button onClick={handleResign}
-                      className={`rounded-none flex-1 text-xs py-2 font-bold transition-all ${confirmResign ? 'bg-red-600 text-white animate-pulse' : 'btn-secondary'}`}
-                    >🏳️ {confirmResign ? 'Confirm?' : 'Resign'}</button>
-                    {confirmResign && <button onClick={() => setConfirmResign(false)} className="rounded-none flex-1 text-xs py-2 bg-navy-700 text-slate-300 font-medium">Cancel</button>}
-                    <button onClick={handleNewGame} className="btn-secondary rounded-none flex-1 text-xs py-2 font-bold">🔄 New Game</button>
-                  </div>
-                )}
-                {gameStatus === 'finished' && (
-                  <div className="flex gap-2 w-full mt-2">
-                    <button onClick={handleNewGame} className="btn-primary rounded-none flex-1 text-xs py-2 font-bold">🔄 Play Again</button>
-                    <button onClick={() => setShowGameReview(true)} className="btn-secondary rounded-none flex-1 text-xs py-2 font-bold">📊 Review</button>
-                  </div>
-                )}
-              </div>
             </div>
 
-            {/* RIGHT SIDEBAR — player info + move history */}
+            {/* RIGHT SIDEBAR — mobile: player info, buttons, then moves. Desktop: sidebar */}
             <div className="flex flex-col gap-2 w-full lg:w-[260px] lg:self-center flex-shrink-0">
+              {/* Player Info */}
               <div className="flex gap-1 flex-shrink-0">
                 <div className="flex-1 bg-navy-800/60 border border-navy-700/50 p-1.5">
                   {[{ ...currentPlayer, elo: user?.elo?.free || 1200 }, botPlayer].map((p, i) => (
@@ -297,6 +279,25 @@ export default function BotGame() {
                     </div>
                   ))}
                 </div>
+              </div>
+
+              {/* Controls — mobile: after player info, before moves */}
+              <div className="lg:hidden w-full">
+                {gameStatus === 'playing' && (
+                  <div className="flex gap-2 w-full">
+                    <button onClick={handleResign}
+                      className={`rounded-none flex-1 text-xs py-2 font-bold transition-all ${confirmResign ? 'bg-red-600 text-white animate-pulse' : 'btn-secondary'}`}
+                    >🏳️ {confirmResign ? 'Confirm?' : 'Resign'}</button>
+                    {confirmResign && <button onClick={() => setConfirmResign(false)} className="rounded-none flex-1 text-xs py-2 bg-navy-700 text-slate-300 font-medium">Cancel</button>}
+                    <button onClick={handleNewGame} className="btn-secondary rounded-none flex-1 text-xs py-2 font-bold">🔄 New Game</button>
+                  </div>
+                )}
+                {gameStatus === 'finished' && (
+                  <div className="flex gap-2 w-full">
+                    <button onClick={handleNewGame} className="btn-primary rounded-none flex-1 text-xs py-2 font-bold">🔄 Play Again</button>
+                    <button onClick={() => setShowGameReview(true)} className="btn-secondary rounded-none flex-1 text-xs py-2 font-bold">📊 Review</button>
+                  </div>
+                )}
               </div>
 
               {/* Move history */}

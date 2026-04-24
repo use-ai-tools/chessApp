@@ -231,27 +231,26 @@ export default function ChessBoard({
   const whiteAdv = Math.max(0, whiteAdvRaw);
   const blackAdv = Math.max(0, -whiteAdvRaw);
 
-  // ── Timer countdown ──
-  const timerMax = Math.ceil(moveTimeoutMs / 1000);
+  // ── Chess Clock countdown ──
+  // timerData has: { turn, whiteTime, blackTime, startedAt }
   useEffect(() => {
     if (!timerData || gameStatus !== 'playing') return;
-    const calculateRemaining = () => {
-      const expires = timerData.expiresAt || Date.now() + moveTimeoutMs;
-      return Math.max(0, Math.floor((expires - Date.now()) / 1000));
-    };
-    if (timerData.turn === 'w') {
-      setWhiteTime(calculateRemaining());
-      setBlackTime(timerMax);
-    } else {
-      setBlackTime(calculateRemaining());
-      setWhiteTime(timerMax);
-    }
+    // Set initial times from server
+    setWhiteTime(timerData.whiteTime || 600);
+    setBlackTime(timerData.blackTime || 600);
+    const serverStart = timerData.startedAt || Date.now();
+    const activeTurn = timerData.turn;
+
     const interval = setInterval(() => {
-      if (timerData.turn === 'w') setWhiteTime((p) => Math.max(0, p - 1));
-      else setBlackTime((p) => Math.max(0, p - 1));
-    }, 1000);
+      const elapsed = (Date.now() - serverStart) / 1000;
+      if (activeTurn === 'w') {
+        setWhiteTime(Math.max(0, (timerData.whiteTime || 600) - elapsed));
+      } else {
+        setBlackTime(Math.max(0, (timerData.blackTime || 600) - elapsed));
+      }
+    }, 100); // 100ms for smooth countdown
     return () => clearInterval(interval);
-  }, [timerData, gameStatus, moveTimeoutMs]);
+  }, [timerData, gameStatus]);
 
   // ── Auto-dismiss removed ──
 
@@ -585,17 +584,17 @@ export default function ChessBoard({
       )}
 
       {/* Top Player */}
-      <PlayerTimer player={topPlayer} time={topTime} isActive={isTopTurn && gameStatus === 'playing'} color={topColor} captured={topCaptured} materialAdvantage={topAdv} timerMax={timerMax} gameStatus={gameStatus} hideTimer={hideTimer} />
+      <PlayerTimer player={topPlayer} time={topTime} isActive={isTopTurn && gameStatus === 'playing'} color={topColor} captured={topCaptured} materialAdvantage={topAdv} gameStatus={gameStatus} hideTimer={hideTimer} />
 
       {/* Board + Win Probability Bar */}
       <div className="flex items-center justify-center gap-2 w-full">
         {/* Only show WinProbabilityBar in review mode */}
         {isReview && <WinProbabilityBar fen={fen} height={boardSize} />}
 
-        <div className={`w-full max-w-[500px] lg:max-w-none lg:w-[min(90vh,600px)] aspect-square shadow-2xl shadow-black/50 transition-all duration-300 relative ${
+        <div className={`w-full max-w-[100vw] lg:max-w-[500px] xl:max-w-[min(90vh,600px)] aspect-square shadow-2xl shadow-black/50 transition-all duration-300 relative ${
           !isMyTurn && !isSpectator && !isReview && gameStatus === 'playing' ? 'opacity-85' : ''
         }`}
-          style={{ flexShrink: 0, maxWidth: '100vw' }}
+          style={{ flexShrink: 0 }}
         >
           {/* Username watermark during live game */}
           {gameStatus === 'playing' && username && (
@@ -628,7 +627,7 @@ export default function ChessBoard({
       {prequeue.length > 0 && <p className="text-[10px] text-red-400 font-bold">{prequeue.length} premove{prequeue.length > 1 ? 's' : ''} queued</p>}
       {activePremoveStart && prequeue.length === 0 && <p className="text-[10px] text-red-400/70 font-medium">Select target square...</p>}
 
-      <PlayerTimer player={bottomPlayer} time={bottomTime} isActive={isBottomTurn && gameStatus === 'playing'} color={bottomColor} captured={bottomCaptured} materialAdvantage={bottomAdv} timerMax={timerMax} gameStatus={gameStatus} hideTimer={hideTimer} />
+      <PlayerTimer player={bottomPlayer} time={bottomTime} isActive={isBottomTurn && gameStatus === 'playing'} color={bottomColor} captured={bottomCaptured} materialAdvantage={bottomAdv} gameStatus={gameStatus} hideTimer={hideTimer} />
 
       <div className="w-full max-w-[560px] flex items-center justify-between mt-1">
         {isSpectator && <div className="badge-purple rounded-none"><span>👁️</span> Spectating</div>}

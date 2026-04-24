@@ -21,10 +21,13 @@ export default function MoveHistory({
 
   const activeIndex = currentIndex === -1 ? moves.length - 1 : currentIndex;
 
-  // Auto-scroll to keep active move centered
+  // Auto-scroll within container only (no page scroll)
   useEffect(() => {
     if (activeRef.current && containerRef.current) {
-      activeRef.current.scrollIntoView({ block: 'center', behavior: 'smooth' });
+      const container = containerRef.current;
+      const el = activeRef.current;
+      const offsetTop = el.offsetTop - container.offsetTop;
+      container.scrollTop = offsetTop - container.clientHeight / 2 + el.clientHeight / 2;
     }
   }, [activeIndex, moves.length]);
 

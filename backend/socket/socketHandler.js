@@ -14,26 +14,41 @@ const games = new Map();         // contestId -> Chess instance + metadata
 const userSockets = new Map();   // userId -> socketId
 const moveTimers = new Map();    // contestId -> setTimeout handle
 const matchStates = new Map();   // contestId -> full match state for quick sync
-const MOVE_TIMEOUT_MS = 30000;
+const DEFAULT_TIME_SEC = 600; // fallback 10 min
 
 module.exports = (io) => {
 
-  // ── TIMER ──
-  const startMoveTimer = (contestId, gameState) => {
+  // ── CHESS CLOCK TIMER ──
+  // Each player has a total time pool. On their turn, a countdown runs.
+  // When they move, elapsed time is deducted. If time hits 0 → they lose.
+  const startChessClock = (contestId, gameState) => {
     if (moveTimers.has(contestId)) clearTimeout(moveTimers.get(contestId));
-    const expiresAt = Date.now() + MOVE_TIMEOUT_MS;
+    const turn = gameState.chess.turn();
+    const remaining = turn === 'w' ? gameState.whiteTime : gameState.blackTime;
+    gameState.lastTickAt = Date.now();
+
+    // Set timeout for when this player's clock runs out
     const timer = setTimeout(async () => {
       try {
         const contest = await Contest.findById(contestId);
         if (!contest || contest.status !== 'playing') return;
-        const turn = gameState.chess.turn();
         const loserId = turn === 'w' ? contest.whitePlayer : contest.blackPlayer;
         const winnerId = turn === 'w' ? contest.blackPlayer : contest.whitePlayer;
+        if (turn === 'w') gameState.whiteTime = 0;
+        else gameState.blackTime = 0;
         await endContest(contestId, winnerId, loserId, 'timeout', gameState);
       } catch (err) { console.error('[timer]', err); }
-    }, MOVE_TIMEOUT_MS);
+    }, remaining * 1000);
     moveTimers.set(contestId, timer);
-    io.to(contestId).emit('timerStart', { contestId, timeMs: MOVE_TIMEOUT_MS, turn: gameState.chess.turn(), startedAt: Date.now(), expiresAt });
+
+    // Emit clock state to both players
+    io.to(contestId).emit('timerStart', {
+      contestId,
+      turn,
+      whiteTime: gameState.whiteTime,
+      blackTime: gameState.blackTime,
+      startedAt: Date.now(),
+    });
   };
 
   // ── END CONTEST ──
@@ -121,7 +136,8 @@ module.exports = (io) => {
       await contest.save();
 
       const chess = new Chess();
-      games.set(contestId, { chess, players: [whiteId, blackId], moveCount: 0 });
+      const totalTimeSec = (contest.contestType?.timeControl || 10) * 60; // timeControl is in minutes
+      games.set(contestId, { chess, players: [whiteId, blackId], moveCount: 0, whiteTime: totalTimeSec, blackTime: totalTimeSec, lastTickAt: Date.now() });
 
       const white = await User.findById(whiteId).select('username elo').lean();
       const black = await User.findById(blackId).select('username elo').lean();
@@ -453,11 +469,11 @@ module.exports = (io) => {
 
     // ── PLAYER READY ──
     socket.on('playerReady', async ({ contestId, userId }) => {
-      // Game is already started — just start the timer
       const gameState = games.get(contestId);
       if (!gameState) return;
-      // Start timer on first move instead
       io.to(contestId).emit('gameReady', { contestId });
+      // Start chess clock for the first move
+      startChessClock(contestId, gameState);
     });
 
     // ── MAKE MOVE ──
@@ -503,8 +519,18 @@ module.exports = (io) => {
           await contest.save(); await endContest(contestId, null, null, 'insufficient', gameState); return;
         }
 
+        // Deduct elapsed time from the player who just moved
+        if (gameState.lastTickAt) {
+          const elapsed = (Date.now() - gameState.lastTickAt) / 1000;
+          if (turnBefore === 'w') {
+            gameState.whiteTime = Math.max(0, gameState.whiteTime - elapsed);
+          } else {
+            gameState.blackTime = Math.max(0, gameState.blackTime - elapsed);
+          }
+        }
+
         await contest.save();
-        startMoveTimer(contestId, gameState);
+        startChessClock(contestId, gameState);
         io.to(contestId).emit('moveMade', { contestId, from, to, san: move.san, fen: chess.fen(), inCheck: chess.in_check(), captured: move.captured || null });
       } catch (err) { console.error('[makeMove]', err); }
     });

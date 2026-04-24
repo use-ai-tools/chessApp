@@ -12,8 +12,15 @@ export default function PlayerTimer({
   hideTimer = false,
 }) {
   const formatTime = (seconds) => {
+    if (seconds <= 0) return '0:00';
+    if (seconds < 10) {
+      // Show tenths for low time
+      const s = Math.floor(seconds);
+      const tenths = Math.floor((seconds - s) * 10);
+      return `0:${s.toString().padStart(2, '0')}.${tenths}`;
+    }
     const m = Math.floor(seconds / 60);
-    const s = seconds % 60;
+    const s = Math.floor(seconds % 60);
     return `${m}:${s.toString().padStart(2, '0')}`;
   };
 
