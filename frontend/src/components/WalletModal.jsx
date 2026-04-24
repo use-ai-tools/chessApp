@@ -1,10 +1,12 @@
 import React, { useState, useEffect, useContext } from 'react';
 import { AuthContext } from '../contexts/AuthContext';
+import { useCurrency } from '../contexts/CurrencyContext';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001';
 
 export default function WalletModal({ onClose }) {
   const { user, token, refreshUser, updateWallet } = useContext(AuthContext);
+  const { formatShort, getSymbol } = useCurrency();
   const [activeTab, setActiveTab] = useState('overview');
   const [transactions, setTransactions] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -57,7 +59,7 @@ export default function WalletModal({ onClose }) {
       if (!res.ok) throw new Error(data.message);
       updateWallet(data.wallet);
       setAddAmount('');
-      showMsg(`₹${amt} added successfully! ✅`);
+      showMsg(`${formatShort(amt)} added successfully! ✅`);
       fetchTransactions();
     } catch (err) {
       showMsg(err.message, 'error');
@@ -66,7 +68,7 @@ export default function WalletModal({ onClose }) {
 
   const handleWithdraw = async () => {
     const amt = parseInt(withdrawAmount);
-    if (!amt || amt < 50) return showMsg('Minimum withdrawal is ₹50', 'error');
+    if (!amt || amt < 50) return showMsg(`Minimum withdrawal is ${formatShort(50)}`, 'error');
     if (!upiId.trim()) return showMsg('Enter your UPI ID', 'error');
     if (amt > (user?.wallet || 0)) return showMsg('Insufficient balance', 'error');
     setLoading(true);
@@ -128,7 +130,7 @@ export default function WalletModal({ onClose }) {
         <div className="p-5 border-b border-navy-700/30 flex items-center justify-between flex-shrink-0">
           <h2 className="text-lg font-bold text-white flex items-center gap-2">
             <div className="w-8 h-8 rounded-full bg-gradient-to-br from-gold-400 to-gold-600 flex items-center justify-center">
-              <span className="text-navy-900 text-sm font-bold">₹</span>
+              <span className="text-navy-900 text-sm font-bold">{getSymbol()}</span>
             </div>
             Wallet
           </h2>
@@ -138,10 +140,10 @@ export default function WalletModal({ onClose }) {
         {/* Balance */}
         <div className="px-5 py-4 bg-gradient-to-r from-chess-green/10 to-emerald-500/5 border-b border-navy-700/30 flex-shrink-0">
           <p className="text-xs text-slate-500 uppercase tracking-wider">Available Balance</p>
-          <p className="text-3xl font-black text-white">₹{(user?.wallet || 0).toLocaleString()}</p>
+          <p className="text-3xl font-black text-white">{formatShort(user?.wallet || 0)}</p>
           <div className="flex gap-4 mt-2 text-xs">
-            <span className="text-emerald-400">↑ Won: ₹{totalWon.toLocaleString()}</span>
-            <span className="text-red-400">↓ Spent: ₹{totalLost.toLocaleString()}</span>
+            <span className="text-emerald-400">↑ Won: {formatShort(totalWon)}</span>
+            <span className="text-red-400">↓ Spent: {formatShort(totalLost)}</span>
           </div>
         </div>
 
@@ -185,7 +187,7 @@ export default function WalletModal({ onClose }) {
 
               <h4 className="text-xs text-slate-500 font-bold uppercase tracking-wider mt-4">Recent Activity</h4>
               {transactions.slice(0, 5).map((tx, i) => (
-                <TxRow key={tx._id || i} tx={tx} formatDate={formatDate} />
+                <TxRow key={tx._id || i} tx={tx} formatDate={formatDate} formatShort={formatShort} />
               ))}
               {transactions.length > 5 && (
                 <button onClick={() => setActiveTab('history')} className="text-xs text-chess-green font-bold hover:underline">
@@ -204,7 +206,7 @@ export default function WalletModal({ onClose }) {
                   {quickAmounts.map(amt => (
                     <button key={amt} onClick={() => handleAddMoney(amt)} disabled={loading}
                       className="px-4 py-2.5 rounded-xl bg-navy-800 border border-navy-700/30 text-white font-bold text-sm hover:border-chess-green/30 hover:bg-chess-green/5 transition-all">
-                      ₹{amt}
+                      {formatShort(amt)}
                     </button>
                   ))}
                 </div>
@@ -214,7 +216,7 @@ export default function WalletModal({ onClose }) {
                 <label className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2 block">Custom Amount</label>
                 <div className="flex gap-2">
                   <div className="relative flex-1">
-                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500">₹</span>
+                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500">{getSymbol()}</span>
                     <input type="number" value={addAmount} onChange={e => setAddAmount(e.target.value)}
                       placeholder="Enter amount" min="1" max="10000"
                       className="input-field pl-8" />
@@ -227,7 +229,7 @@ export default function WalletModal({ onClose }) {
               </div>
 
               <div className="p-3 rounded-xl bg-navy-800/50 border border-navy-700/20 text-xs text-slate-500">
-                <p>💡 Max deposit: ₹10,000 per transaction</p>
+                <p>💡 Max deposit: {formatShort(10000)} per transaction</p>
                 <p className="mt-1">🔒 Payments secured via Razorpay</p>
               </div>
             </div>
@@ -239,9 +241,9 @@ export default function WalletModal({ onClose }) {
               <div>
                 <label className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2 block">Amount</label>
                 <div className="relative">
-                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500">₹</span>
+                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500">{getSymbol()}</span>
                   <input type="number" value={withdrawAmount} onChange={e => setWithdrawAmount(e.target.value)}
-                    placeholder="Min ₹50" min="50" className="input-field pl-8" />
+                    placeholder={`Min ${formatShort(50)}`} min="50" className="input-field pl-8" />
                 </div>
               </div>
 
@@ -258,9 +260,9 @@ export default function WalletModal({ onClose }) {
 
               <div className="p-3 rounded-xl bg-yellow-500/10 border border-yellow-500/20 text-xs text-yellow-400">
                 <p>⏱️ Processing time: 24-48 hours</p>
-                <p className="mt-1">📋 Min withdrawal: ₹50</p>
+                <p className="mt-1">📋 Min withdrawal: {formatShort(50)}</p>
                 {parseInt(withdrawAmount) > 0 && (
-                  <p className="mt-1 text-yellow-300">💰 Net winnings above ₹10,000 are subject to 30% TDS</p>
+                  <p className="mt-1 text-yellow-300">💰 Net winnings above {formatShort(10000)} are subject to 30% TDS</p>
                 )}
               </div>
             </div>
@@ -275,7 +277,7 @@ export default function WalletModal({ onClose }) {
                   <p className="text-slate-400">No transactions yet</p>
                 </div>
               ) : transactions.map((tx, i) => (
-                <TxRow key={tx._id || i} tx={tx} formatDate={formatDate} />
+                <TxRow key={tx._id || i} tx={tx} formatDate={formatDate} formatShort={formatShort} />
               ))}
             </div>
           )}
@@ -289,7 +291,7 @@ export default function WalletModal({ onClose }) {
                 </label>
                 <div className="flex gap-2">
                   <div className="relative flex-1">
-                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500">₹</span>
+                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500">{getSymbol()}</span>
                     <input type="number" value={depositLimit} onChange={e => setDepositLimit(parseInt(e.target.value) || 0)}
                       placeholder="0 = No limit" className="input-field pl-8" />
                   </div>
@@ -315,7 +317,7 @@ export default function WalletModal({ onClose }) {
   );
 }
 
-function TxRow({ tx, formatDate }) {
+function TxRow({ tx, formatDate, formatShort }) {
   const isCredit = tx.type === 'credit';
   return (
     <div className="flex items-center gap-3 p-3 rounded-xl bg-navy-800/40 border border-navy-700/10 hover:border-navy-600/20 transition-all">
@@ -330,7 +332,7 @@ function TxRow({ tx, formatDate }) {
       </div>
       <div className="text-right flex-shrink-0">
         <p className={`text-sm font-bold ${isCredit ? 'text-emerald-400' : 'text-red-400'}`}>
-          {isCredit ? '+' : '-'}₹{tx.amount}
+          {isCredit ? '+' : '-'}{formatShort ? formatShort(tx.amount) : `₹${tx.amount}`}
         </p>
         {tx.status === 'pending' && (
           <span className="text-[9px] text-yellow-400 font-medium">Pending</span>

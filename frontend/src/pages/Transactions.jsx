@@ -1,10 +1,12 @@
 import React, { useState, useEffect, useContext } from 'react';
 import { AuthContext } from '../contexts/AuthContext';
+import { useCurrency } from '../contexts/CurrencyContext';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001';
 
 export default function Transactions() {
   const { token, user } = useContext(AuthContext);
+  const { format, formatShort } = useCurrency();
   const [transactions, setTransactions] = useState([]);
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
@@ -55,15 +57,15 @@ export default function Transactions() {
         <div className="grid grid-cols-3 gap-3 mb-6 animate-fade-in">
           <div className="card text-center py-4">
             <p className="text-xs text-slate-500 uppercase">Balance</p>
-            <p className="text-xl font-black text-white">₹{(user?.wallet || 0).toLocaleString()}</p>
+            <p className="text-xl font-black text-white">{formatShort(user?.wallet || 0)}</p>
           </div>
           <div className="card text-center py-4">
             <p className="text-xs text-slate-500 uppercase">Credits</p>
-            <p className="text-xl font-black text-emerald-400">+₹{totalCredit.toLocaleString()}</p>
+            <p className="text-xl font-black text-emerald-400">+{formatShort(totalCredit)}</p>
           </div>
           <div className="card text-center py-4">
             <p className="text-xs text-slate-500 uppercase">Debits</p>
-            <p className="text-xl font-black text-red-400">-₹{totalDebit.toLocaleString()}</p>
+            <p className="text-xl font-black text-red-400">-{formatShort(totalDebit)}</p>
           </div>
         </div>
 
@@ -102,7 +104,7 @@ export default function Transactions() {
                 </div>
                 <div className="text-right flex-shrink-0">
                   <p className={`text-base font-bold ${tx.type === 'credit' ? 'text-emerald-400' : 'text-red-400'}`}>
-                    {tx.type === 'credit' ? '+' : '-'}₹{tx.amount}
+                    {tx.type === 'credit' ? '+' : '-'}{formatShort(tx.amount)}
                   </p>
                   {tx.status === 'pending' && <span className="badge-gold text-[9px]">Pending</span>}
                 </div>

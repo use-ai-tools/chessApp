@@ -1,12 +1,14 @@
 import React, { useContext, useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { AuthContext } from '../contexts/AuthContext';
+import { useCurrency } from '../contexts/CurrencyContext';
 import WalletModal from './WalletModal';
 import ChatBot from './ChatBot';
 import PingIndicator from './PingIndicator';
 
 export default function Header() {
   const { user, logout, token } = useContext(AuthContext);
+  const { formatShort, getSymbol } = useCurrency();
   const [walletOpen, setWalletOpen] = useState(false);
   const [supportOpen, setSupportOpen] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
@@ -107,10 +109,10 @@ export default function Header() {
               id="wallet-btn"
             >
               <div className="w-6 h-6 rounded-full bg-gradient-to-br from-chess-green to-emerald-600 flex items-center justify-center">
-                <span className="text-white text-xs font-bold">₹</span>
+                <span className="text-white text-xs font-bold">{getSymbol()}</span>
               </div>
               <span className="text-chess-green font-bold text-sm group-hover:text-emerald-400 transition-colors">
-                {(user.wallet || 0).toLocaleString()}
+                {formatShort(user.wallet || 0)}
               </span>
             </button>
 

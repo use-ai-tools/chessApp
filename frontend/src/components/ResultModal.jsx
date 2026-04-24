@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { playSound } from './ChessBoard';
+import { useCurrency } from '../contexts/CurrencyContext';
 
 const CLASS_CONFIG = {
   brilliant: { icon: '‼', label: 'Brilliant', color: 'text-cyan-400', bg: 'bg-cyan-500/15', border: 'border-cyan-500/30' },
@@ -14,6 +15,7 @@ const CLASS_CONFIG = {
 
 export default function ResultModal({ result, onClose, onBackToLobby, onPlayAgain, onGameReview }) {
   const [showContent, setShowContent] = useState(false);
+  const { formatShort } = useCurrency();
 
   useEffect(() => {
     if (result) {
@@ -121,7 +123,7 @@ export default function ResultModal({ result, onClose, onBackToLobby, onPlayAgai
           {result.prize > 0 && (
             <div className="mb-4 p-3 rounded-xl bg-gold-500/10 border border-gold-500/20 glow-gold">
               <p className="text-sm text-gold-400 mb-1">🏆 Prize Won</p>
-              <p className="text-2xl font-black text-gold-300">+₹{result.prize.toLocaleString()}</p>
+              <p className="text-2xl font-black text-gold-300">+{formatShort(result.prize)}</p>
               <p className="text-xs text-gold-500 mt-1">Added to your wallet</p>
             </div>
           )}

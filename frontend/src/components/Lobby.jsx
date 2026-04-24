@@ -1,5 +1,6 @@
 import React, { useEffect, useState, useContext, useRef } from 'react';
 import { AuthContext } from '../contexts/AuthContext';
+import { useCurrency } from '../contexts/CurrencyContext';
 import { useNavigate } from 'react-router-dom';
 import { io } from 'socket.io-client';
 
@@ -7,49 +8,27 @@ const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001';
 const SOCKET_URL = import.meta.env.VITE_SOCKET_URL || 'http://localhost:3001';
 
 // ── Prize Distribution Logic ──
+// 2, 3, 4 players → 1 winner only (15% platform fee)
+// 10 players → 1st: 50%, 2nd: 20%, 3rd: 10% of total pot (20% platform fee)
 function getPrizeDistribution(totalPot, playersCount) {
-  const fee = Math.floor(totalPot * 0.15);
-  const prize = totalPot - fee;
-
-  if (playersCount <= 2) {
+  if (playersCount <= 4) {
+    // Single winner takes all (15% platform fee)
+    const fee = Math.floor(totalPot * 0.15);
+    const prize = totalPot - fee;
     return { fee, totalPrize: prize, breakdown: [{ rank: 1, prize, percent: 100 }] };
   }
-  if (playersCount === 3) {
-    const first = Math.floor(prize * 0.6);
-    const second = prize - first;
-    return {
-      fee, totalPrize: prize,
-      breakdown: [
-        { rank: 1, prize: first, percent: 60 },
-        { rank: 2, prize: second, percent: 40 },
-      ]
-    };
-  }
-  if (playersCount === 4) {
-    const first = Math.floor(prize * 0.5);
-    const second = Math.floor(prize * 0.3);
-    const third = prize - first - second;
-    return {
-      fee, totalPrize: prize,
-      breakdown: [
-        { rank: 1, prize: first, percent: 50 },
-        { rank: 2, prize: second, percent: 30 },
-        { rank: 3, prize: third, percent: 20 },
-      ]
-    };
-  }
-  // 5+ players
-  const first = Math.floor(prize * 0.45);
-  const second = Math.floor(prize * 0.25);
-  const third = Math.floor(prize * 0.15);
-  const fourth = prize - first - second - third;
+  // 10 players: 20% platform fee, 3 winners
+  const fee = Math.floor(totalPot * 0.20);
+  const first = Math.floor(totalPot * 0.50);
+  const second = Math.floor(totalPot * 0.20);
+  const third = Math.floor(totalPot * 0.10);
+  const totalPrize = first + second + third;
   return {
-    fee, totalPrize: prize,
+    fee, totalPrize,
     breakdown: [
-      { rank: 1, prize: first, percent: 45 },
-      { rank: 2, prize: second, percent: 25 },
-      { rank: 3, prize: third, percent: 15 },
-      { rank: 4, prize: fourth, percent: 15 },
+      { rank: 1, prize: first, percent: 50 },
+      { rank: 2, prize: second, percent: 20 },
+      { rank: 3, prize: third, percent: 10 },
     ]
   };
 }
@@ -62,6 +41,7 @@ function getMatchType(playersCount) {
 
 export default function Lobby() {
   const { token, user, refreshUser } = useContext(AuthContext);
+  const { format, formatShort, currency, changeCurrency, currencies, getSymbol } = useCurrency();
   const navigate = useNavigate();
 
   const [message, setMessage] = useState('');
@@ -74,7 +54,8 @@ export default function Lobby() {
 
   // Modals
   const [showInfoModal, setShowInfoModal] = useState(false);
-  const [showPrizeModal, setShowPrizeModal] = useState(null); // entry amount or null
+  const [showPrizeModal, setShowPrizeModal] = useState(null);
+  const [showCurrencyPicker, setShowCurrencyPicker] = useState(false);
 
   const socketRef = useRef(null);
 
@@ -116,7 +97,7 @@ export default function Lobby() {
     if (joiningId) return;
 
     if (entry > 0 && (user.wallet || 0) < entry) {
-      setMessage(`Insufficient balance! Need ₹${entry}, have ₹${user.wallet}`);
+      setMessage(`Insufficient balance! Need ${format(entry)}, have ${format(user.wallet)}`);
       setMsgType('error');
       return;
     }
@@ -125,7 +106,6 @@ export default function Lobby() {
     setMessage('');
     setJoiningId(uniqueId);
 
-    // If players > 2, show coming soon for now
     if (playersCount > 2) {
       setTimeout(() => {
         setMessage(`Multiplayer tournaments (${playersCount} players) are currently being finalized. Try 1v1 for now!`);
@@ -143,8 +123,8 @@ export default function Lobby() {
   return (
     <div className="w-full bg-hero pb-28 lg:pb-8 min-h-full overflow-y-auto">
       <div className="max-w-7xl mx-auto px-4 py-6 lg:py-8">
-        {/* Title with Info Icon */}
-        <div className="flex items-center gap-3 mb-2">
+        {/* Title with Info Icon + Currency Selector */}
+        <div className="flex items-center gap-3 mb-2 flex-wrap">
           <h1 className="text-3xl font-black text-white">Arena Contests</h1>
           <button
             onClick={() => setShowInfoModal(true)}
@@ -153,6 +133,34 @@ export default function Lobby() {
           >
             ?
           </button>
+          {/* Currency Selector */}
+          <div className="relative ml-auto">
+            <button
+              onClick={() => setShowCurrencyPicker(!showCurrencyPicker)}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-navy-800/80 border border-navy-700/50 text-xs font-bold text-slate-300 hover:text-white hover:border-chess-green/30 transition-all"
+            >
+              <span>{currencies[currency]?.flag}</span>
+              <span>{currency}</span>
+              <span className="text-slate-500 text-[10px]">▼</span>
+            </button>
+            {showCurrencyPicker && (
+              <div className="absolute right-0 top-full mt-1 bg-navy-800 border border-navy-700/50 rounded-xl shadow-2xl z-50 overflow-hidden animate-scale-in min-w-[160px]">
+                {Object.entries(currencies).map(([code, info]) => (
+                  <button
+                    key={code}
+                    onClick={() => { changeCurrency(code); setShowCurrencyPicker(false); }}
+                    className={`flex items-center gap-2 w-full px-4 py-2.5 text-xs font-medium transition-all ${
+                      currency === code ? 'bg-chess-green/10 text-chess-green' : 'text-slate-300 hover:bg-white/5 hover:text-white'
+                    }`}
+                  >
+                    <span>{info.flag}</span>
+                    <span className="font-bold">{code}</span>
+                    <span className="text-slate-500 ml-auto">{info.symbol}</span>
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
         </div>
         <p className="text-slate-400 text-sm mb-6">Select your stakes, format, and time control to dominate.</p>
 
@@ -199,7 +207,6 @@ export default function Lobby() {
 
             return (
               <div key={uniqueId} className="card-hover p-0 overflow-hidden flex flex-col relative group">
-                {/* Decorative top bar */}
                 <div className="h-1.5 w-full bg-gradient-to-r from-chess-green via-emerald-400 to-chess-green"></div>
                 
                 <div className="p-5 flex-1 flex flex-col relative z-10">
@@ -212,14 +219,14 @@ export default function Lobby() {
                     </div>
                     <div className="bg-emerald-500/10 border border-emerald-500/20 px-3 py-1.5 rounded-lg flex flex-col items-center justify-center">
                       <span className="text-[10px] text-emerald-500 font-bold uppercase tracking-wider">Prize Pool</span>
-                      <span className="text-lg font-black text-emerald-400 leading-none mt-0.5">₹{dist.totalPrize}</span>
+                      <span className="text-lg font-black text-emerald-400 leading-none mt-0.5">{formatShort(dist.totalPrize)}</span>
                     </div>
                   </div>
 
                   <div className="flex flex-col gap-2 mb-4">
                     <div className="flex justify-between items-center bg-navy-900/40 px-3 py-2 rounded-lg border border-navy-700/30">
                       <span className="text-xs text-slate-400 font-medium">Entry Fee</span>
-                      <span className="text-sm text-white font-black">₹{entry}</span>
+                      <span className="text-sm text-white font-black">{formatShort(entry)}</span>
                     </div>
                     {/* Winners preview */}
                     <div className="bg-navy-900/40 px-3 py-2 rounded-lg border border-navy-700/30">
@@ -228,12 +235,12 @@ export default function Lobby() {
                         <span className="text-[10px] text-emerald-400 font-bold">{dist.breakdown.length} {dist.breakdown.length === 1 ? 'Winner' : 'Winners'}</span>
                       </div>
                       <div className="flex gap-1">
-                        {dist.breakdown.slice(0, 3).map((b, i) => (
+                        {dist.breakdown.map((b, i) => (
                           <div key={i} className="flex-1 text-center">
                             <div className={`text-[10px] font-black ${i === 0 ? 'text-gold-400' : i === 1 ? 'text-slate-300' : 'text-amber-600'}`}>
                               {i === 0 ? '🥇' : i === 1 ? '🥈' : '🥉'}
                             </div>
-                            <div className="text-[10px] text-white font-bold">₹{b.prize}</div>
+                            <div className="text-[10px] text-white font-bold">{formatShort(b.prize)}</div>
                           </div>
                         ))}
                       </div>
@@ -258,7 +265,7 @@ export default function Lobby() {
                     {isJoining ? (
                       <><span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" /> Joining...</>
                     ) : (
-                      `Play for ₹${entry}`
+                      `Play for ${formatShort(entry)}`
                     )}
                   </button>
                 </div>
@@ -279,7 +286,6 @@ export default function Lobby() {
               </div>
 
               <div className="space-y-4">
-                {/* Direct Match */}
                 <div className="bg-navy-900/60 border border-navy-700/30 p-4 rounded-xl">
                   <div className="flex items-center gap-3 mb-2">
                     <div className="w-10 h-10 rounded-xl bg-sky-500/10 flex items-center justify-center text-xl border border-sky-500/20">⚔️</div>
@@ -291,7 +297,6 @@ export default function Lobby() {
                   <p className="text-xs text-slate-400">Head-to-head 1v1 battle. Winner takes the entire prize pool.</p>
                 </div>
 
-                {/* Round Robin */}
                 <div className="bg-navy-900/60 border border-navy-700/30 p-4 rounded-xl">
                   <div className="flex items-center gap-3 mb-2">
                     <div className="w-10 h-10 rounded-xl bg-amber-500/10 flex items-center justify-center text-xl border border-amber-500/20">🔄</div>
@@ -300,10 +305,9 @@ export default function Lobby() {
                       <span className="text-[10px] text-amber-400 font-bold uppercase">3 Players</span>
                     </div>
                   </div>
-                  <p className="text-xs text-slate-400">Every player plays against every other player. Final rankings based on total points. Win=1, Draw=0.5, Loss=0.</p>
+                  <p className="text-xs text-slate-400">Every player plays against every other player. Winner by points takes all. Win=1, Draw=0.5, Loss=0.</p>
                 </div>
 
-                {/* Knockout */}
                 <div className="bg-navy-900/60 border border-navy-700/30 p-4 rounded-xl">
                   <div className="flex items-center gap-3 mb-2">
                     <div className="w-10 h-10 rounded-xl bg-purple-500/10 flex items-center justify-center text-xl border border-purple-500/20">🏆</div>
@@ -316,14 +320,13 @@ export default function Lobby() {
                 </div>
               </div>
 
-              {/* Rules Summary */}
               <div className="mt-5 p-3 bg-chess-green/5 border border-chess-green/10 rounded-xl">
                 <h4 className="text-xs font-bold text-chess-green mb-1.5">📋 Quick Rules</h4>
                 <ul className="text-[11px] text-slate-400 space-y-1">
-                  <li>• 2 Players → Direct Match (1v1)</li>
-                  <li>• 3 Players → Round Robin (play everyone)</li>
-                  <li>• 4+ Players → Knockout Bracket (single elimination)</li>
-                  <li>• Multiple winners share the prize pool</li>
+                  <li>• 2 Players → Direct Match — 1 Winner</li>
+                  <li>• 3 Players → Round Robin — 1 Winner</li>
+                  <li>• 4 Players → Knockout — 1 Winner</li>
+                  <li>• 10 Players → Knockout — Top 3 share prizes</li>
                 </ul>
               </div>
             </div>
@@ -331,7 +334,7 @@ export default function Lobby() {
         </div>
       )}
 
-      {/* ── Prize Breakdown Modal (Dream11-style) ── */}
+      {/* ── Prize Breakdown Modal ── */}
       {showPrizeModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm animate-fade-in" onClick={() => setShowPrizeModal(null)}>
           <div className="bg-navy-800 border border-navy-700/50 rounded-2xl shadow-2xl w-full max-w-sm animate-scale-in overflow-hidden" onClick={e => e.stopPropagation()}>
@@ -348,15 +351,14 @@ export default function Lobby() {
                     <button onClick={() => setShowPrizeModal(null)} className="text-slate-400 hover:text-white text-lg font-bold transition-colors">✕</button>
                   </div>
 
-                  {/* Header stats */}
                   <div className="grid grid-cols-3 gap-3 mb-5">
                     <div className="bg-navy-900/60 p-3 rounded-xl text-center border border-navy-700/30">
                       <div className="text-[10px] text-slate-500 font-bold uppercase mb-1">Entry</div>
-                      <div className="text-sm font-black text-white">₹{entry}</div>
+                      <div className="text-sm font-black text-white">{formatShort(entry)}</div>
                     </div>
                     <div className="bg-navy-900/60 p-3 rounded-xl text-center border border-navy-700/30">
                       <div className="text-[10px] text-slate-500 font-bold uppercase mb-1">Pool</div>
-                      <div className="text-sm font-black text-emerald-400">₹{totalPot}</div>
+                      <div className="text-sm font-black text-emerald-400">{formatShort(totalPot)}</div>
                     </div>
                     <div className="bg-navy-900/60 p-3 rounded-xl text-center border border-navy-700/30">
                       <div className="text-[10px] text-slate-500 font-bold uppercase mb-1">Format</div>
@@ -364,7 +366,6 @@ export default function Lobby() {
                     </div>
                   </div>
 
-                  {/* Prize Table */}
                   <div className="bg-navy-900/40 rounded-xl border border-navy-700/30 overflow-hidden">
                     <div className="grid grid-cols-3 gap-2 px-4 py-2.5 bg-navy-900/80 border-b border-navy-700/30">
                       <span className="text-[10px] text-slate-500 font-black uppercase">Rank</span>
@@ -378,15 +379,22 @@ export default function Lobby() {
                           <span className={i === 0 ? 'text-gold-400' : 'text-slate-300'}>#{b.rank}</span>
                         </span>
                         <span className="text-sm text-slate-400 font-medium text-center">{b.percent}%</span>
-                        <span className={`text-sm font-black text-right ${i === 0 ? 'text-emerald-400' : 'text-white'}`}>₹{b.prize}</span>
+                        <span className={`text-sm font-black text-right ${i === 0 ? 'text-emerald-400' : 'text-white'}`}>{formatShort(b.prize)}</span>
                       </div>
                     ))}
+                    {/* Losers row */}
+                    {Number(selectedPlayers) > 4 && (
+                      <div className="grid grid-cols-3 gap-2 px-4 py-3 border-t border-navy-700/20 bg-navy-900/30">
+                        <span className="text-sm font-bold text-slate-500">4th+</span>
+                        <span className="text-sm text-slate-500 font-medium text-center">0%</span>
+                        <span className="text-sm font-black text-right text-slate-500">{getSymbol()}0</span>
+                      </div>
+                    )}
                   </div>
 
-                  {/* Total winnable */}
                   <div className="mt-4 flex items-center justify-between bg-emerald-500/5 border border-emerald-500/10 px-4 py-3 rounded-xl">
                     <span className="text-xs text-slate-400 font-bold">Total Distributed</span>
-                    <span className="text-lg font-black text-emerald-400">₹{dist.totalPrize}</span>
+                    <span className="text-lg font-black text-emerald-400">{formatShort(dist.totalPrize)}</span>
                   </div>
 
                   <p className="text-[10px] text-slate-500 mt-3 text-center">15% platform fee deducted from pool</p>

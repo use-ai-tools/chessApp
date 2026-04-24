@@ -1,11 +1,13 @@
 import React, { useContext, useEffect, useState } from 'react';
 import { AuthContext } from '../contexts/AuthContext';
+import { useCurrency } from '../contexts/CurrencyContext';
 
 const PIECES = ['♔', '♕', '♖', '♗', '♘', '♙'];
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001';
 
 export default function Profile() {
   const { user, token, refreshUser } = useContext(AuthContext);
+  const { formatShort } = useCurrency();
   const [profile, setProfile] = useState(null);
   const [stats, setStats] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -199,7 +201,7 @@ export default function Profile() {
             <StatBox label="Win Rate" value={`${s.winRate || 0}%`} icon="📊" color="purple" />
             <StatBox
               label="Total Earnings"
-              value={`₹${(s.totalEarnings || 0).toLocaleString()}`}
+              value={formatShort(s.totalEarnings || 0)}
               icon="💰"
               color="gold"
             />

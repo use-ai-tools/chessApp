@@ -323,7 +323,8 @@ module.exports = (io) => {
         let ct = await ContestType.findOne({ entry, playersCount, timeControl });
         if (!ct) {
           const totalPot = entry * playersCount;
-          const platformFee = Math.floor(totalPot * 0.15);
+          const feePercent = playersCount >= 10 ? 0.20 : 0.15;
+          const platformFee = Math.floor(totalPot * feePercent);
           const payout = totalPot - platformFee;
           ct = await ContestType.create({
             name: `${playersCount}P - ${timeControl}m - ₹${entry}`,
