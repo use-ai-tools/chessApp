@@ -15,11 +15,13 @@ export default function Lobby() {
   const [joiningId, setJoiningId] = useState(null);
 
   const [selectedEntry, setSelectedEntry] = useState('ALL');
+  const [selectedPlayers, setSelectedPlayers] = useState('2');
   const [selectedTime, setSelectedTime] = useState('10');
 
   const socketRef = useRef(null);
 
   const ENTRIES = [1, 2, 5, 10, 25, 50, 100, 200, 500, 1000, 2000];
+  const PLAYERS = [2, 3, 4, 10];
   const TIMES = [3, 5, 10];
 
   useEffect(() => {
@@ -93,8 +95,18 @@ export default function Lobby() {
         )}
 
         {/* Filters */}
-        <div className="flex flex-col gap-4 mb-8 bg-navy-800/40 p-4 rounded-2xl border border-navy-700/50 backdrop-blur-sm">
-          <div>
+        <div className="flex flex-col lg:flex-row gap-4 mb-8 bg-navy-800/40 p-4 rounded-2xl border border-navy-700/50 backdrop-blur-sm">
+          <div className="flex-1">
+            <label className="block text-xs font-bold text-slate-500 mb-2 uppercase tracking-wider">Players</label>
+            <div className="flex flex-wrap gap-2">
+              {PLAYERS.map(p => (
+                <button key={p} onClick={() => setSelectedPlayers(p.toString())} className={`px-4 py-2 rounded-xl text-sm font-bold transition-all ${
+                  selectedPlayers === p.toString() ? 'bg-chess-green text-white shadow-lg shadow-chess-green/20' : 'bg-navy-900/80 text-slate-400 hover:text-white border border-navy-700/50'
+                }`}>{p} Players</button>
+              ))}
+            </div>
+          </div>
+          <div className="flex-1">
             <label className="block text-xs font-bold text-slate-500 mb-2 uppercase tracking-wider">Time Control</label>
             <div className="flex flex-wrap gap-2">
               {TIMES.map(t => (
@@ -109,7 +121,7 @@ export default function Lobby() {
         {/* Contest Cards */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
           {filteredEntries.map(entry => {
-            const players = 2; // Fixed to 2 players
+            const players = Number(selectedPlayers);
             const time = Number(selectedTime);
             const totalPot = entry * players;
             const fee = Math.floor(totalPot * 0.15);
@@ -126,7 +138,7 @@ export default function Lobby() {
                   <div className="flex justify-between items-start mb-4">
                     <div>
                       <h3 className="text-xl font-black text-white">{time} Min Match</h3>
-                      <p className="text-xs font-medium text-slate-400 mt-1 uppercase tracking-wider">Direct Match</p>
+                      <p className="text-xs font-medium text-slate-400 mt-1 uppercase tracking-wider">{players} Players • {players === 2 ? 'Direct Match' : players === 3 ? 'Round Robin' : players === 4 ? 'Semi -> Final' : 'Knockout Bracket'}</p>
                     </div>
                     <div className="bg-emerald-500/10 border border-emerald-500/20 px-3 py-1.5 rounded-lg flex flex-col items-center justify-center">
                       <span className="text-[10px] text-emerald-500 font-bold uppercase tracking-wider">Prize</span>
