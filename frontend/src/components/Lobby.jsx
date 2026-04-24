@@ -151,10 +151,6 @@ export default function Lobby() {
                       <span className="text-xs text-slate-400 font-medium">Entry Fee</span>
                       <span className="text-sm text-white font-black">₹{entry}</span>
                     </div>
-                    <div className="flex justify-between items-center bg-navy-900/40 px-3 py-2 rounded-lg border border-navy-700/30">
-                      <span className="text-xs text-slate-400 font-medium">Platform Fee</span>
-                      <span className="text-sm text-red-400 font-black">-₹{fee}</span>
-                    </div>
                   </div>
 
                   <button
