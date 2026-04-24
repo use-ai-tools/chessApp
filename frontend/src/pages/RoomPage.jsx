@@ -477,18 +477,17 @@ export default function RoomPage() {
   }
 
   return (
-    <div className="h-[calc(100vh-64px)] bg-hero flex flex-col overflow-hidden">
+    <div className="h-[100vh] w-full bg-hero flex flex-col overflow-hidden relative">
       <style>{`button[title="Flip Board"] { display: none !important; }`}</style>
       <div className="flex-1 flex flex-col px-2 py-2 lg:px-4 lg:py-3 overflow-hidden">
-        {/* Header */}
-        <div className="flex items-center justify-between gap-2 mb-1 flex-shrink-0">
-          <div className="flex items-center gap-2">
+        <div className="flex items-center justify-between gap-2 mb-1 flex-shrink-0 absolute top-0 left-0 right-0 p-2 lg:p-4 z-10 pointer-events-none">
+          <div className="flex items-center gap-2 pointer-events-auto">
             <h1 className="text-sm lg:text-xl font-bold text-white">{contestType?.name || 'Match'}</h1>
             <span className={`badge rounded-none text-[10px] ${gameStatus === 'playing' ? 'badge-green' : gameStatus === 'finished' ? 'badge-purple' : 'badge-gold'}`}>
               {gameStatus === 'playing' ? '🔴 Live' : gameStatus === 'finished' ? 'Ended' : 'Waiting'}
             </span>
           </div>
-          <div className="flex items-center gap-1">
+          <div className="flex items-center gap-1 pointer-events-auto">
             {isTournament && (
               <button
                 onClick={() => setShowBracket(!showBracket)}
@@ -503,11 +502,11 @@ export default function RoomPage() {
         </div>
 
         {/* Main layout: left panel | board (centered) | right sidebar */}
-        <div className="flex-1 min-h-0 overflow-hidden">
-          <div className="h-full grid grid-cols-1 lg:grid-cols-[1fr_auto_280px] gap-2 lg:gap-4 max-w-7xl mx-auto items-center">
+        <div className="flex-1 w-full h-full flex items-center justify-center overflow-hidden pt-12 lg:pt-0">
+          <div className="flex flex-col lg:flex-row items-center justify-center gap-2 lg:gap-8 w-full max-w-7xl mx-auto h-full px-2">
 
             {/* LEFT PANEL — desktop only: game info */}
-            <div className="hidden lg:flex flex-col gap-2 h-full justify-center items-end pr-2 overflow-hidden">
+            <div className="hidden lg:flex flex-col gap-2 h-full justify-center w-[300px] flex-shrink-0">
               {/* Contest Info */}
               {contestType && (
                 <div className="w-full max-w-[200px] bg-navy-800/60 border border-navy-700/50 p-3 rounded-none">
@@ -554,7 +553,7 @@ export default function RoomPage() {
             </div>
 
             {/* CENTER — Board */}
-            <div className="flex flex-col gap-1 flex-shrink-0 items-center justify-center" style={{ width: '100%', maxWidth: 'min(calc(100vh - 160px), 560px)' }}>
+            <div className="flex flex-col gap-1 flex-shrink-0 items-center justify-center w-full lg:max-w-[700px]">
               <div className="w-full aspect-square relative" style={{ borderRadius: 0 }}>
                 {matchDataRef.current ? (
                   <ChessBoard
@@ -627,7 +626,7 @@ export default function RoomPage() {
             </div>
 
             {/* RIGHT SIDEBAR — move history + chat */}
-            <div className="flex flex-col gap-2 min-h-0 overflow-hidden h-full justify-center">
+            <div className="flex flex-col gap-2 h-full justify-center w-full lg:w-[300px] flex-shrink-0">
               {/* Mobile-only: players row */}
               <div className="lg:hidden flex gap-1 flex-shrink-0">
                 {(whitePlayer || blackPlayer) && (

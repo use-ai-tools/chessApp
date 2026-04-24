@@ -117,8 +117,6 @@ export default function ChessBoard({
   const [blackTime, setBlackTime] = useState(30);
   const [selectedSquare, setSelectedSquare] = useState(null);
   const [legalMoveStyles, setLegalMoveStyles] = useState({});
-  const [illegalMoveMsg, setIllegalMoveMsg] = useState('');
-  const [boardShake, setBoardShake] = useState(false); // FEATURE 6: Illegal move shake
   const [boardTheme, setBoardTheme] = useState(() => {
     try {
       const s = JSON.parse(localStorage.getItem('chess-settings') || '{}');
@@ -255,14 +253,7 @@ export default function ChessBoard({
     return () => clearInterval(interval);
   }, [timerData, gameStatus, moveTimeoutMs]);
 
-  // ── Auto-dismiss illegal move + shake ──
-  useEffect(() => {
-    if (!illegalMoveMsg) return;
-    setBoardShake(true);
-    const t1 = setTimeout(() => setBoardShake(false), 500);
-    const t2 = setTimeout(() => setIllegalMoveMsg(''), 2000);
-    return () => { clearTimeout(t1); clearTimeout(t2); };
-  }, [illegalMoveMsg]);
+  // ── Auto-dismiss removed ──
 
   // ── Sync board theme from settings ──
   useEffect(() => {
@@ -321,7 +312,14 @@ export default function ChessBoard({
     if (selectedSquare) {
       // STATE 2: Piece already selected
       const piece = game.get(square);
-      if (piece && piece.color === game.turn() && square !== selectedSquare) {
+      if (square === selectedSquare) {
+        // Unselect if same square clicked
+        setSelectedSquare(null);
+        setLegalMoveStyles({});
+        return;
+      }
+      
+      if (piece && piece.color === game.turn()) {
         setSelectedSquare(square);
         setLegalMoveStyles(showLegalMoveHints(square));
         return;
@@ -332,16 +330,13 @@ export default function ChessBoard({
       const moveCopy = new Chess(game.fen());
       try {
         const move = moveCopy.move({ from: selectedSquare, to: square, promotion: promo });
-        if (move) {
+        if (move && selectedSquare !== square) {
           if (soundEnabled) playSound(move.captured ? 'capture' : moveCopy.isCheck() ? 'check' : 'move');
           onMove({ from: selectedSquare, to: square, promotion: promo, san: move.san });
-          setSelectedSquare(null);
-          setLegalMoveStyles({});
-          return;
         }
       } catch(e) {}
 
-      setIllegalMoveMsg('Illegal move');
+      // Silently fail if illegal
       setSelectedSquare(null);
       setLegalMoveStyles({});
       return;
@@ -482,16 +477,16 @@ export default function ChessBoard({
     const game = gameRef.current;
     const moveCopy = new Chess(game.fen());
     try {
-      const move = moveCopy.move({ from: sourceSquare, to: targetSquare, promotion: promo || 'q' });
-      if (!move) {
-        setIllegalMoveMsg('Illegal move');
-        return false;
+      if (sourceSquare !== targetSquare) {
+        const move = moveCopy.move({ from: sourceSquare, to: targetSquare, promotion: promo || 'q' });
+        if (move) {
+          if (soundEnabled) playSound(move.captured ? 'capture' : moveCopy.isCheck() ? 'check' : 'move');
+          onMove({ from: sourceSquare, to: targetSquare, promotion: promo || 'q', san: move.san });
+          return true;
+        }
       }
-      if (soundEnabled) playSound(move.captured ? 'capture' : moveCopy.isCheck() ? 'check' : 'move');
-      onMove({ from: sourceSquare, to: targetSquare, promotion: promo || 'q', san: move.san });
-      return true;
+      return false;
     } catch {
-      setIllegalMoveMsg('Illegal move');
       return false;
     }
   };
@@ -599,7 +594,7 @@ export default function ChessBoard({
 
         <div className={`w-full overflow-hidden shadow-2xl shadow-black/50 transition-all duration-300 relative ${
           !isMyTurn && !isSpectator && !isReview && gameStatus === 'playing' ? 'opacity-85' : ''
-        } ${boardShake ? 'board-shake' : ''}`}
+        }`}
           style={{ width: boardSize, height: boardSize, flexShrink: 0 }}
         >
           {/* Username watermark during live game */}
@@ -630,7 +625,6 @@ export default function ChessBoard({
         </div>
       </div>
 
-      {illegalMoveMsg && <p className="illegal-move-text">{illegalMoveMsg}</p>}
       {prequeue.length > 0 && <p className="text-[10px] text-red-400 font-bold">{prequeue.length} premove{prequeue.length > 1 ? 's' : ''} queued</p>}
       {activePremoveStart && prequeue.length === 0 && <p className="text-[10px] text-red-400/70 font-medium">Select target square...</p>}
 

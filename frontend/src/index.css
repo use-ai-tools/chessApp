@@ -16,11 +16,13 @@
     color: #ffffff;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
-    overflow-x: hidden;
+    overflow: hidden;
+    height: 100vh;
   }
 
   #root {
-    min-height: 100vh;
+    height: 100vh;
+    overflow: hidden;
   }
 
   ::-webkit-scrollbar {
@@ -225,10 +227,7 @@
     @apply text-chess-green bg-chess-green/10;
   }
 
-  /* ── Illegal Move Notice ── */
-  .illegal-move-text {
-    @apply text-red-400 text-xs font-medium text-center py-1.5 animate-fade-in;
-  }
+  /* ── Removed Illegal Move Notice ── */
 
   /* ── King Fall Animation ── */
   .king-fall {
@@ -241,10 +240,7 @@
     opacity: 0.4;
   }
 
-  /* ── FEATURE 6: Board Shake (illegal move) ── */
-  .board-shake {
-    animation: boardShake 0.4s ease-in-out;
-  }
+  /* ── Removed Board Shake ── */
 }
 
 /* ── Utility Animations ── */
@@ -304,19 +300,7 @@
   50% { background-color: rgba(239, 68, 68, 0.7); }
 }
 
-/* FEATURE 6: Illegal move — board shake */
-@keyframes boardShake {
-  0%, 100% { transform: translateX(0); }
-  10% { transform: translateX(-4px); }
-  20% { transform: translateX(4px); }
-  30% { transform: translateX(-4px); }
-  40% { transform: translateX(4px); }
-  50% { transform: translateX(-3px); }
-  60% { transform: translateX(3px); }
-  70% { transform: translateX(-2px); }
-  80% { transform: translateX(2px); }
-  90% { transform: translateX(-1px); }
-}
+/* ── Removed boardShake keyframes ── */
 
 /* FEATURE 6: Captured piece fade in */
 @keyframes pieceCaptureIn {
