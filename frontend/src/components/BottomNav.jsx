@@ -4,6 +4,7 @@ import { Link, useLocation } from 'react-router-dom';
 const tabs = [
   { path: '/', label: 'Home', icon: '🏠' },
   { path: '/contests', label: 'Contests', icon: '⚔️' },
+  { path: '/tournaments', label: 'Tourneys', icon: '🏆' },
   { path: '/transactions', label: 'History', icon: '📋' },
   { path: '/profile', label: 'Profile', icon: '👤' },
 ];

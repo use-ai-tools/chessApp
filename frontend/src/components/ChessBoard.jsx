@@ -579,7 +579,7 @@ export default function ChessBoard({
   const bottomAdv = boardOrientation === 'white' ? whiteAdv : blackAdv;
 
   return (
-    <div ref={containerRef} className="w-full flex flex-col items-center gap-2">
+    <div ref={containerRef} className="w-full max-w-[100vw] flex flex-col items-center gap-2">
       {floatingEmoji && (
         <div className="emoji-float" style={{ top: '40%', left: '50%' }}>{floatingEmoji}</div>
       )}
@@ -592,10 +592,10 @@ export default function ChessBoard({
         {/* Only show WinProbabilityBar in review mode */}
         {isReview && <WinProbabilityBar fen={fen} height={boardSize} />}
 
-        <div className={`w-full max-w-[500px] lg:max-w-none lg:w-[min(90vh,600px)] aspect-square overflow-hidden shadow-2xl shadow-black/50 transition-all duration-300 relative ${
+        <div className={`w-full max-w-[500px] lg:max-w-none lg:w-[min(90vh,600px)] aspect-square shadow-2xl shadow-black/50 transition-all duration-300 relative ${
           !isMyTurn && !isSpectator && !isReview && gameStatus === 'playing' ? 'opacity-85' : ''
         }`}
-          style={{ flexShrink: 0 }}
+          style={{ flexShrink: 0, maxWidth: '100vw' }}
         >
           {/* Username watermark during live game */}
           {gameStatus === 'playing' && username && (

@@ -167,8 +167,8 @@ export default function BotGame() {
   useEffect(() => { return () => terminate(); }, [terminate]);
 
   return (
-    <div className="flex-1 w-full bg-hero flex flex-col overflow-hidden relative">
-      <div className="flex-1 flex flex-col px-2 py-2 lg:px-4 lg:py-3 overflow-hidden">
+    <div className="flex-1 w-full bg-hero flex flex-col overflow-y-auto relative pb-28 lg:pb-0">
+      <div className="flex-1 flex flex-col px-2 py-2 lg:px-4 lg:py-3 lg:overflow-hidden">
         {/* Header */}
         <div className="flex lg:hidden items-center justify-between gap-2 mb-1 flex-shrink-0 absolute top-0 left-0 right-0 p-2 z-10 pointer-events-none">
           <div className="flex items-center gap-2 pointer-events-auto">
@@ -188,8 +188,8 @@ export default function BotGame() {
         </div>
 
         {/* Main layout: left panel | board (centered) | right sidebar */}
-        <div className="flex-1 w-full h-full overflow-hidden pt-10 lg:pt-0">
-          <div className="h-full w-full max-w-7xl mx-auto flex flex-col xl:grid xl:grid-cols-[180px_1fr_280px] xl:gap-6 items-center justify-center px-1 lg:px-2">
+        <div className="flex-1 w-full lg:h-full lg:overflow-hidden pt-10 lg:pt-0">
+          <div className="w-full max-w-7xl mx-auto flex flex-col xl:grid xl:grid-cols-[180px_1fr_280px] xl:gap-6 items-center xl:justify-center px-1 lg:px-2">
 
             {/* LEFT PANEL — desktop only: bot info */}
             <div className="hidden xl:flex flex-col gap-2 h-full justify-center w-full">
@@ -216,8 +216,8 @@ export default function BotGame() {
             </div>
 
             {/* CENTER — Board */}
-            <div className="flex flex-col gap-1 w-full xl:w-auto h-full justify-center items-center flex-1 min-h-0">
-              <div className="relative max-h-[70vh] lg:max-h-[80vh] w-full max-w-[500px] xl:max-w-[600px] flex items-center justify-center">
+            <div className="flex flex-col gap-1 w-full xl:w-auto xl:h-full xl:justify-center items-center flex-1 min-h-0">
+              <div className="relative w-full max-w-[100vw] lg:max-h-[80vh] lg:max-w-[500px] xl:max-w-[600px] flex items-center justify-center" style={{ aspectRatio: '1/1' }}>
                 <ChessBoard
                   roomId="bot-game"
                   matchId="bot-game"
@@ -262,8 +262,8 @@ export default function BotGame() {
               )}
             </div>
 
-            {/* RIGHT SIDEBAR — players + move history */}
-            <div className="flex flex-col gap-2 h-full justify-center w-full xl:w-[280px]">
+            {/* PLAYER INFO — shows below board on mobile, sidebar on desktop */}
+            <div className="flex flex-col gap-2 xl:h-full xl:justify-center w-full xl:w-[280px]">
               <div className="flex gap-1 flex-shrink-0">
                 <div className="flex-1 bg-navy-800/60 border border-navy-700/50 p-1.5">
                   {[{ ...currentPlayer, elo: user?.elo?.free || 1200 }, botPlayer].map((p, i) => (
@@ -282,7 +282,7 @@ export default function BotGame() {
               </div>
 
               {/* Move history */}
-              <div className="flex-1 overflow-hidden flex flex-col min-h-0 max-h-[20vh] lg:max-h-full">
+              <div className="overflow-hidden flex flex-col min-h-0 max-h-[25vh] lg:max-h-full lg:flex-1">
                 <MoveHistory moves={moveHistory} currentIndex={previewIndex} onClickMove={setPreviewIndex} />
               </div>
             </div>
