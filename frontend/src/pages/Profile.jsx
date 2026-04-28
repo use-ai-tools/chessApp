@@ -127,7 +127,7 @@ export default function Profile() {
   const s = stats || {};
 
   return (
-    <div className="min-h-[calc(100vh-64px)] bg-hero px-4 py-6 pb-24">
+    <div className="bg-hero px-4 py-6">
       <div className="max-w-2xl mx-auto space-y-6">
         {/* User Header */}
         <div className="card p-6">

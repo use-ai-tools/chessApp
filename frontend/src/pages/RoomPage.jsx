@@ -477,7 +477,7 @@ export default function RoomPage() {
   }
 
   return (
-    <div className="flex-1 w-full bg-hero flex flex-col overflow-visible relative pb-24 lg:pb-0">
+    <div className="flex-1 w-full bg-hero flex flex-col overflow-visible relative">
       <style>{`button[title="Flip Board"] { display: none !important; }`}</style>
       <div className="flex-1 flex flex-col px-2 py-2 lg:px-4 lg:py-3">
         {/* Mobile Header — static flex, no overlap */}
@@ -649,7 +649,7 @@ export default function RoomPage() {
 
               {/* Move history */}
               {matchDataRef.current && (
-                <div className="overflow-hidden flex flex-col min-h-0 max-h-[25vh] lg:max-h-full lg:flex-1">
+                <div className="flex flex-col w-full flex-shrink-0 lg:flex-1">
                   <MoveHistory moves={moveHistory} currentIndex={previewIndex} onClickMove={setPreviewIndex} />
                 </div>
               )}
@@ -674,7 +674,7 @@ export default function RoomPage() {
                       <option value="Oops!">Oops!</option>
                       <option value="Nice move!">Nice move!</option>
                     </select>
-                    <div ref={chatRef} className="h-[12vh] lg:h-[140px] overflow-y-auto p-2 space-y-1">
+                    <div ref={chatRef} className="max-h-[200px] overflow-y-auto p-2 space-y-1">
                       {chatMessages.map((msg, i) => (
                         <div key={i} className="text-xs">
                           <span className="font-bold text-chess-green">{msg.username}: </span>

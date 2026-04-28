@@ -15,7 +15,7 @@ export default function BottomNav() {
   const isActive = (path) => location.pathname === path;
 
   return (
-    <nav className="fixed bottom-0 left-0 right-0 z-40 bg-navy-900/95 backdrop-blur-xl border-t border-navy-700/50 safe-area-bottom">
+    <nav className="fixed bottom-0 left-0 right-0 z-40 bg-navy-900/95 backdrop-blur-xl border-t border-navy-700/50 safe-area-bottom md:hidden">
       <div className="max-w-lg mx-auto flex items-center justify-around px-2 py-1">
         {tabs.map((tab) => {
           const active = isActive(tab.path);

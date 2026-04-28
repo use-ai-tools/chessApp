@@ -13,9 +13,9 @@
   html, body {
     margin: 0;
     padding: 0;
-    height: auto;
     overflow-x: hidden;
-    overflow-y: auto;
+    scroll-behavior: auto;
+    touch-action: pan-y;
   }
 
   body {
