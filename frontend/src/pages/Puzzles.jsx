@@ -355,7 +355,7 @@ export default function Puzzles() {
     const theme = BOARD_THEMES[boardTheme] || BOARD_THEMES.classic;
 
     return (
-      <div className="min-h-[calc(100vh-64px)] bg-hero px-4 py-6 pb-24 overflow-y-auto">
+      <div className="min-h-[calc(100vh-64px)] bg-hero px-4 py-6 pb-24">
         <div className="max-w-3xl mx-auto animate-fade-in">
           
           <div className="flex items-center justify-between mb-6">
@@ -508,7 +508,7 @@ export default function Puzzles() {
   const completionPercent = Math.round((completedCount / 100) * 100);
 
   return (
-    <div className="min-h-[calc(100vh-64px)] bg-hero px-4 py-8 pb-24 overflow-y-auto">
+    <div className="min-h-[calc(100vh-64px)] bg-hero px-4 py-8 pb-24">
       <div className="max-w-6xl mx-auto animate-fade-in">
         
         {/* Header & Progress */}

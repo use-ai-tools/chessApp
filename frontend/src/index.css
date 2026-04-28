@@ -13,8 +13,9 @@
   html, body {
     margin: 0;
     padding: 0;
-    height: 100%;
+    height: auto;
     overflow-x: hidden;
+    overflow-y: auto;
   }
 
   body {
@@ -27,6 +28,7 @@
 
   #root {
     min-height: 100vh;
+    overflow: visible;
   }
 
   ::-webkit-scrollbar {

@@ -477,7 +477,7 @@ export default function RoomPage() {
   }
 
   return (
-    <div className="flex-1 w-full bg-hero flex flex-col overflow-y-auto relative pb-24 lg:pb-0">
+    <div className="flex-1 w-full bg-hero flex flex-col overflow-visible relative pb-24 lg:pb-0">
       <style>{`button[title="Flip Board"] { display: none !important; }`}</style>
       <div className="flex-1 flex flex-col px-2 py-2 lg:px-4 lg:py-3">
         {/* Mobile Header — static flex, no overlap */}

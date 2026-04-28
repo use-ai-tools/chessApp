@@ -106,7 +106,7 @@ export default function Tournaments() {
   }
 
   return (
-    <div className="min-h-[calc(100vh-64px)] bg-hero px-4 py-8 pb-28 lg:pb-8 overflow-y-auto">
+    <div className="min-h-[calc(100vh-64px)] bg-hero px-4 py-8 pb-28 lg:pb-8">
       <div className="max-w-6xl mx-auto animate-fade-in">
         
         {/* Header */}

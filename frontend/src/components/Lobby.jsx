@@ -121,7 +121,7 @@ export default function Lobby() {
   const filteredEntries = selectedEntry === 'ALL' ? ENTRIES : [Number(selectedEntry)];
 
   return (
-    <div className="w-full bg-hero pb-28 lg:pb-8 min-h-full overflow-y-auto">
+    <div className="w-full bg-hero pb-28 lg:pb-8 min-h-full">
       <div className="max-w-7xl mx-auto px-4 py-6 lg:py-8">
         {/* Title with Info Icon + Currency Selector */}
         <div className="flex items-center gap-3 mb-2 flex-wrap">

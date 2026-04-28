@@ -52,9 +52,9 @@ function AppContent() {
   }, []);
 
   return (
-    <div className="flex h-screen bg-navy-950 overflow-hidden">
+    <div className="flex min-h-screen bg-navy-950">
       {user && !isAuthPage && <Sidebar />}
-      <div className="flex-1 flex flex-col h-full overflow-y-auto relative">
+      <div className="flex-1 flex flex-col min-h-screen overflow-visible relative">
         <Routes>
           <Route path="/login" element={<AuthForm mode="login" />} />
           <Route path="/signup" element={<AuthForm mode="signup" />} />
