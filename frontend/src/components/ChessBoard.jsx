@@ -585,7 +585,7 @@ export default function ChessBoard({
   const bottomAdv = boardOrientation === 'white' ? whiteAdv : blackAdv;
 
   return (
-    <div ref={containerRef} className="w-full flex flex-col items-center gap-1" style={{ maxWidth: '640px', margin: '0 auto' }}>
+    <div ref={containerRef} className="w-full h-full flex flex-col items-center gap-1" style={{ margin: '0 auto' }}>
       {floatingEmoji && (
         <div className="emoji-float" style={{ top: '40%', left: '50%' }}>{floatingEmoji}</div>
       )}

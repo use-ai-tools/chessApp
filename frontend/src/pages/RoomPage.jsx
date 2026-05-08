@@ -499,54 +499,10 @@ export default function RoomPage() {
       </div>
 
       {/* Desktop Wrapper / Mobile Stack */}
-      <div className="flex-1 w-full lg:match-desktop-layout flex flex-col lg:flex-row p-2 lg:p-0">
-        
-        {/* Left Panel (Desktop Only) */}
-        <div className="hidden lg:flex flex-col gap-2 match-left-panel">
-          {contestType && (
-            <div className="bg-navy-800/60 border border-navy-700/50 p-3 rounded-none w-full">
-              <h4 className="text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-2">Match Info</h4>
-              <div className="space-y-1.5">
-                <div className="flex justify-between text-xs"><span className="text-slate-500">Type</span><span className="text-white font-bold">{contestType.name}</span></div>
-                <div className="flex justify-between text-xs"><span className="text-slate-500">Entry</span><span className="text-white font-bold">₹{contestType.entry}</span></div>
-                <div className="flex justify-between text-xs"><span className="text-slate-500">Prize</span><span className="text-chess-green font-bold">₹{contestType.payout}</span></div>
-              </div>
-            </div>
-          )}
-          <div className="bg-navy-800/60 border border-navy-700/50 p-3 rounded-none w-full">
-            <h4 className="text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-2">Game Stats</h4>
-            <div className="space-y-1.5">
-              <div className="flex justify-between text-xs"><span className="text-slate-500">Moves</span><span className="text-white font-bold">{moveHistory.length}</span></div>
-              <div className="flex justify-between text-xs"><span className="text-slate-500">Status</span>
-                <span className={`font-bold ${gameStatus === 'playing' ? 'text-emerald-400' : gameStatus === 'finished' ? 'text-purple-400' : 'text-gold-400'}`}>
-                  {gameStatus === 'playing' ? 'Live' : gameStatus === 'finished' ? 'Ended' : 'Waiting'}
-                </span>
-              </div>
-              {currentPlayerColor && (
-                <div className="flex justify-between text-xs"><span className="text-slate-500">You play</span>
-                  <span className="text-white font-bold capitalize">{currentPlayerColor}</span>
-                </div>
-              )}
-            </div>
-          </div>
-          {(whitePlayer || blackPlayer) && (
-            <div className="bg-navy-800/60 border border-navy-700/50 p-3 rounded-none w-full">
-              <h4 className="text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-2">Players</h4>
-              {[whitePlayer, blackPlayer].filter(Boolean).map((p, i) => (
-                <div key={i} className={`flex items-center gap-2 p-1.5 rounded-none mb-1 last:mb-0 ${
-                  p.id === user?.id ? 'bg-chess-green/5 border border-chess-green/10' : 'bg-navy-900/30'
-                }`}>
-                  <div className={`w-3 h-3 flex-shrink-0 rounded-full ${i === 0 ? 'bg-white' : 'bg-slate-700 border border-slate-500'}`} />
-                  <span className="text-xs font-medium text-white truncate flex-1">{p.username}</span>
-                  {p.id === user?.id && <span className="text-[9px] text-chess-green font-bold">YOU</span>}
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
+      <div className="flex-1 w-full lg:match-desktop-layout flex flex-col p-2 lg:p-0">
 
         {/* Center Panel: Board & Controls */}
-        <div className="flex-1 lg:match-center flex flex-col gap-2 w-full max-w-[640px] mx-auto">
+        <div className="flex-1 lg:match-center flex flex-col gap-2 w-full max-w-[640px] lg:max-w-none mx-auto">
           
           {/* Mobile Info Row (Hidden on Desktop) */}
           <div className="lg:hidden flex gap-1 w-full shrink-0">
@@ -558,7 +514,7 @@ export default function RoomPage() {
             )}
           </div>
 
-          <div className="match-board-section relative">
+          <div className="match-board-section lg:match-board-desktop relative w-full">
             {matchDataRef.current ? (
               <ChessBoard
                 roomId={contestId}
@@ -595,7 +551,7 @@ export default function RoomPage() {
 
           {/* Action Buttons */}
           {currentPlayerColor && gameStatus === 'playing' && (
-            <div className="flex flex-col gap-1 w-full shrink-0">
+            <div className="flex flex-col gap-1 w-full shrink-0 max-w-[640px] lg:max-w-none mx-auto">
               <div className="flex flex-wrap gap-1">
                 <button
                   onClick={handleResign}
@@ -669,11 +625,60 @@ export default function RoomPage() {
         </div>
 
         {/* Right Panel (Desktop Only) */}
-        <div className="hidden lg:flex flex-col gap-2 match-right-panel w-full">
+        <div className="hidden lg:flex match-right-panel w-full">
+          
+          {/* Relocated Info from Left Panel */}
+          <div className="flex gap-2">
+            {contestType && (
+              <div className="bg-navy-800/60 border border-navy-700/50 p-3 rounded-none flex-1">
+                <h4 className="text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-2">Match Info</h4>
+                <div className="space-y-1.5">
+                  <div className="flex justify-between text-xs"><span className="text-slate-500">Type</span><span className="text-white font-bold">{contestType.name}</span></div>
+                  <div className="flex justify-between text-xs"><span className="text-slate-500">Entry</span><span className="text-white font-bold">₹{contestType.entry}</span></div>
+                  <div className="flex justify-between text-xs"><span className="text-slate-500">Prize</span><span className="text-chess-green font-bold">₹{contestType.payout}</span></div>
+                </div>
+              </div>
+            )}
+            
+            <div className="bg-navy-800/60 border border-navy-700/50 p-3 rounded-none flex-1">
+              <h4 className="text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-2">Game Stats</h4>
+              <div className="space-y-1.5">
+                <div className="flex justify-between text-xs"><span className="text-slate-500">Moves</span><span className="text-white font-bold">{moveHistory.length}</span></div>
+                <div className="flex justify-between text-xs"><span className="text-slate-500">Status</span>
+                  <span className={`font-bold ${gameStatus === 'playing' ? 'text-emerald-400' : gameStatus === 'finished' ? 'text-purple-400' : 'text-gold-400'}`}>
+                    {gameStatus === 'playing' ? 'Live' : gameStatus === 'finished' ? 'Ended' : 'Waiting'}
+                  </span>
+                </div>
+                {currentPlayerColor && (
+                  <div className="flex justify-between text-xs"><span className="text-slate-500">You play</span>
+                    <span className="text-white font-bold capitalize">{currentPlayerColor}</span>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+
+          {(whitePlayer || blackPlayer) && (
+            <div className="bg-navy-800/60 border border-navy-700/50 p-3 rounded-none w-full">
+              <h4 className="text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-2">Players</h4>
+              {[whitePlayer, blackPlayer].filter(Boolean).map((p, i) => (
+                <div key={i} className={`flex items-center gap-2 p-1.5 rounded-none mb-1 last:mb-0 ${
+                  p.id === user?.id ? 'bg-chess-green/5 border border-chess-green/10' : 'bg-navy-900/30'
+                }`}>
+                  <div className={`w-3 h-3 flex-shrink-0 rounded-full ${i === 0 ? 'bg-white' : 'bg-slate-700 border border-slate-500'}`} />
+                  <span className="text-xs font-medium text-white truncate flex-1">{p.username}</span>
+                  {p.id === user?.id && <span className="text-[9px] text-chess-green font-bold">YOU</span>}
+                </div>
+              ))}
+            </div>
+          )}
+
+          {/* Moves */}
           {matchDataRef.current && (
             <MoveHistory moves={moveHistory} currentIndex={previewIndex} onClickMove={setPreviewIndex} mode="vertical" />
           )}
 
+          {/* Chat */}
           {currentPlayerColor && gameStatus === 'playing' && (
             <div className="bg-navy-800/60 border border-navy-700/50 flex flex-col shrink-0">
               <select
