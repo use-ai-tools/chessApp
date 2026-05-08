@@ -137,7 +137,7 @@ module.exports = (io) => {
 
       const chess = new Chess();
       const totalTimeSec = (contest.contestType?.timeControl || 10) * 60; // timeControl is in minutes
-      games.set(contestId, { chess, players: [whiteId, blackId], moveCount: 0, whiteTime: totalTimeSec, blackTime: totalTimeSec, lastTickAt: Date.now() });
+      games.set(contestId, { chess, players: [whiteId, blackId], moveCount: 0, whiteTime: totalTimeSec, blackTime: totalTimeSec, lastTickAt: null, firstMoveMade: false });
 
       const white = await User.findById(whiteId).select('username elo').lean();
       const black = await User.findById(blackId).select('username elo').lean();
@@ -472,8 +472,15 @@ module.exports = (io) => {
       const gameState = games.get(contestId);
       if (!gameState) return;
       io.to(contestId).emit('gameReady', { contestId });
-      // Start chess clock for the first move
-      startChessClock(contestId, gameState);
+      // Don't start clock yet — wait for white's first move
+      // Emit initial timer state with startedAt=null (paused)
+      io.to(contestId).emit('timerStart', {
+        contestId,
+        turn: 'w',
+        whiteTime: gameState.whiteTime,
+        blackTime: gameState.blackTime,
+        startedAt: null,
+      });
     });
 
     // ── MAKE MOVE ──
@@ -519,18 +526,25 @@ module.exports = (io) => {
           await contest.save(); await endContest(contestId, null, null, 'insufficient', gameState); return;
         }
 
-        // Deduct elapsed time from the player who just moved
-        if (gameState.lastTickAt) {
-          const elapsed = (Date.now() - gameState.lastTickAt) / 1000;
-          if (turnBefore === 'w') {
-            gameState.whiteTime = Math.max(0, gameState.whiteTime - elapsed);
-          } else {
-            gameState.blackTime = Math.max(0, gameState.blackTime - elapsed);
+        // Timer logic: first move starts the clock, subsequent moves deduct + switch
+        if (!gameState.firstMoveMade) {
+          // First move of the game — start clock now, no time deducted
+          gameState.firstMoveMade = true;
+          startChessClock(contestId, gameState);
+        } else {
+          // Deduct elapsed time from the player who just moved
+          if (gameState.lastTickAt) {
+            const elapsed = (Date.now() - gameState.lastTickAt) / 1000;
+            if (turnBefore === 'w') {
+              gameState.whiteTime = Math.max(0, gameState.whiteTime - elapsed);
+            } else {
+              gameState.blackTime = Math.max(0, gameState.blackTime - elapsed);
+            }
           }
+          startChessClock(contestId, gameState);
         }
 
         await contest.save();
-        startChessClock(contestId, gameState);
         io.to(contestId).emit('moveMade', { contestId, from, to, san: move.san, fen: chess.fen(), inCheck: chess.in_check(), captured: move.captured || null });
       } catch (err) { console.error('[makeMove]', err); }
     });

@@ -477,219 +477,236 @@ export default function RoomPage() {
   }
 
   return (
-    <div className="flex-1 w-full bg-hero flex flex-col overflow-visible relative">
+    <div className="match-page bg-hero relative">
       <style>{`button[title="Flip Board"] { display: none !important; }`}</style>
-      <div className="flex-1 flex flex-col px-2 py-2 lg:px-4 lg:py-3">
-        {/* Mobile Header — static flex, no overlap */}
-        <div className="flex lg:hidden items-center justify-between gap-2 mb-2 flex-shrink-0 z-10">
-          <div className="flex items-center gap-2">
-            <h1 className="text-sm font-bold text-white">{contestType?.name || 'Match'}</h1>
-            <span className={`badge rounded-none text-[10px] ${gameStatus === 'playing' ? 'badge-green' : gameStatus === 'finished' ? 'badge-purple' : 'badge-gold'}`}>
-              {gameStatus === 'playing' ? '🔴 Live' : gameStatus === 'finished' ? 'Ended' : 'Waiting'}
-            </span>
-          </div>
-          <div className="flex items-center gap-1">
-            {isTournament && (
-              <button onClick={() => setShowBracket(!showBracket)} className="btn-sm rounded-none text-[10px] font-bold btn-secondary">
-                {showBracket ? '♟️ Board' : '🏆 Bracket'}
-              </button>
-            )}
-            <PingIndicator customSocket={socketRef.current} />
-          </div>
+
+      {/* Match Header Bar */}
+      <div className="match-header-bar z-10">
+        <div className="flex items-center gap-2">
+          <h1 className="text-sm font-bold text-white">{contestType?.name || 'Match'}</h1>
+          <span className={`badge rounded-none text-[10px] ${gameStatus === 'playing' ? 'badge-green' : gameStatus === 'finished' ? 'badge-purple' : 'badge-gold'}`}>
+            {gameStatus === 'playing' ? '🔴 Live' : gameStatus === 'finished' ? 'Ended' : 'Waiting'}
+          </span>
         </div>
-
-        {/* Main layout */}
-        <div className="flex-1 w-full">
-          <div className="w-full max-w-7xl mx-auto flex flex-col xl:grid xl:grid-cols-[180px_1fr_280px] xl:gap-6 items-center xl:justify-center px-1 lg:px-2">
-
-            {/* LEFT PANEL — desktop only: game info */}
-            <div className="hidden xl:flex flex-col gap-2 h-full justify-center w-full">
-              {/* Contest Info */}
-              {contestType && (
-                <div className="w-full max-w-[200px] bg-navy-800/60 border border-navy-700/50 p-3 rounded-none">
-                  <h4 className="text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-2">Match Info</h4>
-                  <div className="space-y-1.5">
-                    <div className="flex justify-between text-xs"><span className="text-slate-500">Type</span><span className="text-white font-bold">{contestType.name}</span></div>
-                    <div className="flex justify-between text-xs"><span className="text-slate-500">Entry</span><span className="text-white font-bold">₹{contestType.entry}</span></div>
-                    <div className="flex justify-between text-xs"><span className="text-slate-500">Prize</span><span className="text-chess-green font-bold">₹{contestType.payout}</span></div>
-                  </div>
-                </div>
-              )}
-              {/* Game Stats */}
-              <div className="w-full max-w-[200px] bg-navy-800/60 border border-navy-700/50 p-3 rounded-none">
-                <h4 className="text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-2">Game Stats</h4>
-                <div className="space-y-1.5">
-                  <div className="flex justify-between text-xs"><span className="text-slate-500">Moves</span><span className="text-white font-bold">{moveHistory.length}</span></div>
-                  <div className="flex justify-between text-xs"><span className="text-slate-500">Status</span>
-                    <span className={`font-bold ${gameStatus === 'playing' ? 'text-emerald-400' : gameStatus === 'finished' ? 'text-purple-400' : 'text-gold-400'}`}>
-                      {gameStatus === 'playing' ? 'Live' : gameStatus === 'finished' ? 'Ended' : 'Waiting'}
-                    </span>
-                  </div>
-                  {currentPlayerColor && (
-                    <div className="flex justify-between text-xs"><span className="text-slate-500">You play</span>
-                      <span className="text-white font-bold capitalize">{currentPlayerColor}</span>
-                    </div>
-                  )}
-                </div>
-              </div>
-              {/* Players */}
-              {(whitePlayer || blackPlayer) && (
-                <div className="w-full max-w-[200px] bg-navy-800/60 border border-navy-700/50 p-3 rounded-none">
-                  <h4 className="text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-2">Players</h4>
-                  {[whitePlayer, blackPlayer].filter(Boolean).map((p, i) => (
-                    <div key={i} className={`flex items-center gap-2 p-1.5 rounded-none mb-1 last:mb-0 ${
-                      p.id === user?.id ? 'bg-chess-green/5 border border-chess-green/10' : 'bg-navy-900/30'
-                    }`}>
-                      <div className={`w-3 h-3 flex-shrink-0 rounded-full ${i === 0 ? 'bg-white' : 'bg-slate-700 border border-slate-500'}`} />
-                      <span className="text-xs font-medium text-white truncate flex-1">{p.username}</span>
-                      {p.id === user?.id && <span className="text-[9px] text-chess-green font-bold">YOU</span>}
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-
-            {/* CENTER — Board */}
-            <div className="flex flex-col gap-1 w-full xl:w-auto xl:justify-center items-center flex-1">
-              <div className="relative w-full max-w-[100vw] lg:max-w-[500px] xl:max-w-[600px]" style={{ aspectRatio: '1/1' }}>
-                {matchDataRef.current ? (
-                  <ChessBoard
-                    roomId={contestId}
-                    matchId={contestId}
-                    fen={displayFen}
-                    onMove={handleMove}
-                    onPlayerReady={handlePlayerReady}
-                    currentPlayer={previewIndex === -1 ? currentPlayer : null}
-                    whitePlayer={whitePlayer}
-                    blackPlayer={blackPlayer}
-                    isSpectator={isSpectator || previewIndex !== -1}
-                    isReview={false}
-                    gameStatus={previewIndex !== -1 ? 'preview' : gameStatus}
-                    boardOrientation={boardOrientation}
-                    timerData={timerData}
-                    floatingEmoji={floatingEmoji}
-                    lastMove={lastMove}
-                    settings={settings}
-                    username={user?.username}
-                  />
-                ) : (
-                  <div className="flex items-center justify-center w-full h-full bg-navy-800/60">
-                    <div className="w-8 h-8 border-2 border-chess-green border-t-transparent rounded-full animate-spin" />
-                  </div>
-                )}
-
-                {previewIndex !== -1 && (
-                  <div className="absolute bottom-0 left-0 right-0 p-1 bg-sky-500/10 border-t border-sky-500/20 flex items-center justify-between z-10">
-                    <p className="text-[9px] text-sky-400 font-bold">📖 Move {previewIndex + 1}/{moveHistory.length}</p>
-                    <button onClick={() => setPreviewIndex(-1)} className="text-[9px] text-sky-400 font-black">LIVE</button>
-                  </div>
-                )}
-              </div>
-
-              {/* Game controls below board */}
-              {currentPlayerColor && gameStatus === 'playing' && (
-                <div className="flex flex-col gap-1 w-full max-w-[500px] xl:max-w-[600px]">
-                  <div className="flex gap-2">
-                    <button
-                      onClick={handleResign}
-                      className={`rounded-none flex-1 text-xs py-2 font-bold transition-all ${
-                        confirmResign ? 'bg-red-600 text-white animate-pulse' : 'btn-secondary'
-                      }`}
-                    >
-                      🏳️ {confirmResign ? 'Confirm?' : 'Resign'}
-                    </button>
-                    <button
-                      onClick={handleDrawOffer}
-                      disabled={drawOfferPending}
-                      className="btn-secondary rounded-none flex-1 text-xs py-2 font-bold"
-                    >
-                      🤝 {drawOfferPending ? 'Sent...' : 'Draw'}
-                    </button>
-                    <button
-                      onClick={() => setShowSettings(true)}
-                      className="btn-secondary rounded-none flex-1 text-xs py-2 font-bold"
-                    >
-                      ⚙️ Settings
-                    </button>
-                  </div>
-                  {confirmResign && (
-                    <div className="flex gap-2">
-                      <button onClick={() => setConfirmResign(false)} className="flex-1 py-2 rounded-none bg-navy-700 text-slate-300 text-xs font-medium">Cancel</button>
-                      <button onClick={handleResign} className="flex-1 py-2 rounded-none bg-red-600 text-white text-xs font-bold">Yes, Resign</button>
-                    </div>
-                  )}
-                </div>
-              )}
-            </div>
-
-            {/* RIGHT SIDEBAR — mobile: player info + buttons + moves. Desktop: sidebar */}
-            <div className="flex flex-col gap-2 xl:h-full xl:justify-center w-full xl:w-[280px] mt-3 xl:mt-0">
-              {/* Mobile-only: players row */}
-              <div className="lg:hidden flex gap-1 flex-shrink-0">
-                {(whitePlayer || blackPlayer) && (
-                  <div className="flex-1 bg-navy-800/60 border border-navy-700/50 p-1.5">
-                    {[whitePlayer, blackPlayer].filter(Boolean).map((p, i) => (
-                      <div key={i} className={`flex items-center gap-1 p-1 rounded-none mb-0.5 last:mb-0 ${
-                        p.id === user?.id ? 'bg-chess-green/5 border border-chess-green/10' : 'bg-navy-900/30'
-                      }`}>
-                        <div className={`w-2 h-2 flex-shrink-0 ${i === 0 ? 'bg-white' : 'bg-slate-700 border border-slate-500'}`} />
-                        <span className="text-[10px] font-medium text-white truncate flex-1">{p.username}</span>
-                        {p.id === user?.id && <span className="text-[9px] text-chess-green font-bold">YOU</span>}
-                      </div>
-                    ))}
-                  </div>
-                )}
-                {contestType && (
-                  <div className="flex-1 bg-navy-800/60 border border-navy-700/50 p-1.5 flex flex-col justify-center gap-0.5">
-                    <div className="flex justify-between text-[10px]"><span className="text-slate-500">Entry</span><span className="text-white font-bold">₹{contestType.entry}</span></div>
-                    <div className="flex justify-between text-[10px]"><span className="text-slate-500">Prize</span><span className="text-chess-green font-bold">₹{contestType.payout}</span></div>
-                  </div>
-                )}
-              </div>
-
-              {/* Move history */}
-              {matchDataRef.current && (
-                <div className="flex flex-col w-full flex-shrink-0 lg:flex-1">
-                  <MoveHistory moves={moveHistory} currentIndex={previewIndex} onClickMove={setPreviewIndex} />
-                </div>
-              )}
-
-              {/* Chat */}
-              {currentPlayerColor && gameStatus === 'playing' && (
-                <div className="flex flex-col gap-1 flex-shrink-0">
-                  <div className="bg-navy-800/60 border border-navy-700/50">
-                    <select
-                      className="w-full bg-navy-900 border-b border-navy-700 text-xs rounded-none px-2 py-2 text-white outline-none"
-                      onChange={(e) => {
-                        if (e.target.value) {
-                          socketRef.current?.emit('matchChat', { contestId, message: e.target.value, username: user.username });
-                          e.target.value = '';
-                        }
-                      }}
-                    >
-                      <option value="">💬 Quick Chat...</option>
-                      <option value="Good luck!">Good luck!</option>
-                      <option value="Well played!">Well played!</option>
-                      <option value="Thanks!">Thanks!</option>
-                      <option value="Oops!">Oops!</option>
-                      <option value="Nice move!">Nice move!</option>
-                    </select>
-                    <div ref={chatRef} className="max-h-[200px] overflow-y-auto p-2 space-y-1">
-                      {chatMessages.map((msg, i) => (
-                        <div key={i} className="text-xs">
-                          <span className="font-bold text-chess-green">{msg.username}: </span>
-                          <span className="text-slate-300">{msg.message}</span>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                </div>
-              )}
-            </div>
-          </div>
+        <div className="flex items-center gap-2">
+          {isTournament && (
+            <button onClick={() => setShowBracket(!showBracket)} className="btn-sm rounded-none text-[10px] font-bold btn-secondary">
+              {showBracket ? '♟️ Board' : '🏆 Bracket'}
+            </button>
+          )}
+          <PingIndicator customSocket={socketRef.current} />
         </div>
       </div>
 
+      {/* Desktop Wrapper / Mobile Stack */}
+      <div className="flex-1 w-full lg:match-desktop-layout flex flex-col lg:flex-row p-2 lg:p-0">
+        
+        {/* Left Panel (Desktop Only) */}
+        <div className="hidden lg:flex flex-col gap-2 match-left-panel">
+          {contestType && (
+            <div className="bg-navy-800/60 border border-navy-700/50 p-3 rounded-none w-full">
+              <h4 className="text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-2">Match Info</h4>
+              <div className="space-y-1.5">
+                <div className="flex justify-between text-xs"><span className="text-slate-500">Type</span><span className="text-white font-bold">{contestType.name}</span></div>
+                <div className="flex justify-between text-xs"><span className="text-slate-500">Entry</span><span className="text-white font-bold">₹{contestType.entry}</span></div>
+                <div className="flex justify-between text-xs"><span className="text-slate-500">Prize</span><span className="text-chess-green font-bold">₹{contestType.payout}</span></div>
+              </div>
+            </div>
+          )}
+          <div className="bg-navy-800/60 border border-navy-700/50 p-3 rounded-none w-full">
+            <h4 className="text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-2">Game Stats</h4>
+            <div className="space-y-1.5">
+              <div className="flex justify-between text-xs"><span className="text-slate-500">Moves</span><span className="text-white font-bold">{moveHistory.length}</span></div>
+              <div className="flex justify-between text-xs"><span className="text-slate-500">Status</span>
+                <span className={`font-bold ${gameStatus === 'playing' ? 'text-emerald-400' : gameStatus === 'finished' ? 'text-purple-400' : 'text-gold-400'}`}>
+                  {gameStatus === 'playing' ? 'Live' : gameStatus === 'finished' ? 'Ended' : 'Waiting'}
+                </span>
+              </div>
+              {currentPlayerColor && (
+                <div className="flex justify-between text-xs"><span className="text-slate-500">You play</span>
+                  <span className="text-white font-bold capitalize">{currentPlayerColor}</span>
+                </div>
+              )}
+            </div>
+          </div>
+          {(whitePlayer || blackPlayer) && (
+            <div className="bg-navy-800/60 border border-navy-700/50 p-3 rounded-none w-full">
+              <h4 className="text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-2">Players</h4>
+              {[whitePlayer, blackPlayer].filter(Boolean).map((p, i) => (
+                <div key={i} className={`flex items-center gap-2 p-1.5 rounded-none mb-1 last:mb-0 ${
+                  p.id === user?.id ? 'bg-chess-green/5 border border-chess-green/10' : 'bg-navy-900/30'
+                }`}>
+                  <div className={`w-3 h-3 flex-shrink-0 rounded-full ${i === 0 ? 'bg-white' : 'bg-slate-700 border border-slate-500'}`} />
+                  <span className="text-xs font-medium text-white truncate flex-1">{p.username}</span>
+                  {p.id === user?.id && <span className="text-[9px] text-chess-green font-bold">YOU</span>}
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* Center Panel: Board & Controls */}
+        <div className="flex-1 lg:match-center flex flex-col gap-2 w-full max-w-[640px] mx-auto">
+          
+          {/* Mobile Info Row (Hidden on Desktop) */}
+          <div className="lg:hidden flex gap-1 w-full shrink-0">
+            {contestType && (
+              <div className="flex-1 bg-navy-800/60 border border-navy-700/50 p-1.5 flex justify-around text-[10px]">
+                <div><span className="text-slate-500 mr-1">Entry:</span><span className="text-white font-bold">₹{contestType.entry}</span></div>
+                <div><span className="text-slate-500 mr-1">Prize:</span><span className="text-chess-green font-bold">₹{contestType.payout}</span></div>
+              </div>
+            )}
+          </div>
+
+          <div className="match-board-section relative">
+            {matchDataRef.current ? (
+              <ChessBoard
+                roomId={contestId}
+                matchId={contestId}
+                fen={displayFen}
+                onMove={handleMove}
+                onPlayerReady={handlePlayerReady}
+                currentPlayer={previewIndex === -1 ? currentPlayer : null}
+                whitePlayer={whitePlayer}
+                blackPlayer={blackPlayer}
+                isSpectator={isSpectator || previewIndex !== -1}
+                isReview={false}
+                gameStatus={previewIndex !== -1 ? 'preview' : gameStatus}
+                boardOrientation={boardOrientation}
+                timerData={timerData}
+                floatingEmoji={floatingEmoji}
+                lastMove={lastMove}
+                settings={settings}
+                username={user?.username}
+              />
+            ) : (
+              <div className="flex items-center justify-center w-full aspect-square bg-navy-800/60">
+                <div className="w-8 h-8 border-2 border-chess-green border-t-transparent rounded-full animate-spin" />
+              </div>
+            )}
+            
+            {previewIndex !== -1 && (
+              <div className="absolute bottom-0 left-0 right-0 p-1 bg-sky-500/10 border-t border-sky-500/20 flex items-center justify-between z-10">
+                <p className="text-[9px] text-sky-400 font-bold">📖 Move {previewIndex + 1}/{moveHistory.length}</p>
+                <button onClick={() => setPreviewIndex(-1)} className="text-[9px] text-sky-400 font-black px-2 py-0.5 hover:bg-sky-500/20 rounded">LIVE</button>
+              </div>
+            )}
+          </div>
+
+          {/* Action Buttons */}
+          {currentPlayerColor && gameStatus === 'playing' && (
+            <div className="flex flex-col gap-1 w-full shrink-0">
+              <div className="flex flex-wrap gap-1">
+                <button
+                  onClick={handleResign}
+                  className={`rounded-none flex-1 text-xs py-2 font-bold transition-all ${
+                    confirmResign ? 'bg-red-600 text-white animate-pulse' : 'bg-navy-800/60 border border-navy-700 text-slate-300 hover:bg-navy-700'
+                  }`}
+                >
+                  🏳️ {confirmResign ? 'Confirm?' : 'Resign'}
+                </button>
+                <button
+                  onClick={handleDrawOffer}
+                  disabled={drawOfferPending}
+                  className="bg-navy-800/60 border border-navy-700 text-slate-300 hover:bg-navy-700 rounded-none flex-1 text-xs py-2 font-bold disabled:opacity-50"
+                >
+                  🤝 {drawOfferPending ? 'Sent...' : 'Draw'}
+                </button>
+                <button
+                  onClick={() => setShowSettings(true)}
+                  className="bg-navy-800/60 border border-navy-700 text-slate-300 hover:bg-navy-700 rounded-none flex-1 text-xs py-2 font-bold"
+                >
+                  ⚙️ Settings
+                </button>
+              </div>
+              {confirmResign && (
+                <div className="flex gap-1 w-full">
+                  <button onClick={() => setConfirmResign(false)} className="flex-1 py-1.5 bg-navy-700 text-slate-300 text-xs font-medium">Cancel</button>
+                  <button onClick={handleResign} className="flex-1 py-1.5 bg-red-600 text-white text-xs font-bold">Yes, Resign</button>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Mobile Move History */}
+          {matchDataRef.current && (
+            <div className="w-full shrink-0 mt-1 lg:hidden">
+              <MoveHistory moves={moveHistory} currentIndex={previewIndex} onClickMove={setPreviewIndex} mode="horizontal" />
+            </div>
+          )}
+
+          {/* Mobile Chat */}
+          {currentPlayerColor && gameStatus === 'playing' && (
+            <div className="w-full shrink-0 lg:hidden mb-2">
+              <div className="bg-navy-800/60 border border-navy-700/50">
+                <select
+                  className="w-full bg-navy-900 border-b border-navy-700 text-xs rounded-none px-2 py-1.5 text-white outline-none"
+                  onChange={(e) => {
+                    if (e.target.value) {
+                      socketRef.current?.emit('matchChat', { contestId, message: e.target.value, username: user.username });
+                      e.target.value = '';
+                    }
+                  }}
+                >
+                  <option value="">💬 Quick Chat...</option>
+                  <option value="Good luck!">Good luck!</option>
+                  <option value="Well played!">Well played!</option>
+                  <option value="Thanks!">Thanks!</option>
+                  <option value="Oops!">Oops!</option>
+                  <option value="Nice move!">Nice move!</option>
+                </select>
+                <div ref={chatRef} className="max-h-[100px] overflow-y-auto p-1.5 space-y-0.5">
+                  {chatMessages.map((msg, i) => (
+                    <div key={i} className="text-[10px]">
+                      <span className="font-bold text-chess-green">{msg.username}: </span>
+                      <span className="text-slate-300">{msg.message}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* Right Panel (Desktop Only) */}
+        <div className="hidden lg:flex flex-col gap-2 match-right-panel w-full">
+          {matchDataRef.current && (
+            <MoveHistory moves={moveHistory} currentIndex={previewIndex} onClickMove={setPreviewIndex} mode="vertical" />
+          )}
+
+          {currentPlayerColor && gameStatus === 'playing' && (
+            <div className="bg-navy-800/60 border border-navy-700/50 flex flex-col shrink-0">
+              <select
+                className="w-full bg-navy-900 border-b border-navy-700 text-xs rounded-none px-2 py-2 text-white outline-none"
+                onChange={(e) => {
+                  if (e.target.value) {
+                    socketRef.current?.emit('matchChat', { contestId, message: e.target.value, username: user.username });
+                    e.target.value = '';
+                  }
+                }}
+              >
+                <option value="">💬 Quick Chat...</option>
+                <option value="Good luck!">Good luck!</option>
+                <option value="Well played!">Well played!</option>
+                <option value="Thanks!">Thanks!</option>
+                <option value="Oops!">Oops!</option>
+                <option value="Nice move!">Nice move!</option>
+              </select>
+              <div className="flex-1 max-h-[250px] overflow-y-auto p-2 space-y-1" style={{ scrollbarWidth: 'thin' }}>
+                {chatMessages.map((msg, i) => (
+                  <div key={i} className="text-xs">
+                    <span className="font-bold text-chess-green">{msg.username}: </span>
+                    <span className="text-slate-300">{msg.message}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+
+      </div>
+
+      {/* Modals & Overlays */}
       {drawOfferReceived && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm animate-fade-in">
           <div className="bg-navy-800 border border-navy-700/50 rounded-none shadow-2xl p-4 max-w-sm w-full animate-scale-in">

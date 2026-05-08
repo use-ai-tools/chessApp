@@ -233,23 +233,30 @@ export default function ChessBoard({
 
   // ── Chess Clock countdown ──
   // timerData has: { turn, whiteTime, blackTime, startedAt }
+  // startedAt=null means clock is paused (before first move)
   useEffect(() => {
     if (!timerData || gameStatus !== 'playing') return;
-    // Set initial times from server
     setWhiteTime(timerData.whiteTime || 600);
     setBlackTime(timerData.blackTime || 600);
-    const serverStart = timerData.startedAt || Date.now();
-    const activeTurn = timerData.turn;
 
-    const interval = setInterval(() => {
+    // If startedAt is null, clock is paused — don't tick
+    if (!timerData.startedAt) return;
+
+    const serverStart = timerData.startedAt;
+    const activeTurn = timerData.turn;
+    let rafId;
+
+    const tick = () => {
       const elapsed = (Date.now() - serverStart) / 1000;
       if (activeTurn === 'w') {
         setWhiteTime(Math.max(0, (timerData.whiteTime || 600) - elapsed));
       } else {
         setBlackTime(Math.max(0, (timerData.blackTime || 600) - elapsed));
       }
-    }, 100); // 100ms for smooth countdown
-    return () => clearInterval(interval);
+      rafId = requestAnimationFrame(tick);
+    };
+    rafId = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(rafId);
   }, [timerData, gameStatus]);
 
   // ── Auto-dismiss removed ──
@@ -578,25 +585,21 @@ export default function ChessBoard({
   const bottomAdv = boardOrientation === 'white' ? whiteAdv : blackAdv;
 
   return (
-    <div ref={containerRef} className="w-full max-w-[100vw] flex flex-col items-center gap-2">
+    <div ref={containerRef} className="w-full flex flex-col items-center gap-1" style={{ maxWidth: '640px', margin: '0 auto' }}>
       {floatingEmoji && (
         <div className="emoji-float" style={{ top: '40%', left: '50%' }}>{floatingEmoji}</div>
       )}
 
       {/* Top Player */}
-      <PlayerTimer player={topPlayer} time={topTime} isActive={isTopTurn && gameStatus === 'playing'} color={topColor} captured={topCaptured} materialAdvantage={topAdv} gameStatus={gameStatus} hideTimer={hideTimer} />
+      <PlayerTimer player={topPlayer} time={topTime} isActive={isTopTurn && gameStatus === 'playing'} color={topColor} captured={topCaptured} materialAdvantage={topAdv} gameStatus={gameStatus} hideTimer={hideTimer} compact />
 
       {/* Board + Win Probability Bar */}
       <div className="flex items-center justify-center gap-2 w-full">
-        {/* Only show WinProbabilityBar in review mode */}
         {isReview && <WinProbabilityBar fen={fen} height={boardSize} />}
 
-        <div className={`w-full max-w-[100vw] lg:max-w-[500px] xl:max-w-[min(90vh,600px)] aspect-square shadow-2xl shadow-black/50 transition-all duration-300 relative ${
-          !isMyTurn && !isSpectator && !isReview && gameStatus === 'playing' ? 'opacity-85' : ''
-        }`}
-          style={{ flexShrink: 0 }}
-        >
-          {/* Username watermark during live game */}
+        <div className={`w-full aspect-square shadow-2xl shadow-black/50 relative ${
+          !isMyTurn && !isSpectator && !isReview && gameStatus === 'playing' ? 'opacity-90' : ''
+        }`}>
           {gameStatus === 'playing' && username && (
             <div className="absolute inset-0 z-10 pointer-events-none flex items-center justify-center" style={{ opacity: 0.04 }}>
               <p className="text-white text-2xl font-black rotate-[-30deg] select-none whitespace-nowrap">
@@ -627,14 +630,15 @@ export default function ChessBoard({
       {prequeue.length > 0 && <p className="text-[10px] text-red-400 font-bold">{prequeue.length} premove{prequeue.length > 1 ? 's' : ''} queued</p>}
       {activePremoveStart && prequeue.length === 0 && <p className="text-[10px] text-red-400/70 font-medium">Select target square...</p>}
 
-      <PlayerTimer player={bottomPlayer} time={bottomTime} isActive={isBottomTurn && gameStatus === 'playing'} color={bottomColor} captured={bottomCaptured} materialAdvantage={bottomAdv} gameStatus={gameStatus} hideTimer={hideTimer} />
+      {/* Bottom Player */}
+      <PlayerTimer player={bottomPlayer} time={bottomTime} isActive={isBottomTurn && gameStatus === 'playing'} color={bottomColor} captured={bottomCaptured} materialAdvantage={bottomAdv} gameStatus={gameStatus} hideTimer={hideTimer} compact />
 
-      <div className="w-full max-w-[560px] flex items-center justify-between mt-1">
-        {isSpectator && <div className="badge-purple rounded-none"><span>👁️</span> Spectating</div>}
-        {spectatorCount > 0 && <div className="badge-blue rounded-none"><span>👁</span> {spectatorCount} watching</div>}
-        <div className="flex gap-1 ml-auto">
+      {isSpectator && (
+        <div className="w-full flex items-center justify-between mt-1">
+          <div className="badge-purple rounded-none"><span>👁️</span> Spectating</div>
+          {spectatorCount > 0 && <div className="badge-blue rounded-none"><span>👁</span> {spectatorCount} watching</div>}
         </div>
-      </div>
+      )}
     </div>
   );
 }
