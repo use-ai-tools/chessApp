@@ -33,16 +33,16 @@
   }
 
   ::-webkit-scrollbar {
-    width: 6px;
+    width: 4px;
   }
 
   ::-webkit-scrollbar-track {
-    background: #0f172a;
+    background: transparent;
   }
 
   ::-webkit-scrollbar-thumb {
     background: #334155;
-    border-radius: 3px;
+    border-radius: 2px;
   }
 
   ::-webkit-scrollbar-thumb:hover {
@@ -66,9 +66,8 @@
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding: 6px 12px;
-    background: rgba(15, 23, 42, 0.8);
-    border-bottom: 1px solid rgba(51, 65, 85, 0.5);
+    padding: 8px 16px;
+    background: rgba(15, 23, 42, 0.6);
     flex-shrink: 0;
     gap: 8px;
   }
@@ -113,7 +112,7 @@
       width: 100%;
       display: flex;
       flex-direction: column;
-      gap: 12px;
+      gap: 16px;
     }
   }
 
@@ -133,34 +132,34 @@
 /* ── Component Classes ── */
 @layer components {
 
-  /* Cards */
+  /* Cards — flat, borderless, spacious */
   .card {
-    @apply bg-navy-800/60 backdrop-blur-sm border border-navy-700/50 rounded-2xl p-5 transition-all duration-300;
+    @apply bg-navy-800/40 rounded-2xl p-6 transition-all duration-300;
   }
 
   .card-hover {
-    @apply card hover:border-chess-green/30 hover:shadow-lg hover:shadow-chess-green/5 hover:-translate-y-0.5;
+    @apply card hover:bg-navy-800/60 hover:-translate-y-0.5 transition-all duration-300;
   }
 
   .card-glass {
-    @apply bg-white/5 backdrop-blur-md border border-white/10 rounded-2xl p-5;
+    @apply bg-white/[0.03] backdrop-blur-md rounded-2xl p-6;
   }
 
-  /* Buttons */
+  /* Buttons — softer, lower profile */
   .btn {
-    @apply inline-flex items-center justify-center gap-2 font-semibold rounded-xl px-5 py-2.5 transition-all duration-200 cursor-pointer text-sm disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none;
+    @apply inline-flex items-center justify-center gap-2 font-semibold rounded-xl px-5 py-2 transition-all duration-200 cursor-pointer text-sm disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none;
   }
 
   .btn-primary {
-    @apply btn bg-gradient-to-r from-chess-green to-emerald-600 text-white hover:from-chess-green hover:to-emerald-500 hover:shadow-lg hover:shadow-chess-green/25 active:scale-[0.98];
+    @apply btn bg-gradient-to-r from-chess-green to-emerald-600 text-white hover:shadow-md hover:shadow-chess-green/15 active:scale-[0.98];
   }
 
   .btn-secondary {
-    @apply btn bg-navy-700/80 text-slate-200 border border-navy-600 hover:bg-navy-600 hover:border-navy-500 active:scale-[0.98];
+    @apply btn bg-white/5 text-slate-300 hover:bg-white/10 hover:text-white active:scale-[0.98];
   }
 
   .btn-danger {
-    @apply btn bg-red-600/80 text-white border border-red-500/50 hover:bg-red-500 hover:shadow-lg hover:shadow-red-500/25 active:scale-[0.98];
+    @apply btn bg-red-600/80 text-white hover:bg-red-500 active:scale-[0.98];
   }
 
   .btn-ghost {
@@ -168,16 +167,16 @@
   }
 
   .btn-sm {
-    @apply text-xs px-3.5 py-2 rounded-lg;
+    @apply text-xs px-3.5 py-1.5 rounded-lg;
   }
 
   .btn-lg {
-    @apply text-base px-8 py-3.5 rounded-xl;
+    @apply text-base px-8 py-3 rounded-xl;
   }
 
   /* Inputs */
   .input-field {
-    @apply w-full px-4 py-3 bg-navy-900/80 border border-navy-700/50 rounded-xl text-white placeholder-slate-500 text-sm focus:outline-none focus:ring-2 focus:ring-chess-green/40 focus:border-chess-green/50 transition-all duration-200;
+    @apply w-full px-4 py-3 bg-navy-900/60 border border-navy-700/30 rounded-xl text-white placeholder-slate-500 text-sm focus:outline-none focus:ring-2 focus:ring-chess-green/30 focus:border-chess-green/30 transition-all duration-200;
   }
 
   .select-field {
@@ -190,23 +189,23 @@
   }
 
   .badge-gold {
-    @apply badge bg-gold-500/15 text-gold-400 border border-gold-500/20;
+    @apply badge bg-gold-500/10 text-gold-400;
   }
 
   .badge-green {
-    @apply badge bg-emerald-500/15 text-emerald-400 border border-emerald-500/20;
+    @apply badge bg-emerald-500/10 text-emerald-400;
   }
 
   .badge-blue {
-    @apply badge bg-sky-500/15 text-sky-400 border border-sky-500/20;
+    @apply badge bg-sky-500/10 text-sky-400;
   }
 
   .badge-red {
-    @apply badge bg-red-500/15 text-red-400 border border-red-500/20;
+    @apply badge bg-red-500/10 text-red-400;
   }
 
   .badge-purple {
-    @apply badge bg-purple-500/15 text-purple-400 border border-purple-500/20;
+    @apply badge bg-purple-500/10 text-purple-400;
   }
 
   /* Status pills */
@@ -214,14 +213,9 @@
     @apply inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold;
   }
 
-  /* Contest card specific */
+  /* Contest card — clean, no top bar */
   .contest-card {
     @apply card-hover relative overflow-hidden;
-  }
-
-  .contest-card::before {
-    content: '';
-    @apply absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-chess-green via-emerald-400 to-chess-green;
   }
 
   /* Modal overlay */
@@ -230,12 +224,12 @@
   }
 
   .modal-content {
-    @apply bg-navy-800 border border-navy-700/50 rounded-2xl shadow-2xl w-full max-w-md animate-scale-in overflow-hidden;
+    @apply bg-navy-800 border border-navy-700/30 rounded-2xl shadow-2xl w-full max-w-md animate-scale-in overflow-hidden;
   }
 
   /* Progress bar */
   .progress-bar {
-    @apply h-1.5 rounded-full overflow-hidden bg-navy-700;
+    @apply h-1.5 rounded-full overflow-hidden bg-navy-700/50;
   }
 
   .progress-fill {
@@ -255,10 +249,9 @@
     @apply text-gold-400 text-sm;
   }
 
-  /* Glassmorphism gradient backgrounds */
+  /* Background — subtle gradient */
   .bg-hero {
-    background: radial-gradient(ellipse 80% 50% at 50% -20%, rgba(129, 182, 76, 0.06), transparent),
-      linear-gradient(135deg, #0a0a1a 0%, #0f172a 50%, #0a0a1a 100%);
+    background: linear-gradient(135deg, #0a0a1a 0%, #0f172a 50%, #0a0a1a 100%);
   }
 
   /* ── Move History Panel ── */
@@ -322,7 +315,7 @@
     @apply scale-[0.97];
   }
 
-  /* ── FEATURE 2: Toolbar Buttons (chess.com style) ── */
+  /* ── Toolbar Buttons (chess.com style) ── */
   .toolbar-btn {
     @apply flex flex-col items-center justify-center gap-0.5 px-3 py-2 rounded-xl text-slate-400 transition-all duration-200 hover:text-white hover:bg-white/5 active:scale-95;
     min-width: 52px;
@@ -331,8 +324,6 @@
   .toolbar-btn-active {
     @apply text-chess-green bg-chess-green/10;
   }
-
-  /* ── Removed Illegal Move Notice ── */
 
   /* ── King Fall Animation ── */
   .king-fall {
@@ -345,8 +336,6 @@
     display: inline-block;
     opacity: 0.4;
   }
-
-  /* ── Removed Board Shake ── */
 }
 
 /* ── Utility Animations ── */
@@ -359,12 +348,13 @@
     @apply bg-gradient-to-r from-chess-green via-emerald-400 to-chess-green bg-clip-text text-transparent inline-block pb-1 pr-2;
   }
 
+  /* Reduced glows — 70% less intensity */
   .glow-gold {
-    box-shadow: 0 0 20px rgba(245, 158, 11, 0.15), 0 0 60px rgba(245, 158, 11, 0.05);
+    box-shadow: 0 0 8px rgba(245, 158, 11, 0.06), 0 0 24px rgba(245, 158, 11, 0.02);
   }
 
   .glow-green {
-    box-shadow: 0 0 20px rgba(129, 182, 76, 0.15), 0 0 60px rgba(129, 182, 76, 0.05);
+    box-shadow: 0 0 8px rgba(129, 182, 76, 0.06), 0 0 24px rgba(129, 182, 76, 0.02);
   }
 
   /* Timer bar */
@@ -374,8 +364,6 @@
 }
 
 /* ── Non-Tailwind Keyframes ── */
-
-/* FEATURE 6: Smooth Animations */
 
 /* Emoji float up */
 @keyframes emojiFloat {
@@ -440,7 +428,7 @@
   }
 }
 
-/* FEATURE 6: Check — king square pulse red */
+/* Check — king square pulse red */
 @keyframes checkPulse {
 
   0%,
@@ -453,9 +441,7 @@
   }
 }
 
-/* ── Removed boardShake keyframes ── */
-
-/* FEATURE 6: Captured piece fade in */
+/* Captured piece fade in */
 @keyframes pieceCaptureIn {
   0% {
     opacity: 0;
@@ -472,7 +458,7 @@
   animation: pieceCaptureIn 0.3s ease-out forwards;
 }
 
-/* FEATURE 6: Bounce in (result modal icon) */
+/* Bounce in (result modal icon) */
 @keyframes bounceIn {
   0% {
     transform: scale(0);

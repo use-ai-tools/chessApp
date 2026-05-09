@@ -20,10 +20,10 @@ export default function Sidebar() {
   };
 
   return (
-    <aside className="hidden md:flex flex-col w-64 h-full bg-navy-900 border-r border-navy-800">
+    <aside className="hidden md:flex flex-col w-64 h-full bg-navy-900/80">
       <div className="p-6">
         <Link to="/" className="flex items-center gap-3 group">
-          <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-chess-green to-emerald-600 flex items-center justify-center shadow-lg shadow-chess-green/20 group-hover:shadow-chess-green/40 transition-shadow">
+          <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-chess-green to-emerald-600 flex items-center justify-center transition-all">
             <span className="text-white font-black text-xl">♔</span>
           </div>
           <span className="text-2xl font-extrabold tracking-tight">
@@ -33,15 +33,15 @@ export default function Sidebar() {
         </Link>
       </div>
 
-      <nav className="flex-1 px-4 py-2 space-y-2 overflow-y-auto">
+      <nav className="flex-1 px-4 py-2 space-y-1 overflow-y-auto">
         {navLinks.map((link) => (
           <Link
             key={link.to}
             to={link.to}
-            className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 font-bold ${
+            className={`flex items-center gap-3 px-4 py-3.5 rounded-xl transition-all duration-200 font-semibold ${
               isActive(link.to)
-                ? 'bg-chess-green/15 text-chess-green shadow-sm'
-                : 'text-slate-400 hover:bg-white/5 hover:text-white'
+                ? 'bg-chess-green/8 text-chess-green'
+                : 'text-slate-500 hover:bg-white/5 hover:text-slate-200'
             }`}
           >
             <span className="text-xl">{link.icon}</span>
@@ -50,10 +50,10 @@ export default function Sidebar() {
         ))}
       </nav>
 
-      <div className="p-4 border-t border-navy-800">
+      <div className="p-4 border-t border-navy-800/30">
         <Link
           to="/profile"
-          className="flex items-center gap-3 px-4 py-3 rounded-xl text-slate-400 hover:bg-white/5 hover:text-white transition-all font-bold"
+          className="flex items-center gap-3 px-4 py-3 rounded-xl text-slate-500 hover:bg-white/5 hover:text-slate-200 transition-all font-semibold"
         >
           <span className="text-xl">👤</span>
           <span>Profile</span>

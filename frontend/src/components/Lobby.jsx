@@ -122,13 +122,13 @@ export default function Lobby() {
 
   return (
     <div className="w-full bg-hero flex-1">
-      <div className="max-w-7xl mx-auto px-4 py-6 lg:py-8">
-        {/* Title with Info Icon + Currency Selector */}
-        <div className="flex items-center gap-3 mb-2 flex-wrap">
-          <h1 className="text-3xl font-black text-white">Arena Contests</h1>
+      <div className="max-w-7xl mx-auto px-4 py-8 lg:py-10">
+        {/* Title row */}
+        <div className="flex items-center gap-3 mb-8 flex-wrap">
+          <h1 className="text-2xl font-black text-white">Arena Contests</h1>
           <button
             onClick={() => setShowInfoModal(true)}
-            className="w-7 h-7 rounded-full bg-navy-700/80 border border-navy-600 flex items-center justify-center text-slate-400 hover:text-white hover:bg-navy-600 hover:border-chess-green/30 transition-all text-sm font-bold"
+            className="w-6 h-6 rounded-full bg-white/5 flex items-center justify-center text-slate-500 hover:text-white hover:bg-white/10 transition-all text-xs font-bold"
             title="Contest Info"
           >
             ?
@@ -137,14 +137,14 @@ export default function Lobby() {
           <div className="relative ml-auto">
             <button
               onClick={() => setShowCurrencyPicker(!showCurrencyPicker)}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-navy-800/80 border border-navy-700/50 text-xs font-bold text-slate-300 hover:text-white hover:border-chess-green/30 transition-all"
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white/5 text-xs font-semibold text-slate-400 hover:text-white hover:bg-white/10 transition-all"
             >
               <span>{currencies[currency]?.flag}</span>
               <span>{currency}</span>
-              <span className="text-slate-500 text-[10px]">▼</span>
+              <span className="text-slate-600 text-[10px]">▼</span>
             </button>
             {showCurrencyPicker && (
-              <div className="absolute right-0 top-full mt-1 bg-navy-800 border border-navy-700/50 rounded-xl shadow-2xl z-50 overflow-hidden animate-scale-in min-w-[160px]">
+              <div className="absolute right-0 top-full mt-1 bg-navy-800 border border-navy-700/30 rounded-xl shadow-2xl z-50 overflow-hidden animate-scale-in min-w-[160px]">
                 {Object.entries(currencies).map(([code, info]) => (
                   <button
                     key={code}
@@ -162,39 +162,38 @@ export default function Lobby() {
             )}
           </div>
         </div>
-        <p className="text-slate-400 text-sm mb-6">Select your stakes, format, and time control to dominate.</p>
 
         {message && (
-          <div className={`mb-6 p-4 rounded-xl border text-sm font-bold animate-slide-down shadow-xl ${
-            msgType === 'error' ? 'bg-red-500/10 border-red-500/20 text-red-400' : 'bg-emerald-500/10 border-emerald-500/20 text-emerald-400'
+          <div className={`mb-6 p-4 rounded-xl text-sm font-semibold animate-slide-down ${
+            msgType === 'error' ? 'bg-red-500/10 text-red-400' : 'bg-emerald-500/10 text-emerald-400'
           }`}>{message}</div>
         )}
 
-        {/* Filters */}
-        <div className="flex flex-col lg:flex-row gap-4 mb-8 bg-navy-800/40 p-4 rounded-2xl border border-navy-700/50 backdrop-blur-sm">
-          <div className="flex-1">
-            <label className="block text-xs font-bold text-slate-500 mb-2 uppercase tracking-wider">Players</label>
+        {/* Filters — flat inline pills, no container */}
+        <div className="flex flex-col sm:flex-row gap-6 mb-8">
+          <div>
+            <label className="block text-[10px] font-semibold text-slate-600 mb-2 uppercase tracking-wider">Players</label>
             <div className="flex flex-wrap gap-2">
               {PLAYERS.map(p => (
-                <button key={p} onClick={() => setSelectedPlayers(p.toString())} className={`px-4 py-2 rounded-xl text-sm font-bold transition-all ${
-                  selectedPlayers === p.toString() ? 'bg-chess-green text-white shadow-lg shadow-chess-green/20' : 'bg-navy-900/80 text-slate-400 hover:text-white border border-navy-700/50'
-                }`}>{p} Players</button>
+                <button key={p} onClick={() => setSelectedPlayers(p.toString())} className={`px-4 py-1.5 rounded-lg text-sm font-semibold transition-all ${
+                  selectedPlayers === p.toString() ? 'bg-chess-green/15 text-chess-green' : 'bg-white/5 text-slate-500 hover:text-white hover:bg-white/10'
+                }`}>{p}P</button>
               ))}
             </div>
           </div>
-          <div className="flex-1">
-            <label className="block text-xs font-bold text-slate-500 mb-2 uppercase tracking-wider">Time Control</label>
+          <div>
+            <label className="block text-[10px] font-semibold text-slate-600 mb-2 uppercase tracking-wider">Time Control</label>
             <div className="flex flex-wrap gap-2">
               {TIMES.map(t => (
-                <button key={t} onClick={() => setSelectedTime(t.toString())} className={`px-4 py-2 rounded-xl text-sm font-bold transition-all ${
-                  selectedTime === t.toString() ? 'bg-emerald-500 text-white shadow-lg shadow-emerald-500/20' : 'bg-navy-900/80 text-slate-400 hover:text-white border border-navy-700/50'
+                <button key={t} onClick={() => setSelectedTime(t.toString())} className={`px-4 py-1.5 rounded-lg text-sm font-semibold transition-all ${
+                  selectedTime === t.toString() ? 'bg-chess-green/15 text-chess-green' : 'bg-white/5 text-slate-500 hover:text-white hover:bg-white/10'
                 }`}>{t} Min</button>
               ))}
             </div>
           </div>
         </div>
 
-        {/* Contest Cards */}
+        {/* Contest Cards — simplified */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
           {filteredEntries.map(entry => {
             const players = Number(selectedPlayers);
@@ -206,69 +205,52 @@ export default function Lobby() {
             const isJoining = joiningId === uniqueId;
 
             return (
-              <div key={uniqueId} className="card-hover p-0 overflow-hidden flex flex-col relative group">
-                <div className="h-1.5 w-full bg-gradient-to-r from-chess-green via-emerald-400 to-chess-green"></div>
-                
-                <div className="p-5 flex-1 flex flex-col relative z-10">
-                  <div className="flex justify-between items-start mb-4">
-                    <div>
-                      <h3 className="text-xl font-black text-white">{time} Min Match</h3>
-                      <p className="text-xs font-medium text-slate-400 mt-1 uppercase tracking-wider flex items-center gap-1">
-                        <span>{matchInfo.icon}</span> {players} Players • {matchInfo.type}
-                      </p>
-                    </div>
-                    <div className="bg-emerald-500/10 border border-emerald-500/20 px-3 py-1.5 rounded-lg flex flex-col items-center justify-center">
-                      <span className="text-[10px] text-emerald-500 font-bold uppercase tracking-wider">Prize Pool</span>
-                      <span className="text-lg font-black text-emerald-400 leading-none mt-0.5">{formatShort(dist.totalPrize)}</span>
-                    </div>
+              <div key={uniqueId} className="bg-navy-800/30 rounded-2xl p-5 flex flex-col hover:bg-navy-800/50 transition-all duration-300">
+                {/* Title row */}
+                <div className="flex justify-between items-start mb-3">
+                  <div>
+                    <h3 className="text-lg font-bold text-white">{time} Min Match</h3>
+                    <p className="text-[11px] text-slate-500 mt-0.5">
+                      {matchInfo.icon} {players} Players • {matchInfo.type}
+                    </p>
                   </div>
-
-                  <div className="flex flex-col gap-2 mb-4">
-                    <div className="flex justify-between items-center bg-navy-900/40 px-3 py-2 rounded-lg border border-navy-700/30">
-                      <span className="text-xs text-slate-400 font-medium">Entry Fee</span>
-                      <span className="text-sm text-white font-black">{formatShort(entry)}</span>
-                    </div>
-                    {/* Winners preview */}
-                    <div className="bg-navy-900/40 px-3 py-2 rounded-lg border border-navy-700/30">
-                      <div className="flex items-center justify-between mb-1.5">
-                        <span className="text-xs text-slate-400 font-medium">Winners</span>
-                        <span className="text-[10px] text-emerald-400 font-bold">{dist.breakdown.length} {dist.breakdown.length === 1 ? 'Winner' : 'Winners'}</span>
-                      </div>
-                      <div className="flex gap-1">
-                        {dist.breakdown.map((b, i) => (
-                          <div key={i} className="flex-1 text-center">
-                            <div className={`text-[10px] font-black ${i === 0 ? 'text-gold-400' : i === 1 ? 'text-slate-300' : 'text-amber-600'}`}>
-                              {i === 0 ? '🥇' : i === 1 ? '🥈' : '🥉'}
-                            </div>
-                            <div className="text-[10px] text-white font-bold">{formatShort(b.prize)}</div>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
+                  <div className="text-right">
+                    <span className="text-lg font-black text-emerald-400">{formatShort(dist.totalPrize)}</span>
+                    <p className="text-[10px] text-slate-600 font-medium">Prize</p>
                   </div>
+                </div>
 
-                  {/* View Prizes Button */}
+                {/* Info row — flat, no nested boxes */}
+                <div className="flex items-center gap-4 text-xs text-slate-400 mb-4 py-2 border-t border-navy-700/20">
+                  <div>
+                    <span className="text-slate-600">Entry </span>
+                    <span className="text-white font-bold">{formatShort(entry)}</span>
+                  </div>
+                  <div className="w-px h-3 bg-navy-700/30"></div>
+                  <div>
+                    <span className="text-slate-600">{dist.breakdown.length === 1 ? '1 Winner' : `${dist.breakdown.length} Winners`}</span>
+                  </div>
                   <button
                     onClick={(e) => { e.stopPropagation(); setShowPrizeModal({ entry, players, time }); }}
-                    className="text-[11px] text-chess-green font-bold mb-3 hover:underline text-left flex items-center gap-1 transition-all hover:text-emerald-300"
+                    className="ml-auto text-[10px] text-chess-green/60 hover:text-chess-green transition-colors"
                   >
-                    💰 View Full Prize Table →
-                  </button>
-
-                  <button
-                    onClick={() => handleJoin(entry, players, time)}
-                    disabled={isJoining}
-                    className={`mt-auto w-full py-3.5 rounded-xl text-sm font-black text-white transition-all active:scale-[0.98] flex items-center justify-center gap-2 ${
-                      isJoining ? 'bg-navy-600 cursor-wait' : 'bg-gradient-to-r from-chess-green to-emerald-600 hover:shadow-lg hover:shadow-chess-green/20'
-                    }`}
-                  >
-                    {isJoining ? (
-                      <><span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" /> Joining...</>
-                    ) : (
-                      `Play for ${formatShort(entry)}`
-                    )}
+                    Details →
                   </button>
                 </div>
+
+                <button
+                  onClick={() => handleJoin(entry, players, time)}
+                  disabled={isJoining}
+                  className={`mt-auto w-full py-2.5 rounded-xl text-sm font-bold text-white transition-all active:scale-[0.98] flex items-center justify-center gap-2 ${
+                    isJoining ? 'bg-navy-700 cursor-wait' : 'bg-gradient-to-r from-chess-green to-emerald-600 hover:shadow-md hover:shadow-chess-green/15'
+                  }`}
+                >
+                  {isJoining ? (
+                    <><span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" /> Joining...</>
+                  ) : (
+                    `Play for ${formatShort(entry)}`
+                  )}
+                </button>
               </div>
             );
           })}
@@ -278,55 +260,54 @@ export default function Lobby() {
       {/* ── Contest Info Modal ── */}
       {showInfoModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm animate-fade-in" onClick={() => setShowInfoModal(false)}>
-          <div className="bg-navy-800 border border-navy-700/50 rounded-2xl shadow-2xl w-full max-w-md animate-scale-in overflow-hidden" onClick={e => e.stopPropagation()}>
+          <div className="bg-navy-800 border border-navy-700/30 rounded-2xl shadow-2xl w-full max-w-md animate-scale-in overflow-hidden" onClick={e => e.stopPropagation()}>
             <div className="p-6">
               <div className="flex items-center justify-between mb-6">
-                <h2 className="text-xl font-black text-white">Contest Format Guide</h2>
-                <button onClick={() => setShowInfoModal(false)} className="text-slate-400 hover:text-white text-xl font-bold transition-colors">✕</button>
+                <h2 className="text-lg font-bold text-white">Contest Formats</h2>
+                <button onClick={() => setShowInfoModal(false)} className="text-slate-500 hover:text-white text-lg font-bold transition-colors">✕</button>
               </div>
 
-              <div className="space-y-4">
-                <div className="bg-navy-900/60 border border-navy-700/30 p-4 rounded-xl">
-                  <div className="flex items-center gap-3 mb-2">
-                    <div className="w-10 h-10 rounded-xl bg-sky-500/10 flex items-center justify-center text-xl border border-sky-500/20">⚔️</div>
+              <div className="space-y-3">
+                <div className="bg-navy-900/40 p-4 rounded-xl">
+                  <div className="flex items-center gap-3 mb-1.5">
+                    <span className="text-xl">⚔️</span>
                     <div>
                       <h3 className="text-sm font-bold text-white">Direct Match</h3>
-                      <span className="text-[10px] text-sky-400 font-bold uppercase">2 Players</span>
+                      <span className="text-[10px] text-sky-400 font-semibold">2 Players</span>
                     </div>
                   </div>
-                  <p className="text-xs text-slate-400">Head-to-head 1v1 battle. Winner takes the entire prize pool.</p>
+                  <p className="text-xs text-slate-500">Head-to-head 1v1. Winner takes the prize pool.</p>
                 </div>
 
-                <div className="bg-navy-900/60 border border-navy-700/30 p-4 rounded-xl">
-                  <div className="flex items-center gap-3 mb-2">
-                    <div className="w-10 h-10 rounded-xl bg-amber-500/10 flex items-center justify-center text-xl border border-amber-500/20">🔄</div>
+                <div className="bg-navy-900/40 p-4 rounded-xl">
+                  <div className="flex items-center gap-3 mb-1.5">
+                    <span className="text-xl">🔄</span>
                     <div>
                       <h3 className="text-sm font-bold text-white">Round Robin</h3>
-                      <span className="text-[10px] text-amber-400 font-bold uppercase">3 Players</span>
+                      <span className="text-[10px] text-amber-400 font-semibold">3 Players</span>
                     </div>
                   </div>
-                  <p className="text-xs text-slate-400">Every player plays against every other player. Winner by points takes all. Win=1, Draw=0.5, Loss=0.</p>
+                  <p className="text-xs text-slate-500">Every player plays every other. Points decide rankings.</p>
                 </div>
 
-                <div className="bg-navy-900/60 border border-navy-700/30 p-4 rounded-xl">
-                  <div className="flex items-center gap-3 mb-2">
-                    <div className="w-10 h-10 rounded-xl bg-purple-500/10 flex items-center justify-center text-xl border border-purple-500/20">🏆</div>
+                <div className="bg-navy-900/40 p-4 rounded-xl">
+                  <div className="flex items-center gap-3 mb-1.5">
+                    <span className="text-xl">🏆</span>
                     <div>
                       <h3 className="text-sm font-bold text-white">Knockout Bracket</h3>
-                      <span className="text-[10px] text-purple-400 font-bold uppercase">4+ Players</span>
+                      <span className="text-[10px] text-purple-400 font-semibold">4+ Players</span>
                     </div>
                   </div>
-                  <p className="text-xs text-slate-400">Single elimination tournament bracket. Lose one match and you're eliminated. Last player standing wins!</p>
+                  <p className="text-xs text-slate-500">Single elimination. Lose once and you're out!</p>
                 </div>
               </div>
 
-              <div className="mt-5 p-3 bg-chess-green/5 border border-chess-green/10 rounded-xl">
-                <h4 className="text-xs font-bold text-chess-green mb-1.5">📋 Quick Rules</h4>
-                <ul className="text-[11px] text-slate-400 space-y-1">
-                  <li>• 2 Players → Direct Match — 1 Winner</li>
-                  <li>• 3 Players → Round Robin — 1 Winner</li>
-                  <li>• 4 Players → Knockout — 1 Winner</li>
-                  <li>• 10 Players → Knockout — Top 3 share prizes</li>
+              <div className="mt-4 p-3 bg-chess-green/5 rounded-xl">
+                <ul className="text-[11px] text-slate-500 space-y-1">
+                  <li>• 2 Players → 1 Winner</li>
+                  <li>• 3 Players → Round Robin → 1 Winner</li>
+                  <li>• 4 Players → Knockout → 1 Winner</li>
+                  <li>• 10 Players → Knockout → Top 3 share prizes</li>
                 </ul>
               </div>
             </div>
@@ -337,7 +318,7 @@ export default function Lobby() {
       {/* ── Prize Breakdown Modal ── */}
       {showPrizeModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm animate-fade-in" onClick={() => setShowPrizeModal(null)}>
-          <div className="bg-navy-800 border border-navy-700/50 rounded-2xl shadow-2xl w-full max-w-sm animate-scale-in overflow-hidden" onClick={e => e.stopPropagation()}>
+          <div className="bg-navy-800 border border-navy-700/30 rounded-2xl shadow-2xl w-full max-w-sm animate-scale-in overflow-hidden" onClick={e => e.stopPropagation()}>
             {(() => {
               const { entry, players, time } = showPrizeModal;
               const totalPot = entry * players;
@@ -347,57 +328,56 @@ export default function Lobby() {
               return (
                 <div className="p-6">
                   <div className="flex items-center justify-between mb-5">
-                    <h2 className="text-lg font-black text-white">Prize Breakdown</h2>
-                    <button onClick={() => setShowPrizeModal(null)} className="text-slate-400 hover:text-white text-lg font-bold transition-colors">✕</button>
+                    <h2 className="text-lg font-bold text-white">Prize Breakdown</h2>
+                    <button onClick={() => setShowPrizeModal(null)} className="text-slate-500 hover:text-white text-lg font-bold transition-colors">✕</button>
                   </div>
 
-                  <div className="grid grid-cols-3 gap-3 mb-5">
-                    <div className="bg-navy-900/60 p-3 rounded-xl text-center border border-navy-700/30">
-                      <div className="text-[10px] text-slate-500 font-bold uppercase mb-1">Entry</div>
-                      <div className="text-sm font-black text-white">{formatShort(entry)}</div>
+                  <div className="flex gap-4 mb-5 text-center">
+                    <div className="flex-1 bg-navy-900/40 p-3 rounded-xl">
+                      <div className="text-[10px] text-slate-600 font-semibold uppercase mb-1">Entry</div>
+                      <div className="text-sm font-bold text-white">{formatShort(entry)}</div>
                     </div>
-                    <div className="bg-navy-900/60 p-3 rounded-xl text-center border border-navy-700/30">
-                      <div className="text-[10px] text-slate-500 font-bold uppercase mb-1">Pool</div>
-                      <div className="text-sm font-black text-emerald-400">{formatShort(totalPot)}</div>
+                    <div className="flex-1 bg-navy-900/40 p-3 rounded-xl">
+                      <div className="text-[10px] text-slate-600 font-semibold uppercase mb-1">Pool</div>
+                      <div className="text-sm font-bold text-emerald-400">{formatShort(totalPot)}</div>
                     </div>
-                    <div className="bg-navy-900/60 p-3 rounded-xl text-center border border-navy-700/30">
-                      <div className="text-[10px] text-slate-500 font-bold uppercase mb-1">Format</div>
-                      <div className="text-sm font-black text-white">{matchInfo.icon}</div>
+                    <div className="flex-1 bg-navy-900/40 p-3 rounded-xl">
+                      <div className="text-[10px] text-slate-600 font-semibold uppercase mb-1">Format</div>
+                      <div className="text-sm font-bold text-white">{matchInfo.icon}</div>
                     </div>
                   </div>
 
-                  <div className="bg-navy-900/40 rounded-xl border border-navy-700/30 overflow-hidden">
-                    <div className="grid grid-cols-3 gap-2 px-4 py-2.5 bg-navy-900/80 border-b border-navy-700/30">
-                      <span className="text-[10px] text-slate-500 font-black uppercase">Rank</span>
-                      <span className="text-[10px] text-slate-500 font-black uppercase text-center">%</span>
-                      <span className="text-[10px] text-slate-500 font-black uppercase text-right">Prize</span>
+                  <div className="bg-navy-900/30 rounded-xl overflow-hidden">
+                    <div className="grid grid-cols-3 gap-2 px-4 py-2.5 border-b border-navy-700/20">
+                      <span className="text-[10px] text-slate-600 font-bold uppercase">Rank</span>
+                      <span className="text-[10px] text-slate-600 font-bold uppercase text-center">%</span>
+                      <span className="text-[10px] text-slate-600 font-bold uppercase text-right">Prize</span>
                     </div>
                     {dist.breakdown.map((b, i) => (
-                      <div key={i} className={`grid grid-cols-3 gap-2 px-4 py-3 ${i < dist.breakdown.length - 1 ? 'border-b border-navy-700/20' : ''} ${i === 0 ? 'bg-gold-500/5' : ''}`}>
+                      <div key={i} className={`grid grid-cols-3 gap-2 px-4 py-3 ${i < dist.breakdown.length - 1 ? 'border-b border-navy-700/10' : ''}`}>
                         <span className="text-sm font-bold text-white flex items-center gap-1.5">
                           {i === 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉' : `#${b.rank}`}
-                          <span className={i === 0 ? 'text-gold-400' : 'text-slate-300'}>#{b.rank}</span>
+                          <span className={i === 0 ? 'text-gold-400' : 'text-slate-400'}>#{b.rank}</span>
                         </span>
-                        <span className="text-sm text-slate-400 font-medium text-center">{b.percent}%</span>
-                        <span className={`text-sm font-black text-right ${i === 0 ? 'text-emerald-400' : 'text-white'}`}>{formatShort(b.prize)}</span>
+                        <span className="text-sm text-slate-500 font-medium text-center">{b.percent}%</span>
+                        <span className={`text-sm font-bold text-right ${i === 0 ? 'text-emerald-400' : 'text-white'}`}>{formatShort(b.prize)}</span>
                       </div>
                     ))}
-                    {/* Losers row */}
                     {Number(selectedPlayers) > 4 && (
-                      <div className="grid grid-cols-3 gap-2 px-4 py-3 border-t border-navy-700/20 bg-navy-900/30">
-                        <span className="text-sm font-bold text-slate-500">4th+</span>
-                        <span className="text-sm text-slate-500 font-medium text-center">0%</span>
-                        <span className="text-sm font-black text-right text-slate-500">{getSymbol()}0</span>
+                      <div className="grid grid-cols-3 gap-2 px-4 py-3 border-t border-navy-700/10">
+                        <span className="text-sm font-medium text-slate-600">4th+</span>
+                        <span className="text-sm text-slate-600 font-medium text-center">0%</span>
+                        <span className="text-sm font-bold text-right text-slate-600">{getSymbol()}0</span>
                       </div>
                     )}
                   </div>
 
-                  <div className="mt-4 flex items-center justify-between bg-emerald-500/5 border border-emerald-500/10 px-4 py-3 rounded-xl">
-                    <span className="text-xs text-slate-400 font-bold">Total Distributed</span>
+                  <div className="mt-4 flex items-center justify-between px-4 py-3 bg-emerald-500/5 rounded-xl">
+                    <span className="text-xs text-slate-500 font-semibold">Total Distributed</span>
                     <span className="text-lg font-black text-emerald-400">{formatShort(dist.totalPrize)}</span>
                   </div>
 
-                  <p className="text-[10px] text-slate-500 mt-3 text-center">15% platform fee deducted from pool</p>
+                  <p className="text-[10px] text-slate-600 mt-3 text-center">15% platform fee deducted from pool</p>
                 </div>
               );
             })()}

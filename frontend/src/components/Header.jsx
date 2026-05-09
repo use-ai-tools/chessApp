@@ -55,16 +55,16 @@ export default function Header() {
 
   return (
     <>
-      <header className="fixed top-0 left-0 right-0 z-40 bg-navy-900/80 backdrop-blur-xl border-b border-navy-700/50 md:hidden">
-        <div className="max-w-7xl mx-auto px-4 h-16 flex items-center justify-between">
+      <header className="fixed top-0 left-0 right-0 z-40 bg-navy-950/90 backdrop-blur-md md:hidden">
+        <div className="max-w-7xl mx-auto px-4 h-14 flex items-center justify-between">
           {/* Logo */}
           <Link to="/" className="flex items-center gap-2.5 group">
-            <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-chess-green to-emerald-600 flex items-center justify-center shadow-lg shadow-chess-green/20 group-hover:shadow-chess-green/40 transition-shadow">
-              <span className="text-white font-black text-lg">♔</span>
+            <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-chess-green to-emerald-600 flex items-center justify-center">
+              <span className="text-white font-black text-base">♔</span>
             </div>
-            <span className="text-xl font-extrabold tracking-tight hidden sm:block">
+            <span className="text-lg font-extrabold tracking-tight hidden sm:block">
               <span className="text-white">Chess</span>
-              <span className="text-gradient-green">Arena</span>
+              <span className="text-chess-green">Arena</span>
             </span>
           </Link>
 
@@ -76,7 +76,7 @@ export default function Header() {
                   <button
                     key={idx}
                     onClick={link.action}
-                    className="px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 text-slate-400 hover:text-white hover:bg-white/5"
+                    className="px-3 py-1.5 rounded-lg text-sm font-medium transition-all duration-200 text-slate-500 hover:text-white hover:bg-white/5"
                   >
                     <span className="mr-1.5">{link.icon}</span>
                     {link.label}
@@ -87,10 +87,10 @@ export default function Header() {
                 <Link
                   key={link.to}
                   to={link.to}
-                  className={`px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
+                  className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-all duration-200 ${
                     isActive(link.to)
-                      ? 'bg-chess-green/15 text-chess-green border border-chess-green/20'
-                      : 'text-slate-400 hover:text-white hover:bg-white/5'
+                      ? 'bg-chess-green/10 text-chess-green'
+                      : 'text-slate-500 hover:text-white hover:bg-white/5'
                   }`}
                 >
                   <span className="mr-1.5">{link.icon}</span>
@@ -101,17 +101,15 @@ export default function Header() {
           </nav>
 
           {/* Right Section */}
-          <div className="flex items-center gap-3">
-            {/* Wallet Button */}
+          <div className="flex items-center gap-2">
+            {/* Wallet Button — subtle, not dominant */}
             <button
               onClick={() => setWalletOpen(true)}
-              className="flex items-center gap-2 px-3 py-2 rounded-xl bg-gradient-to-r from-chess-green/10 to-emerald-600/10 border border-chess-green/20 hover:border-chess-green/40 transition-all group"
+              className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-white/5 hover:bg-white/10 transition-all"
               id="wallet-btn"
             >
-              <div className="w-6 h-6 rounded-full bg-gradient-to-br from-chess-green to-emerald-600 flex items-center justify-center">
-                <span className="text-white text-xs font-bold">{getSymbol()}</span>
-              </div>
-              <span className="text-chess-green font-bold text-sm group-hover:text-emerald-400 transition-colors">
+              <span className="text-chess-green text-xs">{getSymbol()}</span>
+              <span className="text-white/90 font-bold text-sm">
                 {formatShort(user.wallet || 0)}
               </span>
             </button>
@@ -122,27 +120,27 @@ export default function Header() {
             </div>
 
             {/* Notification Bell */}
-            <Link to="/notifications" className="relative p-2 text-slate-400 hover:text-white transition-colors">
+            <Link to="/notifications" className="relative p-2 text-slate-500 hover:text-white transition-colors">
               <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
               </svg>
               {/* Red dot only if there are unread notifications */}
               {unreadCount > 0 && (
                 <>
-                  <span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full animate-ping"></span>
-                  <span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full"></span>
+                  <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-red-500 rounded-full animate-ping"></span>
+                  <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-red-500 rounded-full"></span>
                 </>
               )}
             </Link>
 
             {/* User Avatar */}
-            <Link to="/profile" className="hidden sm:flex items-center gap-2 hover:bg-white/5 p-1 px-2 rounded-xl transition-colors">
-              <div className="w-8 h-8 rounded-full bg-gradient-to-br from-purple-500 to-indigo-600 flex items-center justify-center ring-2 ring-purple-500/20">
+            <Link to="/profile" className="hidden sm:flex items-center gap-2 hover:bg-white/5 p-1 px-2 rounded-lg transition-colors">
+              <div className="w-7 h-7 rounded-full bg-gradient-to-br from-purple-500 to-indigo-600 flex items-center justify-center">
                 <span className="text-white text-xs font-bold">
                   {user.avatar || user.username?.charAt(0).toUpperCase()}
                 </span>
               </div>
-              <span className="text-sm font-medium text-slate-300 max-w-[100px] truncate">
+              <span className="text-sm font-medium text-slate-400 max-w-[100px] truncate">
                 {user.username}
               </span>
             </Link>
@@ -161,7 +159,7 @@ export default function Header() {
             {/* Mobile hamburger */}
             <button
               onClick={() => setMenuOpen(!menuOpen)}
-              className="md:hidden p-2 text-slate-400 hover:text-white"
+              className="md:hidden p-2 text-slate-500 hover:text-white"
             >
               <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                 {menuOpen ? (
@@ -176,7 +174,7 @@ export default function Header() {
 
         {/* Mobile menu */}
         {menuOpen && (
-          <div className="md:hidden border-t border-navy-700/50 bg-navy-900/95 backdrop-blur-xl animate-slide-down">
+          <div className="md:hidden bg-navy-950/95 backdrop-blur-md animate-slide-down">
             <div className="px-4 py-3 space-y-1">
               {navLinks.map((link, idx) => {
                 if (link.action) {
@@ -198,7 +196,7 @@ export default function Header() {
                     onClick={() => setMenuOpen(false)}
                     className={`block px-4 py-2.5 rounded-lg text-sm font-medium transition-all ${
                       isActive(link.to)
-                        ? 'bg-chess-green/15 text-chess-green'
+                        ? 'bg-chess-green/10 text-chess-green'
                         : 'text-slate-400 hover:text-white hover:bg-white/5'
                     }`}
                   >
@@ -207,7 +205,7 @@ export default function Header() {
                   </Link>
                 );
               })}
-              <div className="pt-2 border-t border-navy-700/50">
+              <div className="pt-2 border-t border-navy-800/50">
                 <button
                   onClick={() => { logout(); setMenuOpen(false); }}
                   className="w-full text-left px-4 py-2.5 rounded-lg text-sm font-medium text-red-400 hover:bg-red-500/10"

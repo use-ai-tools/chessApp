@@ -58,8 +58,7 @@ export default function AuthForm({ mode = 'login' }) {
   return (
     <div className="min-h-screen flex items-center justify-center px-4 py-12 bg-hero">
       <div className="fixed inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-chess-green/5 rounded-full blur-3xl" />
-        <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-purple-500/5 rounded-full blur-3xl" />
+        <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-chess-green/3 rounded-full blur-3xl" />
       </div>
 
       <div className="w-full max-w-md relative z-10 animate-fade-in">

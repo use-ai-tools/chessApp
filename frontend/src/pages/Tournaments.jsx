@@ -110,30 +110,25 @@ export default function Tournaments() {
       <div className="max-w-6xl mx-auto animate-fade-in">
         
         {/* Header */}
-        <div className="bg-navy-800/80 backdrop-blur border border-navy-700/50 rounded-2xl p-8 mb-8 flex flex-col md:flex-row items-center justify-between gap-6 shadow-xl relative overflow-hidden">
-          <div className="absolute top-0 right-0 w-64 h-64 bg-gold-500/10 blur-3xl rounded-full -mr-32 -mt-32"></div>
-          
-          <div className="relative z-10 flex flex-col md:flex-row items-center gap-6">
-            <div className="w-20 h-20 bg-gradient-to-br from-amber-400 to-gold-600 rounded-3xl flex items-center justify-center text-4xl shadow-2xl shadow-amber-500/20 ring-4 ring-amber-400/20">
-              🏆
-            </div>
-            <div className="text-center md:text-left">
-              <h1 className="text-4xl font-black text-white mb-2 tracking-tight">Tournaments</h1>
-              <p className="text-slate-400 max-w-md">Join massive tournaments with 50-500 players. Play matches, earn points, and climb the leaderboard to win!</p>
+        <div className="mb-8 flex flex-col md:flex-row items-start justify-between gap-6">
+          <div className="flex items-center gap-4">
+            <div className="text-4xl">🏆</div>
+            <div>
+              <h1 className="text-2xl font-black text-white mb-1">Tournaments</h1>
+              <p className="text-slate-500 text-sm">Join tournaments, earn points, win prizes.</p>
             </div>
           </div>
-
-          <div className="relative z-10 flex flex-col sm:flex-row gap-3">
-            <div className="bg-navy-950/50 backdrop-blur p-4 rounded-xl border border-navy-700/50 text-center">
-              <div className="text-xs text-slate-500 uppercase font-black mb-1">Your Wallet</div>
-              <div className="text-2xl font-black text-white">₹{user?.wallet || 0}</div>
+          <div className="flex gap-4 text-xs">
+            <div className="bg-white/5 px-4 py-3 rounded-xl text-center">
+              <div className="text-slate-600 uppercase font-semibold mb-1">Wallet</div>
+              <div className="text-lg font-bold text-white">₹{user?.wallet || 0}</div>
             </div>
-            <div className="bg-navy-950/50 backdrop-blur p-4 rounded-xl border border-navy-700/50 text-center">
-              <div className="text-xs text-slate-500 uppercase font-black mb-1">Points System</div>
+            <div className="bg-white/5 px-4 py-3 rounded-xl">
+              <div className="text-slate-600 uppercase font-semibold mb-1">Points</div>
               <div className="flex gap-3 mt-1">
-                <div><span className="text-emerald-400 font-black text-sm">1.0</span><span className="text-[10px] text-slate-500 ml-1">Win</span></div>
-                <div><span className="text-amber-400 font-black text-sm">0.5</span><span className="text-[10px] text-slate-500 ml-1">Draw</span></div>
-                <div><span className="text-red-400 font-black text-sm">0</span><span className="text-[10px] text-slate-500 ml-1">Loss</span></div>
+                <div><span className="text-emerald-400 font-bold">1.0</span><span className="text-slate-600 ml-1">W</span></div>
+                <div><span className="text-amber-400 font-bold">0.5</span><span className="text-slate-600 ml-1">D</span></div>
+                <div><span className="text-red-400 font-bold">0</span><span className="text-slate-600 ml-1">L</span></div>
               </div>
             </div>
           </div>
@@ -154,17 +149,13 @@ export default function Tournaments() {
             const spotsLeft = t.maxPlayers - t.registeredPlayers.length;
 
             return (
-              <div key={t._id} className={`group relative bg-navy-800/50 border ${isRegistered ? 'border-chess-green/30' : 'border-navy-700/50'} rounded-2xl overflow-hidden hover:border-navy-500 transition-all duration-300 shadow-xl flex flex-col`}>
-                {/* Image/Emoji Header */}
-                <div className="h-32 bg-navy-900 relative flex items-center justify-center overflow-hidden">
-                  <div className="absolute inset-0 bg-gradient-to-br from-navy-900/50 to-navy-950/80 z-10"></div>
-                  <div className="text-6xl z-20 transform group-hover:scale-110 transition-transform duration-500">🛡️</div>
-                  <div className="absolute top-3 left-3 z-20">
+              <div key={t._id} className={`group bg-navy-800/30 rounded-2xl overflow-hidden hover:bg-navy-800/50 transition-all duration-300 flex flex-col`}>
+                {/* Compact header row */}
+                <div className="px-6 pt-5 flex items-center justify-between">
+                  <div className="flex items-center gap-2">
                     {getStatusBadge(t.status)}
                   </div>
-                  <div className="absolute top-3 right-3 z-20 bg-black/60 backdrop-blur px-2 py-1 rounded text-[10px] font-black text-gold-400 uppercase border border-gold-400/20">
-                    ₹{t.prizePool} PRIZE
-                  </div>
+                  <span className="text-sm font-bold text-emerald-400">₹{t.prizePool}</span>
                 </div>
 
                 <div className="p-6 flex-grow flex flex-col">
@@ -191,20 +182,11 @@ export default function Tournaments() {
                       )}
                     </div>
 
-                    {/* Quick Stats */}
-                    <div className="grid grid-cols-3 gap-2">
-                      <div className="bg-navy-900/40 p-2 rounded-lg text-center border border-navy-700/30">
-                        <div className="text-[9px] text-slate-500 uppercase font-bold">Pool</div>
-                        <div className="text-xs font-black text-emerald-400">₹{t.prizePool}</div>
-                      </div>
-                      <div className="bg-navy-900/40 p-2 rounded-lg text-center border border-navy-700/30">
-                        <div className="text-[9px] text-slate-500 uppercase font-bold">Players</div>
-                        <div className="text-xs font-black text-white">{t.maxPlayers}</div>
-                      </div>
-                      <div className="bg-navy-900/40 p-2 rounded-lg text-center border border-navy-700/30">
-                        <div className="text-[9px] text-slate-500 uppercase font-bold">Spots</div>
-                        <div className={`text-xs font-black ${spotsLeft > 0 ? 'text-amber-400' : 'text-red-400'}`}>{spotsLeft > 0 ? spotsLeft : 'Full'}</div>
-                      </div>
+                    {/* Quick Stats — flat inline */}
+                    <div className="flex gap-4 text-xs">
+                      <div><span className="text-slate-600">Pool </span><span className="font-bold text-emerald-400">₹{t.prizePool}</span></div>
+                      <div><span className="text-slate-600">Max </span><span className="font-bold text-white">{t.maxPlayers}</span></div>
+                      <div><span className="text-slate-600">Spots </span><span className={`font-bold ${spotsLeft > 0 ? 'text-amber-400' : 'text-red-400'}`}>{spotsLeft > 0 ? spotsLeft : 'Full'}</span></div>
                     </div>
                   </div>
 
@@ -216,7 +198,7 @@ export default function Tournaments() {
                     🏅 View Winnings →
                   </button>
 
-                  <div className="mt-auto pt-4 border-t border-navy-700/30 flex items-center justify-between">
+                  <div className="mt-auto pt-4 border-t border-navy-700/15 flex items-center justify-between">
                     <div>
                       <div className="text-[10px] text-slate-500 uppercase font-black">Entry Fee</div>
                       <div className="text-lg font-black text-white">₹{t.entryFee}</div>
@@ -257,9 +239,9 @@ export default function Tournaments() {
         </div>
 
         {tournaments.length === 0 && !loading && (
-          <div className="bg-navy-800/50 border border-navy-700/50 p-20 rounded-2xl text-center">
-            <div className="text-6xl mb-4 opacity-20">📭</div>
-            <p className="text-slate-400 font-medium">No active tournaments scheduled at the moment.<br/>Check back later for grand events!</p>
+          <div className="bg-navy-800/20 p-16 rounded-2xl text-center">
+            <div className="text-5xl mb-4 opacity-20">📭</div>
+            <p className="text-slate-500 text-sm">No tournaments scheduled right now.</p>
           </div>
         )}
       </div>
@@ -267,7 +249,7 @@ export default function Tournaments() {
       {/* ── Tournament Winnings Modal ── */}
       {showWinningsModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm animate-fade-in" onClick={() => setShowWinningsModal(null)}>
-          <div className="bg-navy-800 border border-navy-700/50 rounded-2xl shadow-2xl w-full max-w-md animate-scale-in overflow-hidden max-h-[85vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
+          <div className="bg-navy-800 border border-navy-700/30 rounded-2xl shadow-2xl w-full max-w-md animate-scale-in overflow-hidden max-h-[85vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
             {(() => {
               const t = showWinningsModal;
               const prizes = getTournamentPrizes(t.prizePool, t.maxPlayers);
