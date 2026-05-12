@@ -137,7 +137,7 @@ module.exports = (io) => {
 
       const chess = new Chess();
       const totalTimeSec = (contest.contestType?.timeControl || 10) * 60; // timeControl is in minutes
-      games.set(contestId, { chess, players: [whiteId, blackId], moveCount: 0, whiteTime: totalTimeSec, blackTime: totalTimeSec, lastTickAt: null, firstMoveMade: false });
+      games.set(contestId, { chess, players: [whiteId, blackId], moveCount: 0, whiteTime: totalTimeSec, blackTime: totalTimeSec, lastTickAt: null });
 
       const white = await User.findById(whiteId).select('username elo').lean();
       const black = await User.findById(blackId).select('username elo').lean();
@@ -171,6 +171,10 @@ module.exports = (io) => {
       // Emit game-start with color assignment to each player individually
       if (sock1) sock1.emit('game-start', { color: p1 === whiteId ? 'white' : 'black', contestId });
       if (sock2) sock2.emit('game-start', { color: p2 === whiteId ? 'white' : 'black', contestId });
+
+      // Start clock immediately — white's time starts ticking from match start
+      const gameState = games.get(contestId);
+      if (gameState) startChessClock(contestId, gameState);
 
       console.log(`[match] ${white?.username} vs ${black?.username} | ${contest.contestType?.name} | ${contestId}`);
     } catch (err) { console.error('[startMatch]', err); }
@@ -472,14 +476,13 @@ module.exports = (io) => {
       const gameState = games.get(contestId);
       if (!gameState) return;
       io.to(contestId).emit('gameReady', { contestId });
-      // Don't start clock yet — wait for white's first move
-      // Emit initial timer state with startedAt=null (paused)
+      // Clock already started in startMatch — just re-emit current timer state
       io.to(contestId).emit('timerStart', {
         contestId,
         turn: 'w',
         whiteTime: gameState.whiteTime,
         blackTime: gameState.blackTime,
-        startedAt: null,
+        startedAt: gameState.lastTickAt || Date.now(),
       });
     });
 
@@ -526,23 +529,16 @@ module.exports = (io) => {
           await contest.save(); await endContest(contestId, null, null, 'insufficient', gameState); return;
         }
 
-        // Timer logic: first move starts the clock, subsequent moves deduct + switch
-        if (!gameState.firstMoveMade) {
-          // First move of the game — start clock now, no time deducted
-          gameState.firstMoveMade = true;
-          startChessClock(contestId, gameState);
-        } else {
-          // Deduct elapsed time from the player who just moved
-          if (gameState.lastTickAt) {
-            const elapsed = (Date.now() - gameState.lastTickAt) / 1000;
-            if (turnBefore === 'w') {
-              gameState.whiteTime = Math.max(0, gameState.whiteTime - elapsed);
-            } else {
-              gameState.blackTime = Math.max(0, gameState.blackTime - elapsed);
-            }
+        // Timer logic: deduct elapsed time from mover, then switch clock
+        if (gameState.lastTickAt) {
+          const elapsed = (Date.now() - gameState.lastTickAt) / 1000;
+          if (turnBefore === 'w') {
+            gameState.whiteTime = Math.max(0, gameState.whiteTime - elapsed);
+          } else {
+            gameState.blackTime = Math.max(0, gameState.blackTime - elapsed);
           }
-          startChessClock(contestId, gameState);
         }
+        startChessClock(contestId, gameState);
 
         await contest.save();
         io.to(contestId).emit('moveMade', { contestId, from, to, san: move.san, fen: chess.fen(), inCheck: chess.in_check(), captured: move.captured || null });

@@ -48,9 +48,15 @@ export default function Lobby() {
   const [msgType, setMsgType] = useState('');
   const [joiningId, setJoiningId] = useState(null);
 
-  const [selectedEntry, setSelectedEntry] = useState('ALL');
-  const [selectedPlayers, setSelectedPlayers] = useState('2');
-  const [selectedTime, setSelectedTime] = useState('10');
+  // Item 6: Load persisted filters from localStorage
+  const savedFilters = (() => { try { return JSON.parse(localStorage.getItem('chess-lobby-filters') || '{}'); } catch { return {}; } })();
+  const [selectedEntry, setSelectedEntry] = useState(savedFilters.entry || 'ALL');
+  const [selectedPlayers, setSelectedPlayers] = useState(savedFilters.players || '2');
+  const [selectedTime, setSelectedTime] = useState(savedFilters.time || '10');
+
+  // Item 7: Sort and filter state
+  const [sortBy, setSortBy] = useState(savedFilters.sortBy || 'entry-asc');
+  const [showFilterSheet, setShowFilterSheet] = useState(false);
 
   // Modals
   const [showInfoModal, setShowInfoModal] = useState(false);
@@ -62,6 +68,13 @@ export default function Lobby() {
   const ENTRIES = [1, 2, 5, 10, 25, 50, 100, 200, 500, 1000, 2000];
   const PLAYERS = [2, 3, 4, 10];
   const TIMES = [3, 5, 10];
+
+  // Item 6: Persist filters to localStorage on change
+  useEffect(() => {
+    localStorage.setItem('chess-lobby-filters', JSON.stringify({
+      entry: selectedEntry, players: selectedPlayers, time: selectedTime, sortBy
+    }));
+  }, [selectedEntry, selectedPlayers, selectedTime, sortBy]);
 
   useEffect(() => {
     socketRef.current = io(SOCKET_URL, { reconnection: true, transports: ['websocket'], timeout: 60000 });
@@ -120,7 +133,24 @@ export default function Lobby() {
 
   const filteredEntries = selectedEntry === 'ALL' ? ENTRIES : [Number(selectedEntry)];
 
+  // Item 7: Sort entries
+  const sortedEntries = [...filteredEntries].sort((a, b) => {
+    const players = Number(selectedPlayers);
+    switch (sortBy) {
+      case 'entry-desc': return b - a;
+      case 'prize-desc': {
+        const potA = a * players, potB = b * players;
+        const prizeA = getPrizeDistribution(potA, players).totalPrize;
+        const prizeB = getPrizeDistribution(potB, players).totalPrize;
+        return prizeB - prizeA;
+      }
+      case 'entry-asc':
+      default: return a - b;
+    }
+  });
+
   return (
+    <>
     <div className="w-full bg-hero flex-1">
       <div className="max-w-7xl mx-auto px-4 py-8 lg:py-10">
         {/* Title row */}
@@ -169,8 +199,8 @@ export default function Lobby() {
           }`}>{message}</div>
         )}
 
-        {/* Filters — flat inline pills, no container */}
-        <div className="flex flex-col sm:flex-row gap-6 mb-8">
+        {/* Filters — flat inline pills */}
+        <div className="flex flex-col sm:flex-row gap-6 mb-6">
           <div>
             <label className="block text-[10px] font-semibold text-slate-600 mb-2 uppercase tracking-wider">Players</label>
             <div className="flex flex-wrap gap-2">
@@ -191,11 +221,19 @@ export default function Lobby() {
               ))}
             </div>
           </div>
+          <div className="sm:ml-auto flex items-end">
+            <button
+              onClick={() => setShowFilterSheet(true)}
+              className="flex items-center gap-1.5 px-4 py-1.5 rounded-lg text-sm font-semibold bg-white/5 text-slate-400 hover:text-white hover:bg-white/10 transition-all"
+            >
+              ⭐ Sort & Filter
+            </button>
+          </div>
         </div>
 
         {/* Contest Cards — simplified */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-          {filteredEntries.map(entry => {
+          {sortedEntries.map(entry => {
             const players = Number(selectedPlayers);
             const time = Number(selectedTime);
             const totalPot = entry * players;
@@ -385,5 +423,103 @@ export default function Lobby() {
         </div>
       )}
     </div>
+
+      {/* Item 7: Sort & Filter Bottom Sheet Modal */}
+      {showFilterSheet && (
+        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/60 backdrop-blur-sm animate-fade-in" onClick={() => setShowFilterSheet(false)}>
+          <div className="bg-navy-800 border-t sm:border border-navy-700/30 rounded-t-2xl sm:rounded-2xl shadow-2xl w-full max-w-md animate-slide-up overflow-hidden" onClick={e => e.stopPropagation()}>
+            <div className="p-5">
+              <div className="flex items-center justify-between mb-5">
+                <h2 className="text-lg font-bold text-white">Sort & Filter</h2>
+                <button onClick={() => setShowFilterSheet(false)} className="text-slate-500 hover:text-white text-lg font-bold transition-colors">✕</button>
+              </div>
+
+              {/* Sort Options */}
+              <div className="mb-5">
+                <label className="block text-[10px] font-semibold text-slate-600 mb-2 uppercase tracking-wider">Sort By</label>
+                <div className="flex flex-wrap gap-2">
+                  {[
+                    { value: 'entry-asc', label: 'Lowest Entry' },
+                    { value: 'entry-desc', label: 'Highest Entry' },
+                    { value: 'prize-desc', label: 'Highest Prize' },
+                  ].map(opt => (
+                    <button
+                      key={opt.value}
+                      onClick={() => setSortBy(opt.value)}
+                      className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
+                        sortBy === opt.value ? 'bg-chess-green/15 text-chess-green' : 'bg-white/5 text-slate-500 hover:text-white hover:bg-white/10'
+                      }`}
+                    >
+                      {opt.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Entry Filter */}
+              <div className="mb-5">
+                <label className="block text-[10px] font-semibold text-slate-600 mb-2 uppercase tracking-wider">Entry Fee</label>
+                <div className="flex flex-wrap gap-1.5">
+                  <button
+                    onClick={() => setSelectedEntry('ALL')}
+                    className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
+                      selectedEntry === 'ALL' ? 'bg-chess-green/15 text-chess-green' : 'bg-white/5 text-slate-500 hover:text-white hover:bg-white/10'
+                    }`}
+                  >All</button>
+                  {[1, 5, 10, 25, 50, 100].map(v => (
+                    <button
+                      key={v}
+                      onClick={() => setSelectedEntry(v.toString())}
+                      className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
+                        selectedEntry === v.toString() ? 'bg-chess-green/15 text-chess-green' : 'bg-white/5 text-slate-500 hover:text-white hover:bg-white/10'
+                      }`}
+                    >₹{v}</button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Quick Player Count */}
+              <div className="mb-5">
+                <label className="block text-[10px] font-semibold text-slate-600 mb-2 uppercase tracking-wider">Players</label>
+                <div className="flex flex-wrap gap-2">
+                  {PLAYERS.map(p => (
+                    <button
+                      key={p}
+                      onClick={() => setSelectedPlayers(p.toString())}
+                      className={`px-4 py-1.5 rounded-lg text-xs font-semibold transition-all ${
+                        selectedPlayers === p.toString() ? 'bg-chess-green/15 text-chess-green' : 'bg-white/5 text-slate-500 hover:text-white hover:bg-white/10'
+                      }`}
+                    >{p}P</button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Time Filter */}
+              <div className="mb-4">
+                <label className="block text-[10px] font-semibold text-slate-600 mb-2 uppercase tracking-wider">Time Control</label>
+                <div className="flex flex-wrap gap-2">
+                  {TIMES.map(t => (
+                    <button
+                      key={t}
+                      onClick={() => setSelectedTime(t.toString())}
+                      className={`px-4 py-1.5 rounded-lg text-xs font-semibold transition-all ${
+                        selectedTime === t.toString() ? 'bg-chess-green/15 text-chess-green' : 'bg-white/5 text-slate-500 hover:text-white hover:bg-white/10'
+                      }`}
+                    >{t} Min</button>
+                  ))}
+                </div>
+              </div>
+
+              <button
+                onClick={() => setShowFilterSheet(false)}
+                className="w-full py-2.5 rounded-xl text-sm font-bold bg-gradient-to-r from-chess-green to-emerald-600 text-white hover:shadow-md hover:shadow-chess-green/15 transition-all"
+              >
+                Apply Filters
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </>
   );
 }

@@ -127,9 +127,10 @@ export default function ChessBoard({
   const [blackCaptured, setBlackCaptured] = useState([]);
   const [inCheck, setInCheck] = useState(false);
   
-  const [prequeue, setPrequeue] = useState([]); // array: {from, to, promotion} — max 2
+  const [prequeue, setPrequeue] = useState([]); // array: {from, to, promotion}
   const [activePremoveStart, setActivePremoveStart] = useState(null);
   const prevFenRef = useRef(fen); // track FEN changes for premove execution
+  const premoveJustExecutedRef = useRef(false); // track if we just sent a premove (wait for opponent response)
   
   const [draggedSquare, setDraggedSquare] = useState(null); // FEATURE 7: Legal move dots on drag
 
@@ -239,7 +240,7 @@ export default function ChessBoard({
     setWhiteTime(timerData.whiteTime || 600);
     setBlackTime(timerData.blackTime || 600);
 
-    // If startedAt is null, clock is paused — don't tick
+    // If startedAt is null, show static time but don't tick
     if (!timerData.startedAt) return;
 
     const serverStart = timerData.startedAt;
@@ -391,8 +392,8 @@ export default function ChessBoard({
     }
 
     // Setting the premove destination — allow any target square (even if currently occupied)
-    // Legality will be checked on execution
-    if (prequeue.length < 2) {
+    // Legality will be checked on execution. Allow up to 5 queued premoves.
+    if (prequeue.length < 5) {
       const promo = autoQueen ? 'q' : undefined;
       setPrequeue(prev => [...prev, { from: activePremoveStart, to: square, promotion: promo }]);
       setActivePremoveStart(null);
@@ -424,8 +425,14 @@ export default function ChessBoard({
 
   // Execute premove INSTANTLY when it becomes our turn (FEN changed = opponent moved)
   useEffect(() => {
-    if (fen !== prevFenRef.current) {
+    const fenChanged = fen !== prevFenRef.current;
+    if (fenChanged) {
       prevFenRef.current = fen;
+      // If we just executed a premove, our own move FEN echo arrived — skip, wait for opponent's move
+      if (premoveJustExecutedRef.current) {
+        premoveJustExecutedRef.current = false;
+        return;
+      }
     }
 
     if (!isMyTurn || prequeue.length === 0) {
@@ -445,14 +452,15 @@ export default function ChessBoard({
         // Premove is legal — execute instantly!
         if (soundEnabled) playSound(move.captured ? 'capture' : moveCopy.isCheck() ? 'check' : 'move');
         onMove({ from: nextPre.from, to: nextPre.to, promotion: promo, san: move.san });
+        premoveJustExecutedRef.current = true;
         setPrequeue(q => q.slice(1));
       } else {
-        // Premove became illegal — cancel all
-        setPrequeue([]);
+        // This premove became illegal — remove only this one, keep the rest
+        setPrequeue(q => q.slice(1));
       }
     } catch {
-      // Invalid premove — cancel all
-      setPrequeue([]);
+      // Invalid premove — remove only the failed one
+      setPrequeue(q => q.slice(1));
     }
   }, [isMyTurn, fen]);
 
@@ -474,7 +482,7 @@ export default function ChessBoard({
 
     // Premove via drag — opponent's turn
     if (!isMyTurn) {
-      if (premovesEnabled && isOpponentTurn && prequeue.length < 2) {
+      if (premovesEnabled && isOpponentTurn && prequeue.length < 5) {
         setPrequeue(prev => [...prev, { from: sourceSquare, to: targetSquare, promotion: promo }]);
       }
       return false;
@@ -546,17 +554,20 @@ export default function ChessBoard({
     };
   };
 
-  // ── Premove highlight (Chess.com red style) ──
+  // ── Premove highlight — subtle gold dots (no arrows) ──
   const getPremoveStyles = () => {
     const styles = {};
-    // Active premove start selection — dark red
+    // Active premove start selection — soft amber glow
     if (activePremoveStart) {
-      styles[activePremoveStart] = { backgroundColor: 'rgba(170, 0, 0, 0.65)', boxShadow: 'inset 0 0 8px rgba(255,0,0,0.3)' };
+      styles[activePremoveStart] = { backgroundColor: 'rgba(245, 180, 60, 0.35)', boxShadow: 'inset 0 0 6px rgba(245, 180, 60, 0.2)' };
     }
-    // Queued premoves — from = dark red, to = lighter red
+    // Queued premoves — source = soft amber, destination = centered dot
     prequeue.forEach((p) => {
-      styles[p.from] = { backgroundColor: 'rgba(170, 0, 0, 0.55)' };
-      styles[p.to] = { backgroundColor: 'rgba(220, 60, 60, 0.55)' };
+      styles[p.from] = { backgroundColor: 'rgba(245, 180, 60, 0.25)' };
+      styles[p.to] = {
+        background: 'radial-gradient(circle, rgba(245, 180, 60, 0.55) 22%, transparent 22%)',
+        borderRadius: '0',
+      };
     });
     return styles;
   };
@@ -619,7 +630,7 @@ export default function ChessBoard({
             customDarkSquareStyle={{ backgroundColor: theme.dark }}
             customLightSquareStyle={{ backgroundColor: theme.light }}
             customSquareStyles={customSquareStyles}
-            customArrows={prequeue.map((p) => [p.from, p.to, 'rgba(200, 40, 40, 0.7)'])}
+            customArrows={[]}
             animationDuration={animDuration}
             arePiecesDraggable={isMyTurn || (isOpponentTurn && premovesEnabled)}
             snapToCursor={false}

@@ -16,7 +16,8 @@
     padding: 0;
     overflow-x: hidden;
     scroll-behavior: auto;
-    touch-action: pan-y;
+    touch-action: manipulation;
+    -ms-touch-action: manipulation;
   }
 
   body {
@@ -348,13 +349,13 @@
     @apply bg-gradient-to-r from-chess-green via-emerald-400 to-chess-green bg-clip-text text-transparent inline-block pb-1 pr-2;
   }
 
-  /* Reduced glows — 70% less intensity */
+  /* Reduced glows — subtle premium */
   .glow-gold {
-    box-shadow: 0 0 8px rgba(245, 158, 11, 0.06), 0 0 24px rgba(245, 158, 11, 0.02);
+    box-shadow: 0 0 6px rgba(245, 158, 11, 0.04), 0 0 16px rgba(245, 158, 11, 0.015);
   }
 
   .glow-green {
-    box-shadow: 0 0 8px rgba(129, 182, 76, 0.06), 0 0 24px rgba(129, 182, 76, 0.02);
+    box-shadow: 0 0 6px rgba(129, 182, 76, 0.04), 0 0 16px rgba(129, 182, 76, 0.015);
   }
 
   /* Timer bar */

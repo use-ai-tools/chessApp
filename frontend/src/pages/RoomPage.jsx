@@ -47,6 +47,10 @@ export default function RoomPage() {
   const [contestType, setContestType] = useState(null);
   const [chatMessages, setChatMessages] = useState([]);
   const [confirmResign, setConfirmResign] = useState(false);
+  const [showLeaveModal, setShowLeaveModal] = useState(false);
+  const [tabWarning, setTabWarning] = useState(null);
+  const [isTabHidden, setIsTabHidden] = useState(false);
+  const tabSwitchRef = useRef(0);
   const chatRef = useRef(null);
 
   const [bracket, setBracket] = useState(null);
@@ -343,6 +347,71 @@ export default function RoomPage() {
     return () => window.removeEventListener('beforeunload', handleBeforeUnload);
   }, [contestId, user?.id, gameStatus]);
 
+  // ── ITEM 4: Anti-cheat tab-switch detection ──
+  useEffect(() => {
+    if (gameStatus !== 'playing' || !currentPlayerColor) return;
+
+    const handleVisibility = () => {
+      if (document.hidden) {
+        setIsTabHidden(true);
+        tabSwitchRef.current += 1;
+        const count = tabSwitchRef.current;
+        if (count >= 3) {
+          // Auto-resign after 3 tab switches
+          socketRef.current?.emit('resign', { contestId, playerId: user?.id });
+          setTabWarning('Auto-resigned due to repeated tab switching.');
+        } else {
+          setTabWarning(`⚠️ Warning ${count}/3 — Leaving match may result in auto resign.`);
+        }
+      } else {
+        setIsTabHidden(false);
+        // Clear warning after 3 seconds on return
+        setTimeout(() => setTabWarning(null), 3000);
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleVisibility);
+    return () => document.removeEventListener('visibilitychange', handleVisibility);
+  }, [gameStatus, currentPlayerColor, contestId, user?.id]);
+
+  // Reset tab switch count on new match
+  useEffect(() => {
+    if (gameStatus === 'playing') tabSwitchRef.current = 0;
+  }, [contestId]);
+
+  // ── ITEM 5: Exit confirmation — block browser back/refresh during match ──
+  useEffect(() => {
+    if (gameStatus !== 'playing' || !currentPlayerColor) return;
+
+    const handleBeforeUnload = (e) => {
+      e.preventDefault();
+      e.returnValue = 'Leaving will count as resignation. Are you sure?';
+      return e.returnValue;
+    };
+
+    const handlePopState = (e) => {
+      // Push state back to prevent navigation, show modal instead
+      window.history.pushState(null, '', window.location.href);
+      setShowLeaveModal(true);
+    };
+
+    // Push an extra history entry so we can intercept back
+    window.history.pushState(null, '', window.location.href);
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    window.addEventListener('popstate', handlePopState);
+
+    return () => {
+      window.removeEventListener('beforeunload', handleBeforeUnload);
+      window.removeEventListener('popstate', handlePopState);
+    };
+  }, [gameStatus, currentPlayerColor]);
+
+  const handleResignAndExit = () => {
+    socketRef.current?.emit('resign', { contestId, playerId: user?.id });
+    setShowLeaveModal(false);
+    navigate('/');
+  };
+
   useEffect(() => {
     return () => {
       // Emit leaveRoom on component unmount if match hasn't started
@@ -480,6 +549,23 @@ export default function RoomPage() {
     <div className="match-page bg-hero relative">
       <style>{`button[title="Flip Board"] { display: none !important; }`}</style>
 
+      {/* Anti-cheat blur overlay when tab is hidden */}
+      {isTabHidden && gameStatus === 'playing' && (
+        <div className="fixed inset-0 z-[60] bg-navy-950/90 backdrop-blur-xl flex items-center justify-center">
+          <div className="text-center">
+            <div className="text-5xl mb-4">🔒</div>
+            <p className="text-white font-bold text-lg">Match Paused</p>
+            <p className="text-slate-400 text-sm mt-1">Return to continue playing</p>
+          </div>
+        </div>
+      )}
+
+      {/* Tab switch warning toast */}
+      {tabWarning && (
+        <div className="fixed top-16 left-1/2 -translate-x-1/2 z-[55] bg-red-500/15 border border-red-500/30 text-red-400 text-xs font-semibold px-4 py-2 rounded-xl animate-slide-down max-w-sm text-center backdrop-blur-sm">
+          {tabWarning}
+        </div>
+      )}
       {/* Match Header Bar */}
       <div className="match-header-bar z-10">
         <div className="flex items-center gap-2">
@@ -737,6 +823,33 @@ export default function RoomPage() {
           onClose={() => setShowSettings(false)}
           onApply={(s) => setSettings(s)}
         />
+      )}
+
+      {/* Item 5: Leave Match Confirmation Modal */}
+      {showLeaveModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm animate-fade-in">
+          <div className="bg-navy-800 border border-navy-700/30 rounded-2xl shadow-2xl p-6 max-w-sm w-full animate-scale-in">
+            <div className="text-center">
+              <div className="text-4xl mb-3">🚪</div>
+              <h3 className="text-lg font-bold text-white mb-1">Leave Match?</h3>
+              <p className="text-sm text-slate-500 mb-5">Leaving may count as resignation.</p>
+              <div className="flex gap-3">
+                <button
+                  onClick={() => setShowLeaveModal(false)}
+                  className="flex-1 py-2.5 rounded-xl text-sm font-bold bg-white/5 text-slate-300 hover:bg-white/10 transition-all"
+                >
+                  Stay
+                </button>
+                <button
+                  onClick={handleResignAndExit}
+                  className="flex-1 py-2.5 rounded-xl text-sm font-bold bg-red-600 text-white hover:bg-red-500 transition-all"
+                >
+                  Resign & Exit
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );
