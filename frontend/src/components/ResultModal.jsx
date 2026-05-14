@@ -3,93 +3,147 @@ import { playSound } from './ChessBoard';
 import { useCurrency } from '../contexts/CurrencyContext';
 
 const CLASS_CONFIG = {
-  brilliant: { icon: '‼', label: 'Brilliant', color: 'text-cyan-400', bg: 'bg-cyan-500/15', border: 'border-cyan-500/30' },
-  great:     { icon: '!', label: 'Great', color: 'text-blue-400', bg: 'bg-blue-500/15', border: 'border-blue-500/30' },
-  best:      { icon: '★', label: 'Best', color: 'text-emerald-400', bg: 'bg-emerald-500/15', border: 'border-emerald-500/30' },
-  excellent: { icon: '★', label: 'Excellent', color: 'text-green-400', bg: 'bg-green-500/15', border: 'border-green-500/30' },
-  good:      { icon: '●', label: 'Good', color: 'text-slate-400', bg: 'bg-slate-500/15', border: 'border-slate-500/30' },
-  inaccuracy:{ icon: '?!', label: 'Inaccuracy', color: 'text-yellow-400', bg: 'bg-yellow-500/15', border: 'border-yellow-500/30' },
-  mistake:   { icon: '?', label: 'Mistake', color: 'text-orange-400', bg: 'bg-orange-500/15', border: 'border-orange-500/30' },
-  blunder:   { icon: '??', label: 'Blunder', color: 'text-red-400', bg: 'bg-red-500/15', border: 'border-red-500/30' },
+  brilliant: { icon: '‼', label: 'Brilliant', color: 'text-cyan-400', bg: 'bg-cyan-500/15' },
+  great:     { icon: '!', label: 'Great', color: 'text-blue-400', bg: 'bg-blue-500/15' },
+  best:      { icon: '★', label: 'Best', color: 'text-emerald-400', bg: 'bg-emerald-500/15' },
+  excellent: { icon: '★', label: 'Excellent', color: 'text-green-400', bg: 'bg-green-500/15' },
+  good:      { icon: '●', label: 'Good', color: 'text-slate-400', bg: 'bg-slate-500/15' },
+  inaccuracy:{ icon: '?!', label: 'Inaccuracy', color: 'text-yellow-400', bg: 'bg-yellow-500/15' },
+  mistake:   { icon: '?', label: 'Mistake', color: 'text-orange-400', bg: 'bg-orange-500/15' },
+  blunder:   { icon: '??', label: 'Blunder', color: 'text-red-400', bg: 'bg-red-500/15' },
 };
 
-export default function ResultModal({ result, onClose, onBackToLobby, onPlayAgain, onGameReview }) {
-  const [showContent, setShowContent] = useState(false);
+export default function ResultModal({ result, onClose, onBackToLobby, onPlayAgain, onGameReview, isBotGame }) {
+  const [phase, setPhase] = useState('reveal');  // 'reveal' -> 'actions'
+  const [visible, setVisible] = useState(false);
   const { formatShort } = useCurrency();
 
   useEffect(() => {
-    if (result) {
-      playSound('gameEnd');
-      setTimeout(() => setShowContent(true), 300);
-    }
+    if (!result) return;
+    playSound('gameEnd');
+
+    // Phase 1: Fade in result text
+    const t1 = setTimeout(() => setVisible(true), 100);
+    // Phase 2: Show action buttons after delay
+    const t2 = setTimeout(() => setPhase('actions'), 2500);
+
+    return () => { clearTimeout(t1); clearTimeout(t2); };
   }, [result]);
 
   if (!result) return null;
 
   const isWinner = result.isWinner;
   const isDraw = result.isDraw || result.reason === 'draw' || result.reason === 'stalemate';
-  const isCheckmate = result.reason === 'checkmate';
   const review = result.review;
   const mySummary = result.playerColor === 'w' ? review?.white : review?.black;
 
-  return (
-    <div className="modal-overlay" onClick={onClose}>
-      <div className="modal-content max-w-sm" onClick={(e) => e.stopPropagation()}>
-        <div className="p-6 text-center">
-          {/* King fall animation for checkmate */}
-          {isCheckmate && !isWinner && (
-            <div className="king-fall mb-4">
-              <span className="text-6xl">♚</span>
-            </div>
-          )}
-          {isCheckmate && isWinner && (
-            <div className="king-fall-opponent mb-4">
-              <span className="text-6xl">♚</span>
-            </div>
-          )}
+  // Result display
+  const getTitle = () => {
+    if (isWinner) return 'You Won!';
+    if (isDraw) return 'Draw';
+    return 'You Lost';
+  };
+  const getIcon = () => {
+    if (isWinner) return '👑';
+    if (isDraw) return '🤝';
+    return '♚';
+  };
+  const getReason = () => {
+    const r = result.reason;
+    if (r === 'checkmate') return isWinner ? 'by Checkmate' : 'Checkmate';
+    if (r === 'timeout') return isWinner ? 'Opponent ran out of time' : 'Time expired';
+    if (r === 'resigned') return isWinner ? 'Opponent resigned' : 'You resigned';
+    if (r === 'stalemate') return 'Stalemate';
+    if (r === 'draw') return 'Draw by agreement';
+    if (r === 'repetition') return 'Threefold repetition';
+    if (r === 'insufficient') return 'Insufficient material';
+    if (r === 'disconnect') return isWinner ? 'Opponent disconnected' : 'Disconnected';
+    return r || '';
+  };
 
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4" onClick={phase === 'actions' ? onClose : undefined}>
+      {/* Semi-transparent backdrop — keeps board visible */}
+      <div className={`absolute inset-0 transition-all duration-700 ${visible ? 'bg-black/50 backdrop-blur-[2px]' : 'bg-transparent'}`} />
+
+      {/* Content */}
+      <div className={`relative z-10 max-w-sm w-full transition-all duration-500 ${visible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}
+           onClick={e => e.stopPropagation()}>
+
+        {/* ── Phase 1: Result Reveal ── */}
+        <div className="text-center mb-4">
           {/* Icon */}
-          <div className={`w-20 h-20 mx-auto rounded-full flex items-center justify-center mb-4 animate-bounce-in ${
-            isWinner ? 'bg-gradient-to-br from-chess-green to-emerald-600 shadow-lg shadow-chess-green/30'
-            : isDraw ? 'bg-gradient-to-br from-slate-500 to-slate-600'
-            : 'bg-gradient-to-br from-slate-700 to-slate-800'
-          }`}>
-            <span className="text-4xl">{isWinner ? '🏆' : isDraw ? '🤝' : '😔'}</span>
+          <div className={`inline-flex items-center justify-center w-16 h-16 rounded-full mb-3 transition-all duration-700 ${
+            isWinner ? 'bg-chess-green/20 shadow-lg shadow-chess-green/20'
+            : isDraw ? 'bg-slate-500/20'
+            : 'bg-red-500/10'
+          } ${visible ? 'scale-100' : 'scale-50'}`}>
+            <span className="text-4xl">{getIcon()}</span>
           </div>
 
           {/* Title */}
-          <h2 className={`text-2xl font-black mb-1 ${
-            isWinner ? 'text-chess-green' : isDraw ? 'text-slate-300' : 'text-slate-400'
+          <h2 className={`text-2xl font-black mb-1 transition-all duration-500 ${
+            isWinner ? 'text-chess-green' : isDraw ? 'text-slate-300' : 'text-red-400/80'
           }`}>
-            {isWinner ? 'You Won!' : isDraw ? 'Draw!' : 'You Lost!'}
+            {getTitle()}
           </h2>
 
-          <p className="text-slate-400 text-sm mb-3">
-            {result.reason === 'checkmate' && (isWinner ? 'by Checkmate' : 'by Checkmate')}
-            {result.reason === 'timeout' && (isWinner ? 'Opponent ran out of time' : 'by Timeout')}
-            {result.reason === 'resigned' && (isWinner ? 'Opponent resigned' : 'You resigned')}
-            {result.reason === 'stalemate' && 'Stalemate'}
-            {result.reason === 'draw' && 'Draw by agreement'}
-            {result.reason === 'repetition' && 'Draw by repetition'}
-            {result.reason === 'insufficient' && 'Draw — insufficient material'}
-            {result.reason === 'disconnect' && (isWinner ? 'Opponent disconnected' : 'You disconnected')}
-          </p>
+          {/* Reason */}
+          <p className="text-sm text-slate-400">{getReason()}</p>
 
-          {/* AI Coach Comment */}
-          {result.coachComment && (
-            <div className="mb-3 p-3 rounded-xl bg-navy-800/50 border border-navy-700/30 text-left">
-              <p className="text-xs text-slate-500 mb-1">🤖 AI Coach</p>
-              <p className="text-sm text-slate-300 italic">"{result.coachComment}"</p>
+          {/* Winner king / loser crossed king indicators */}
+          {result.reason === 'checkmate' && (
+            <div className="flex items-center justify-center gap-3 mt-2">
+              {isWinner ? (
+                <span className="text-xs text-chess-green/80 font-semibold">♔ Your King stands tall</span>
+              ) : (
+                <span className="text-xs text-red-400/70 font-semibold">♚ Your King has fallen</span>
+              )}
             </div>
           )}
 
-          {/* Move Quality Summary - ONLY TOP 3 */}
-          {mySummary && (
-            <div className="mb-3">
-              <div className="flex justify-center gap-1.5 flex-wrap">
-                {Object.entries(CLASS_CONFIG).map(([key, cfg]) => {
-                  return { key, cfg, count: mySummary[key] || 0 };
-                })
+          {/* Bot badge */}
+          {isBotGame && (
+            <div className="mt-2 inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-navy-700/50 text-[10px] text-slate-400 font-semibold">
+              🤖 vs Stockfish
+            </div>
+          )}
+        </div>
+
+        {/* ── Phase 2: Action Panel (fades in after delay) ── */}
+        <div className={`transition-all duration-500 ${
+          phase === 'actions' ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-3 pointer-events-none'
+        }`}>
+          <div className="bg-navy-800/90 backdrop-blur-md border border-navy-700/30 rounded-2xl p-5 shadow-2xl">
+
+            {/* ELO Change */}
+            {result.eloChange !== null && result.eloChange !== undefined && (
+              <div className={`mb-3 flex items-center justify-center gap-2 py-2 rounded-xl ${
+                result.eloChange > 0 ? 'bg-emerald-500/10' : result.eloChange < 0 ? 'bg-red-500/10' : 'bg-slate-500/10'
+              }`}>
+                <span className={`text-sm font-black ${
+                  result.eloChange > 0 ? 'text-emerald-400' : result.eloChange < 0 ? 'text-red-400' : 'text-slate-400'
+                }`}>
+                  {result.eloChange > 0 ? `+${result.eloChange}` : result.eloChange} ELO
+                </span>
+                {result.newElo && <span className="text-[10px] text-slate-500">→ {result.newElo}</span>}
+              </div>
+            )}
+
+            {/* AI Coach */}
+            {result.coachComment && (
+              <div className="mb-3 p-3 rounded-xl bg-navy-900/50 border border-navy-700/20">
+                <p className="text-[10px] text-slate-500 mb-0.5">🤖 AI Coach</p>
+                <p className="text-xs text-slate-300 italic">"{result.coachComment}"</p>
+              </div>
+            )}
+
+            {/* Move Quality (top 3) */}
+            {mySummary && (
+              <div className="mb-3 flex justify-center gap-1.5 flex-wrap">
+                {Object.entries(CLASS_CONFIG).map(([key, cfg]) => ({
+                  key, cfg, count: mySummary[key] || 0
+                }))
                 .filter(item => item.count > 0 && !['good'].includes(item.key))
                 .slice(0, 3)
                 .map(({ key, cfg, count }) => (
@@ -99,52 +153,36 @@ export default function ResultModal({ result, onClose, onBackToLobby, onPlayAgai
                   </div>
                 ))}
               </div>
-            </div>
-          )}
-
-          {/* ELO Change */}
-          {result.eloChange !== null && result.eloChange !== undefined && (
-            <div className={`mb-3 inline-flex items-center gap-2 px-4 py-2 rounded-xl ${
-              result.eloChange > 0 ? 'bg-emerald-500/10 border border-emerald-500/20'
-              : result.eloChange < 0 ? 'bg-red-500/10 border border-red-500/20'
-              : 'bg-slate-500/10 border border-slate-500/20'
-            }`}>
-              <span className={`text-lg font-black ${
-                result.eloChange > 0 ? 'text-emerald-400' : result.eloChange < 0 ? 'text-red-400' : 'text-slate-400'
-              }`}>
-                {result.eloChange > 0 ? `+${result.eloChange}` : result.eloChange} ELO
-              </span>
-              <span className="text-lg">{result.eloChange > 0 ? '⬆' : result.eloChange < 0 ? '⬇' : '━'}</span>
-              {result.newElo && <span className="text-xs text-slate-500">Now {result.newElo}</span>}
-            </div>
-          )}
-
-          {/* Prize Won */}
-          {result.prize > 0 && (
-            <div className="mb-4 p-3 rounded-xl bg-gold-500/10 border border-gold-500/20 glow-gold">
-              <p className="text-sm text-gold-400 mb-1">🏆 Prize Won</p>
-              <p className="text-2xl font-black text-gold-300">+{formatShort(result.prize)}</p>
-              <p className="text-xs text-gold-500 mt-1">Added to your wallet</p>
-            </div>
-          )}
-
-          {/* Actions */}
-          <div className="space-y-2 mt-4">
-            {/* FEATURE 4: Game Review button — always shown after match if review data exists */}
-            {onGameReview && (
-              <button onClick={onGameReview} className="w-full py-2.5 rounded-xl bg-purple-600/15 border border-purple-500/20 text-purple-400 text-sm font-bold hover:bg-purple-600/25 transition-all flex items-center justify-center gap-2">
-                <span>📊</span> Game Review
-              </button>
             )}
-            <div className="flex gap-2">
-              {onPlayAgain && (
-                <button onClick={onPlayAgain} className="btn-primary flex-1">
-                  ⚡ Play Again
+
+            {/* Prize */}
+            {result.prize > 0 && (
+              <div className="mb-3 py-2 px-3 rounded-xl bg-gold-500/10 border border-gold-500/20 text-center">
+                <p className="text-[10px] text-gold-500">🏆 Prize Won</p>
+                <p className="text-lg font-black text-gold-300">+{formatShort(result.prize)}</p>
+              </div>
+            )}
+
+            {/* Action Buttons */}
+            <div className="space-y-2">
+              {onGameReview && (
+                <button onClick={onGameReview}
+                  className="w-full py-2.5 rounded-xl text-xs font-bold bg-purple-600/15 border border-purple-500/20 text-purple-400 hover:bg-purple-600/25 transition-all flex items-center justify-center gap-2">
+                  📊 Game Review
                 </button>
               )}
-              <button onClick={onBackToLobby} className="btn-secondary flex-1">
-                ← Lobby
-              </button>
+              <div className="flex gap-2">
+                {onPlayAgain && (
+                  <button onClick={onPlayAgain}
+                    className="flex-1 py-2.5 rounded-xl text-xs font-bold bg-gradient-to-r from-chess-green to-emerald-600 text-white hover:shadow-md hover:shadow-chess-green/15 transition-all">
+                    ⚡ {isBotGame ? 'Play Again' : 'Rematch'}
+                  </button>
+                )}
+                <button onClick={onBackToLobby}
+                  className="flex-1 py-2.5 rounded-xl text-xs font-bold bg-white/5 text-slate-300 hover:bg-white/10 transition-all">
+                  ← {isBotGame ? 'Home' : 'Lobby'}
+                </button>
+              </div>
             </div>
           </div>
         </div>
