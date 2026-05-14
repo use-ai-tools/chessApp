@@ -1,28 +1,73 @@
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { Chess } from 'chess.js';
 import { Chessboard } from 'react-chessboard';
 import GM_GAMES from '../data/gmGames';
 
 const BOARD_THEMES = {
-  classic: { light: '#f0d9b5', dark: '#b58863' },
   green: { light: '#eeeed2', dark: '#769656' },
 };
 
+const PIECE_UNICODE = {
+  wp: '♙', wn: '♘', wb: '♗', wr: '♖', wq: '♕',
+  bp: '♟', bn: '♞', bb: '♝', br: '♜', bq: '♛',
+};
+const PIECE_VALUES = { p: 1, n: 3, b: 3, r: 5, q: 9 };
+
 export default function Watch() {
   const game = GM_GAMES[0];
-  const chessRef = useRef(new Chess());
   const containerRef = useRef(null);
+  const moveListRef = useRef(null);
   const [moveIndex, setMoveIndex] = useState(-1);
-  const [fen, setFen] = useState('rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1');
-  const [isPlaying, setIsPlaying] = useState(true);
-  const [speed, setSpeed] = useState(1);
   const [boardSize, setBoardSize] = useState(400);
-  const [lastMove, setLastMove] = useState(null);
-  const [whiteTime, setWhiteTime] = useState(300);
-  const [blackTime, setBlackTime] = useState(300);
-  const [moveHistory, setMoveHistory] = useState([]);
-  const [gameEnded, setGameEnded] = useState(false);
-  const timerRef = useRef(null);
+  const [isAutoPlaying, setIsAutoPlaying] = useState(false);
+  const [showMobileHistory, setShowMobileHistory] = useState(false);
+  const autoPlayRef = useRef(null);
+
+  // Precompute ALL positions for instant navigation
+  const positions = useMemo(() => {
+    const chess = new Chess();
+    const result = [{ fen: chess.fen(), lastMove: null }];
+    for (const san of game.moves) {
+      const m = chess.move(san);
+      if (m) {
+        result.push({ fen: chess.fen(), lastMove: { from: m.from, to: m.to } });
+      } else {
+        break; // Stop at first invalid move
+      }
+    }
+    return result;
+  }, [game]);
+
+  const totalMoves = positions.length - 1; // -1 because index 0 is starting position
+  const currentPos = positions[moveIndex + 1] || positions[0];
+  const fen = currentPos.fen;
+  const lastMove = currentPos.lastMove;
+  const gameEnded = moveIndex >= totalMoves - 1;
+  const turn = moveIndex >= 0 ? (moveIndex % 2 === 0 ? 'b' : 'w') : 'w';
+
+  // Captured pieces from FEN
+  const getCaptured = useCallback((fenStr) => {
+    const startingPieces = { p: 8, n: 2, b: 2, r: 2, q: 1 };
+    const current = { w: { p: 0, n: 0, b: 0, r: 0, q: 0 }, b: { p: 0, n: 0, b: 0, r: 0, q: 0 } };
+    const boardPart = fenStr.split(' ')[0];
+    for (const char of boardPart) {
+      if ('pnbrq'.includes(char)) current.b[char]++;
+      else if ('PNBRQ'.includes(char)) current.w[char.toLowerCase()]++;
+    }
+    const wCaptured = [], bCaptured = [];
+    for (const piece of ['q', 'r', 'b', 'n', 'p']) {
+      for (let i = 0; i < startingPieces[piece] - current.b[piece]; i++) wCaptured.push(PIECE_UNICODE[`b${piece}`]);
+      for (let i = 0; i < startingPieces[piece] - current.w[piece]; i++) bCaptured.push(PIECE_UNICODE[`w${piece}`]);
+    }
+    const calcVal = (arr) => {
+      const rev = {}; Object.entries(PIECE_UNICODE).forEach(([k, v]) => rev[v] = k);
+      return arr.reduce((sum, p) => sum + (PIECE_VALUES[rev[p]?.[1]] || 0), 0);
+    };
+    const wAdv = calcVal(wCaptured) - calcVal(bCaptured);
+    return { wCaptured, bCaptured, whiteAdv: Math.max(0, wAdv), blackAdv: Math.max(0, -wAdv) };
+  }, []);
+
+  const captured = getCaptured(fen);
 
   // Responsive board sizing
   useEffect(() => {
@@ -30,137 +75,152 @@ export default function Watch() {
     const ro = new ResizeObserver((entries) => {
       for (const entry of entries) {
         const w = entry.contentRect.width;
-        if (w > 0) setBoardSize(Math.min(Math.floor(w), 560));
+        if (w > 0) setBoardSize(Math.min(Math.floor(w), 640));
       }
     });
     ro.observe(containerRef.current);
-    setBoardSize(Math.min(Math.floor(containerRef.current.offsetWidth), 560) || 400);
+    setBoardSize(Math.min(Math.floor(containerRef.current.offsetWidth), 640) || 400);
     return () => ro.disconnect();
   }, []);
 
-  // Auto-play engine
+  // Navigation functions
+  const goToMove = useCallback((idx) => {
+    const clamped = Math.max(-1, Math.min(idx, totalMoves - 1));
+    setMoveIndex(clamped);
+  }, [totalMoves]);
+
+  const goFirst = () => goToMove(-1);
+  const goPrev = () => goToMove(moveIndex - 1);
+  const goNext = () => goToMove(moveIndex + 1);
+  const goLast = () => goToMove(totalMoves - 1);
+
+  // Keyboard navigation
   useEffect(() => {
-    if (!isPlaying || gameEnded) return;
-
-    const getDelay = () => {
-      // Realistic thinking time: 1.5-4s at 1x, faster in endgame
-      const baseMin = moveIndex > 60 ? 800 : moveIndex > 40 ? 1200 : 1500;
-      const baseMax = moveIndex > 60 ? 2000 : moveIndex > 40 ? 3000 : 4000;
-      const delay = baseMin + Math.random() * (baseMax - baseMin);
-      return delay / speed;
+    const handleKey = (e) => {
+      if (e.key === 'ArrowLeft') { e.preventDefault(); goPrev(); }
+      if (e.key === 'ArrowRight') { e.preventDefault(); goNext(); }
+      if (e.key === 'Home') { e.preventDefault(); goFirst(); }
+      if (e.key === 'End') { e.preventDefault(); goLast(); }
     };
+    window.addEventListener('keydown', handleKey);
+    return () => window.removeEventListener('keydown', handleKey);
+  }, [moveIndex, totalMoves]);
 
-    timerRef.current = setTimeout(() => {
-      const nextIdx = moveIndex + 1;
-      if (nextIdx >= game.moves.length) {
-        setGameEnded(true);
-        setIsPlaying(false);
-        // Loop: restart after 6 seconds
-        setTimeout(() => {
-          resetGame();
-          setIsPlaying(true);
-        }, 6000);
-        return;
-      }
+  // Auto-play
+  useEffect(() => {
+    if (!isAutoPlaying) {
+      clearInterval(autoPlayRef.current);
+      return;
+    }
+    if (gameEnded) {
+      setIsAutoPlaying(false);
+      return;
+    }
+    autoPlayRef.current = setInterval(() => {
+      setMoveIndex(prev => {
+        const next = prev + 1;
+        if (next >= totalMoves) {
+          setIsAutoPlaying(false);
+          return totalMoves - 1;
+        }
+        return next;
+      });
+    }, 1500);
+    return () => clearInterval(autoPlayRef.current);
+  }, [isAutoPlaying, totalMoves, gameEnded]);
 
-      const chess = new Chess();
-      const movesUpTo = game.moves.slice(0, nextIdx + 1);
-      let lastM = null;
-      for (const san of movesUpTo) {
-        const m = chess.move(san);
-        if (m) lastM = { from: m.from, to: m.to };
-      }
-
-      setFen(chess.fen());
-      setMoveIndex(nextIdx);
-      setMoveHistory(movesUpTo);
-      if (lastM) setLastMove(lastM);
-
-      // Simulate timer decrease
-      const timeDecrease = (1 + Math.random() * 6);
-      if (nextIdx % 2 === 0) {
-        setWhiteTime(prev => Math.max(0, prev - timeDecrease));
-      } else {
-        setBlackTime(prev => Math.max(0, prev - timeDecrease));
-      }
-    }, getDelay());
-
-    return () => clearTimeout(timerRef.current);
-  }, [isPlaying, moveIndex, speed, gameEnded]);
-
-  const resetGame = useCallback(() => {
-    chessRef.current = new Chess();
-    setMoveIndex(-1);
-    setFen('rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1');
-    setLastMove(null);
-    setWhiteTime(300);
-    setBlackTime(300);
-    setMoveHistory([]);
-    setGameEnded(false);
-  }, []);
-
-  const formatTime = (seconds) => {
-    if (seconds <= 0) return '0:00';
-    const m = Math.floor(seconds / 60);
-    const s = Math.floor(seconds % 60);
-    return `${m}:${s.toString().padStart(2, '0')}`;
-  };
+  // Auto-scroll move history to current move
+  useEffect(() => {
+    if (!moveListRef.current) return;
+    const activeEl = moveListRef.current.querySelector('[data-active="true"]');
+    if (activeEl) activeEl.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+  }, [moveIndex]);
 
   const theme = BOARD_THEMES.green;
-  const turn = moveIndex >= 0 ? (moveIndex % 2 === 0 ? 'b' : 'w') : 'w';
-
   const lastMoveStyles = lastMove ? {
     [lastMove.from]: { backgroundColor: 'rgba(246, 246, 105, 0.5)' },
     [lastMove.to]: { backgroundColor: 'rgba(246, 246, 105, 0.5)' },
   } : {};
 
-  // Move history pairs for display
-  const movePairs = [];
-  for (let i = 0; i < moveHistory.length; i += 2) {
-    movePairs.push({
-      num: Math.floor(i / 2) + 1,
-      white: moveHistory[i],
-      black: moveHistory[i + 1] || null,
-    });
-  }
+  // Move pairs for display
+  const movePairs = useMemo(() => {
+    const pairs = [];
+    for (let i = 0; i < game.moves.length && i < totalMoves; i += 2) {
+      pairs.push({
+        num: Math.floor(i / 2) + 1,
+        white: game.moves[i],
+        whiteIdx: i,
+        black: game.moves[i + 1] || null,
+        blackIdx: i + 1 < totalMoves ? i + 1 : null,
+      });
+    }
+    return pairs;
+  }, [game.moves, totalMoves]);
+
+  // Result info
+  const getResultText = () => {
+    if (game.result === '1-0') return { text: 'White wins', winner: game.white, icon: '♔' };
+    if (game.result === '0-1') return { text: 'Black wins', winner: game.black, icon: '♚' };
+    return { text: 'Draw', winner: null, icon: '½' };
+  };
+
+  const NavButton = ({ onClick, disabled, children, title }) => (
+    <button
+      onClick={onClick}
+      disabled={disabled}
+      title={title}
+      className={`flex items-center justify-center w-10 h-10 rounded-lg text-sm font-bold transition-all ${
+        disabled
+          ? 'bg-white/[0.02] text-slate-700 cursor-not-allowed'
+          : 'bg-white/5 text-slate-300 hover:bg-white/10 hover:text-white active:scale-95'
+      }`}
+    >
+      {children}
+    </button>
+  );
 
   return (
-    <div className="w-full bg-hero flex-1 px-4 py-6">
-      <div className="max-w-5xl mx-auto">
+    <div className="w-full bg-hero flex-1 px-3 py-4 md:px-6 md:py-6">
+      <div className="max-w-6xl mx-auto">
+
         {/* Header */}
-        <div className="flex items-center gap-3 mb-6">
-          <h1 className="text-2xl font-black text-white">Watch Games</h1>
-          <span className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-red-500/15 text-red-400 text-xs font-bold">
-            <span className="w-2 h-2 rounded-full bg-red-500 animate-pulse" />
-            Live Replay
+        <div className="flex items-center gap-3 mb-4 md:mb-6">
+          <h1 className="text-xl md:text-2xl font-black text-white">Game Review</h1>
+          <span className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-500/10 text-emerald-400 text-[10px] font-bold">
+            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+            {game.event} {game.year}
           </span>
         </div>
 
-        <div className="flex flex-col lg:flex-row gap-6">
-          {/* Board Section */}
-          <div className="flex-1 max-w-[560px]">
+        <div className="flex flex-col lg:flex-row gap-4 md:gap-6">
+
+          {/* ── Board Section ── */}
+          <div className="flex-1 max-w-[640px] mx-auto lg:mx-0 w-full">
+
             {/* Top player (Black) */}
-            <div className={`flex items-center justify-between px-3 py-2 rounded-t-xl mb-0 transition-all ${
-              turn === 'b' ? 'bg-gold-500/10 border border-gold-500/30' : 'bg-navy-800/50 border border-navy-700/30'
-            }`}>
-              <div className="flex items-center gap-2">
-                <div className="w-7 h-7 rounded-full bg-slate-800 text-slate-200 border border-slate-600 flex items-center justify-center text-xs font-bold">
+            <div className="flex items-center justify-between px-3 py-2 bg-navy-800/40 border-b border-navy-700/15">
+              <div className="flex items-center gap-2.5">
+                <div className="w-7 h-7 rounded-full bg-slate-800 text-slate-200 border border-slate-600 flex items-center justify-center text-[10px] font-bold">
                   {game.black.charAt(0)}
                 </div>
                 <div>
-                  <p className="text-xs font-semibold text-white">{game.black}</p>
+                  <p className="text-xs font-semibold text-white leading-tight">{game.black}</p>
                   <p className="text-[9px] text-slate-500">{game.blackElo}</p>
                 </div>
-              </div>
-              <div className={`px-2 py-1 rounded font-mono text-xs font-bold ${
-                turn === 'b' ? 'bg-gold-500/15 text-gold-400' : 'bg-navy-700/50 text-slate-400'
-              }`}>
-                {formatTime(blackTime)}
+                {/* Captured by black (white pieces) */}
+                {captured.bCaptured.length > 0 && (
+                  <div className="flex items-center gap-0 ml-2">
+                    {captured.bCaptured.map((p, i) => (
+                      <span key={i} className="text-[11px] opacity-70 -ml-0.5">{p}</span>
+                    ))}
+                    {captured.blackAdv > 0 && <span className="text-[9px] font-bold text-chess-green ml-1">+{captured.blackAdv}</span>}
+                  </div>
+                )}
               </div>
             </div>
 
             {/* Board */}
-            <div ref={containerRef} className="w-full aspect-square shadow-2xl shadow-black/50">
+            <div ref={containerRef} className="w-full aspect-square">
               <Chessboard
                 position={fen}
                 boardWidth={boardSize}
@@ -170,119 +230,189 @@ export default function Watch() {
                 customDarkSquareStyle={{ backgroundColor: theme.dark }}
                 customLightSquareStyle={{ backgroundColor: theme.light }}
                 customSquareStyles={lastMoveStyles}
-                animationDuration={200}
+                animationDuration={250}
               />
             </div>
 
             {/* Bottom player (White) */}
-            <div className={`flex items-center justify-between px-3 py-2 rounded-b-xl mt-0 transition-all ${
-              turn === 'w' ? 'bg-gold-500/10 border border-gold-500/30' : 'bg-navy-800/50 border border-navy-700/30'
-            }`}>
-              <div className="flex items-center gap-2">
-                <div className="w-7 h-7 rounded-full bg-slate-200 text-slate-800 flex items-center justify-center text-xs font-bold">
+            <div className="flex items-center justify-between px-3 py-2 bg-navy-800/40 border-t border-navy-700/15">
+              <div className="flex items-center gap-2.5">
+                <div className="w-7 h-7 rounded-full bg-slate-200 text-slate-800 flex items-center justify-center text-[10px] font-bold">
                   {game.white.charAt(0)}
                 </div>
                 <div>
-                  <p className="text-xs font-semibold text-white">{game.white}</p>
+                  <p className="text-xs font-semibold text-white leading-tight">{game.white}</p>
                   <p className="text-[9px] text-slate-500">{game.whiteElo}</p>
                 </div>
-              </div>
-              <div className={`px-2 py-1 rounded font-mono text-xs font-bold ${
-                turn === 'w' ? 'bg-gold-500/15 text-gold-400' : 'bg-navy-700/50 text-slate-400'
-              }`}>
-                {formatTime(whiteTime)}
-              </div>
-            </div>
-
-            {/* Controls */}
-            <div className="flex items-center justify-center gap-3 mt-4">
-              <button
-                onClick={() => { resetGame(); setIsPlaying(false); }}
-                className="px-3 py-1.5 rounded-lg text-xs font-semibold bg-white/5 text-slate-400 hover:text-white hover:bg-white/10 transition-all"
-              >
-                ⏮ Reset
-              </button>
-              <button
-                onClick={() => setIsPlaying(!isPlaying)}
-                className="px-5 py-2 rounded-xl text-sm font-bold bg-chess-green/15 text-chess-green hover:bg-chess-green/25 transition-all"
-              >
-                {isPlaying ? '⏸ Pause' : '▶ Play'}
-              </button>
-              <div className="flex items-center gap-1">
-                {[1, 2, 4].map(s => (
-                  <button
-                    key={s}
-                    onClick={() => setSpeed(s)}
-                    className={`px-2.5 py-1.5 rounded-lg text-[10px] font-bold transition-all ${
-                      speed === s ? 'bg-chess-green/15 text-chess-green' : 'bg-white/5 text-slate-500 hover:text-white hover:bg-white/10'
-                    }`}
-                  >
-                    {s}x
-                  </button>
-                ))}
-              </div>
-            </div>
-          </div>
-
-          {/* Right Panel */}
-          <div className="lg:w-80 flex flex-col gap-4">
-            {/* Game Info */}
-            <div className="bg-navy-800/30 rounded-xl p-4">
-              <h3 className="text-sm font-bold text-white mb-2">{game.event} {game.year}</h3>
-              <p className="text-xs text-slate-500 mb-1">{game.opening}</p>
-              <div className="flex gap-3 text-xs mt-3">
-                <div>
-                  <span className="text-slate-600">Moves </span>
-                  <span className="text-white font-semibold">{moveHistory.length}/{game.moves.length}</span>
-                </div>
-                <div>
-                  <span className="text-slate-600">Result </span>
-                  <span className="text-chess-green font-semibold">{gameEnded ? game.result : '...'}</span>
-                </div>
-              </div>
-
-              {/* Progress bar */}
-              <div className="mt-3 h-1 rounded-full bg-navy-700/50 overflow-hidden">
-                <div
-                  className="h-full rounded-full bg-chess-green/60 transition-all duration-300"
-                  style={{ width: `${((moveIndex + 1) / game.moves.length) * 100}%` }}
-                />
-              </div>
-            </div>
-
-            {/* Move History */}
-            <div className="bg-navy-800/30 rounded-xl flex-1 max-h-[400px] overflow-hidden flex flex-col">
-              <div className="px-4 py-2.5 border-b border-navy-700/20">
-                <h3 className="text-xs font-bold text-slate-400">Move History</h3>
-              </div>
-              <div className="flex-1 overflow-y-auto p-3 space-y-0.5" style={{ scrollbarWidth: 'thin' }}>
-                {movePairs.map((pair, i) => (
-                  <div key={i} className="flex items-center gap-1 text-xs font-mono">
-                    <span className="text-slate-600 w-6 text-right mr-1">{pair.num}.</span>
-                    <span className={`px-1.5 py-0.5 rounded ${
-                      moveIndex === i * 2 ? 'bg-chess-green/20 text-chess-green' : 'text-sky-300'
-                    }`}>
-                      {pair.white}
-                    </span>
-                    {pair.black && (
-                      <span className={`px-1.5 py-0.5 rounded ${
-                        moveIndex === i * 2 + 1 ? 'bg-chess-green/20 text-chess-green' : 'text-purple-300'
-                      }`}>
-                        {pair.black}
-                      </span>
-                    )}
-                  </div>
-                ))}
-                {gameEnded && (
-                  <div className="text-center text-xs text-chess-green font-bold mt-2 py-2 bg-chess-green/5 rounded-lg">
-                    {game.result} — {game.result === '1-0' ? game.white : game.black} wins!
+                {/* Captured by white (black pieces) */}
+                {captured.wCaptured.length > 0 && (
+                  <div className="flex items-center gap-0 ml-2">
+                    {captured.wCaptured.map((p, i) => (
+                      <span key={i} className="text-[11px] opacity-70 -ml-0.5">{p}</span>
+                    ))}
+                    {captured.whiteAdv > 0 && <span className="text-[9px] font-bold text-chess-green ml-1">+{captured.whiteAdv}</span>}
                   </div>
                 )}
               </div>
             </div>
+
+            {/* ── Navigation Controls ── */}
+            <div className="flex items-center justify-center gap-2 mt-3">
+              <NavButton onClick={goFirst} disabled={moveIndex <= -1} title="First move (Home)">⏮</NavButton>
+              <NavButton onClick={goPrev} disabled={moveIndex <= -1} title="Previous (←)">◀</NavButton>
+
+              {/* Auto-play toggle — small */}
+              <button
+                onClick={() => {
+                  if (gameEnded) { goToMove(-1); setIsAutoPlaying(true); }
+                  else setIsAutoPlaying(!isAutoPlaying);
+                }}
+                title={isAutoPlaying ? 'Pause auto-play' : 'Start auto-play'}
+                className={`flex items-center justify-center w-10 h-10 rounded-lg text-sm font-bold transition-all ${
+                  isAutoPlaying
+                    ? 'bg-chess-green/15 text-chess-green'
+                    : 'bg-white/5 text-slate-300 hover:bg-white/10 hover:text-white active:scale-95'
+                }`}
+              >
+                {isAutoPlaying ? '⏸' : '▶'}
+              </button>
+
+              <NavButton onClick={goNext} disabled={gameEnded} title="Next (→)">▶</NavButton>
+              <NavButton onClick={goLast} disabled={gameEnded} title="Last move (End)">⏭</NavButton>
+            </div>
+
+            {/* Move counter */}
+            <div className="flex items-center justify-center mt-2 gap-3">
+              <span className="text-[10px] text-slate-500 font-medium">
+                Move {moveIndex < 0 ? 0 : moveIndex + 1} / {totalMoves}
+              </span>
+              <div className="w-32 h-1 rounded-full bg-navy-700/50 overflow-hidden">
+                <div
+                  className="h-full rounded-full bg-chess-green/50 transition-all duration-200"
+                  style={{ width: `${((moveIndex + 1) / totalMoves) * 100}%` }}
+                />
+              </div>
+            </div>
+
+            {/* Mobile: toggle move history */}
+            <button
+              onClick={() => setShowMobileHistory(!showMobileHistory)}
+              className="lg:hidden w-full mt-3 py-2 rounded-lg text-xs font-semibold bg-white/5 text-slate-400 hover:text-white hover:bg-white/10 transition-all"
+            >
+              {showMobileHistory ? '▲ Hide Moves' : '▼ Show Moves'}
+            </button>
+
+            {/* Mobile move history (collapsible) */}
+            {showMobileHistory && (
+              <div className="lg:hidden mt-2 bg-navy-800/30 rounded-xl max-h-[250px] overflow-y-auto p-3 animate-slide-down" style={{ scrollbarWidth: 'thin' }}>
+                <MoveList
+                  movePairs={movePairs}
+                  moveIndex={moveIndex}
+                  onClickMove={goToMove}
+                  listRef={moveListRef}
+                />
+              </div>
+            )}
+          </div>
+
+          {/* ── Right Panel (Desktop) ── */}
+          <div className="hidden lg:flex lg:w-[320px] flex-col gap-4">
+
+            {/* Game Info */}
+            <div className="bg-navy-800/30 rounded-xl p-4">
+              <div className="flex items-center gap-2 mb-2">
+                <span className="text-lg">♟</span>
+                <h3 className="text-sm font-bold text-white">{game.opening}</h3>
+              </div>
+              <div className="flex gap-4 text-[10px] text-slate-500">
+                <span>{game.event} {game.year}</span>
+                <span>•</span>
+                <span>Result: <span className="text-white font-semibold">{game.result}</span></span>
+              </div>
+            </div>
+
+            {/* Move History Panel */}
+            <div className="bg-navy-800/30 rounded-xl flex-1 overflow-hidden flex flex-col" style={{ maxHeight: 'calc(100vh - 300px)', minHeight: '300px' }}>
+              <div className="px-4 py-2.5 border-b border-navy-700/20 flex items-center justify-between">
+                <h3 className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Moves</h3>
+                <span className="text-[10px] text-slate-600">{moveIndex + 1}/{totalMoves}</span>
+              </div>
+              <div ref={moveListRef} className="flex-1 overflow-y-auto p-2" style={{ scrollbarWidth: 'thin' }}>
+                <MoveList
+                  movePairs={movePairs}
+                  moveIndex={moveIndex}
+                  onClickMove={goToMove}
+                />
+              </div>
+            </div>
           </div>
         </div>
+
+        {/* ── Result Banner (when game ends) ── */}
+        {gameEnded && (
+          <div className="mt-6 bg-navy-800/40 border border-navy-700/20 rounded-2xl p-6 max-w-xl mx-auto animate-scale-in">
+            <div className="text-center">
+              <div className="text-4xl mb-2">{getResultText().icon}</div>
+              <h2 className="text-lg font-bold text-white mb-1">{getResultText().text}</h2>
+              {getResultText().winner && (
+                <p className="text-sm text-chess-green font-semibold mb-1">{getResultText().winner}</p>
+              )}
+              <p className="text-xs text-slate-500 mb-4">{game.event} {game.year} • {game.opening}</p>
+              <div className="flex items-center justify-center gap-3">
+                <button
+                  onClick={() => { goToMove(-1); }}
+                  className="px-5 py-2 rounded-xl text-sm font-bold bg-chess-green/15 text-chess-green hover:bg-chess-green/25 transition-all"
+                >
+                  Review Again
+                </button>
+                <button
+                  onClick={() => { goToMove(-1); setIsAutoPlaying(true); }}
+                  className="px-5 py-2 rounded-xl text-sm font-bold bg-white/5 text-slate-300 hover:bg-white/10 transition-all"
+                >
+                  Auto Replay
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
+    </div>
+  );
+}
+
+// ── Move List Component ──
+function MoveList({ movePairs, moveIndex, onClickMove, listRef }) {
+  return (
+    <div ref={listRef} className="space-y-0.5">
+      {movePairs.map((pair, i) => (
+        <div key={i} className="flex items-center text-xs font-mono">
+          <span className="text-slate-600 w-7 text-right mr-1.5 text-[10px] select-none flex-shrink-0">{pair.num}.</span>
+          <button
+            data-active={moveIndex === pair.whiteIdx}
+            onClick={() => onClickMove(pair.whiteIdx)}
+            className={`px-1.5 py-0.5 rounded cursor-pointer transition-all duration-100 min-w-[42px] text-left ${
+              moveIndex === pair.whiteIdx
+                ? 'bg-chess-green/20 text-chess-green font-bold'
+                : 'text-slate-300 hover:bg-white/5'
+            }`}
+          >
+            {pair.white}
+          </button>
+          {pair.black && pair.blackIdx !== null && (
+            <button
+              data-active={moveIndex === pair.blackIdx}
+              onClick={() => onClickMove(pair.blackIdx)}
+              className={`px-1.5 py-0.5 rounded cursor-pointer transition-all duration-100 min-w-[42px] text-left ${
+                moveIndex === pair.blackIdx
+                  ? 'bg-chess-green/20 text-chess-green font-bold'
+                  : 'text-slate-300 hover:bg-white/5'
+              }`}
+            >
+              {pair.black}
+            </button>
+          )}
+        </div>
+      ))}
     </div>
   );
 }

@@ -608,9 +608,7 @@ export default function ChessBoard({
       <div className="flex items-center justify-center gap-2 w-full">
         {isReview && <WinProbabilityBar fen={fen} height={boardSize} />}
 
-        <div className={`w-full aspect-square shadow-2xl shadow-black/50 relative ${
-          !isMyTurn && !isSpectator && !isReview && gameStatus === 'playing' ? 'opacity-90' : ''
-        }`}>
+        <div className={`w-full aspect-square shadow-2xl shadow-black/50 relative`}>
           {gameStatus === 'playing' && username && (
             <div className="absolute inset-0 z-10 pointer-events-none flex items-center justify-center" style={{ opacity: 0.04 }}>
               <p className="text-white text-2xl font-black rotate-[-30deg] select-none whitespace-nowrap">
