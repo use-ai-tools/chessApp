@@ -4,14 +4,12 @@ import { Chessboard } from 'react-chessboard';
 import { AuthContext } from '../contexts/AuthContext';
 import LESSONS from '../data/lessons';
 
-const LANGS = { en: '🇬🇧 English', hi: '🇮🇳 हिंदी', hg: '🇮🇳 Hinglish' };
+const LANGS = { en: 'EN', hi: 'हिं', hg: 'Hi' };
 const BOARD_THEME = { light: '#eeeed2', dark: '#769656' };
 const STORAGE_KEY = 'chess-learn-progress';
 
-function getProgress() {
-  try { return JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}'); } catch { return {}; }
-}
-function saveProgress(data) { localStorage.setItem(STORAGE_KEY, JSON.stringify(data)); }
+function getProgress() { try { return JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}'); } catch { return {}; } }
+function saveProgress(d) { localStorage.setItem(STORAGE_KEY, JSON.stringify(d)); }
 
 export default function Learn() {
   const { user } = useContext(AuthContext);
@@ -19,123 +17,149 @@ export default function Learn() {
   const [lang, setLang] = useState(() => localStorage.getItem('chess-learn-lang') || 'en');
   const [activeLessonIdx, setActiveLessonIdx] = useState(null);
   const [stepIdx, setStepIdx] = useState(0);
-  const [phase, setPhase] = useState('steps'); // 'steps' | 'challenge' | 'success'
+  const [phase, setPhase] = useState('steps'); // steps | challenge
   const [boardSize, setBoardSize] = useState(360);
   const [progress, setProgress] = useState(getProgress);
-  const [feedback, setFeedback] = useState(null);
+  const [toast, setToast] = useState(null);
   const [showHint, setShowHint] = useState(false);
+  const [selectedSq, setSelectedSq] = useState(null);
   const [showOnboarding, setShowOnboarding] = useState(() => !localStorage.getItem('chess-onboarding-done'));
 
   useEffect(() => { localStorage.setItem('chess-learn-lang', lang); }, [lang]);
 
   // Board sizing
   useEffect(() => {
-    if (!containerRef.current) return;
-    const ro = new ResizeObserver(entries => {
-      for (const e of entries) { const w = e.contentRect.width; if (w > 0) setBoardSize(Math.min(Math.floor(w), 480)); }
-    });
-    ro.observe(containerRef.current);
-    setBoardSize(Math.min(Math.floor(containerRef.current.offsetWidth), 480) || 360);
+    const measure = () => {
+      if (!containerRef.current) return;
+      const w = containerRef.current.offsetWidth;
+      if (w > 0) setBoardSize(Math.min(Math.floor(w), 480));
+    };
+    measure();
+    const ro = new ResizeObserver(measure);
+    if (containerRef.current) ro.observe(containerRef.current);
     return () => ro.disconnect();
   }, [activeLessonIdx]);
 
   const t = useCallback((obj) => obj?.[lang] || obj?.en || '', [lang]);
-
   const lesson = activeLessonIdx !== null ? LESSONS[activeLessonIdx] : null;
   const step = lesson && phase === 'steps' ? lesson.steps[stepIdx] : null;
-  const challenge = lesson ? lesson.challenge : null;
+  const challenge = lesson?.challenge;
   const totalSteps = lesson ? lesson.steps.length : 0;
   const completedCount = LESSONS.filter(l => progress[l.id]).length;
-  const totalXP = completedCount * 50;
 
-  // Current display FEN
+  const showSmallToast = (msg) => { setToast(msg); setTimeout(() => setToast(null), 1800); };
+
+  // Current FEN
   const displayFen = useMemo(() => {
     if (phase === 'steps' && step) return step.fen;
-    if ((phase === 'challenge' || phase === 'success') && challenge) return challenge.fen;
+    if (phase === 'challenge' && challenge) return challenge.fen;
     return 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1';
   }, [phase, step, challenge]);
 
-  // Highlight squares
-  const highlightStyles = useMemo(() => {
-    const styles = {};
+  // Square styles
+  const squareStyles = useMemo(() => {
+    const s = {};
+    // Step highlights
     if (phase === 'steps' && step?.highlights) {
-      step.highlights.forEach(sq => {
-        styles[sq] = { backgroundColor: 'rgba(129, 182, 76, 0.45)', borderRadius: '0' };
-      });
+      step.highlights.forEach(sq => { s[sq] = { backgroundColor: 'rgba(129,182,76,0.4)' }; });
     }
-    if ((phase === 'challenge') && showHint && challenge?.hints) {
-      challenge.hints.forEach(sq => {
-        styles[sq] = { background: 'radial-gradient(circle, rgba(245, 180, 60, 0.6) 25%, transparent 25%)', borderRadius: '0' };
-      });
+    // Challenge hints
+    if (phase === 'challenge' && showHint && challenge?.hints) {
+      challenge.hints.forEach(sq => { s[sq] = { background: 'radial-gradient(circle, rgba(245,180,60,0.6) 28%, transparent 28%)' }; });
     }
-    if (phase === 'success' && challenge?.solution) {
-      styles[challenge.solution.from] = { backgroundColor: 'rgba(129, 182, 76, 0.5)' };
-      styles[challenge.solution.to] = { backgroundColor: 'rgba(129, 182, 76, 0.5)' };
+    // Selected square + legal moves
+    if (phase === 'challenge' && selectedSq) {
+      s[selectedSq] = { backgroundColor: 'rgba(255,255,100,0.5)' };
+      // Show legal target
+      if (challenge?.solution && selectedSq === challenge.solution.from) {
+        s[challenge.solution.to] = { background: 'radial-gradient(circle, rgba(129,182,76,0.6) 28%, transparent 28%)' };
+      }
     }
-    return styles;
-  }, [phase, step, challenge, showHint]);
+    return s;
+  }, [phase, step, challenge, showHint, selectedSq]);
 
-  // Challenge move handler
+  // Tap-to-move handler
+  const onSquareClick = useCallback((sq) => {
+    if (phase !== 'challenge' || !challenge) return;
+    const sol = challenge.solution;
+
+    if (!selectedSq) {
+      // Select piece
+      if (sq === sol.from) setSelectedSq(sq);
+      return;
+    }
+
+    // Second tap — attempt move
+    if (selectedSq === sol.from && sq === sol.to) {
+      // Correct!
+      setSelectedSq(null);
+      const np = { ...progress, [lesson.id]: true };
+      setProgress(np); saveProgress(np);
+      showSmallToast('Correct ✓');
+      setTimeout(() => nextLesson(), 1200);
+      return;
+    }
+
+    // Wrong tap
+    if (sq === sol.from) { setSelectedSq(sq); return; }
+    showSmallToast('Try again');
+    setSelectedSq(null);
+  }, [phase, challenge, selectedSq, lesson, progress]);
+
+  // Drag-drop handler
   const onDrop = useCallback((src, tgt) => {
     if (phase !== 'challenge' || !challenge) return false;
     const sol = challenge.solution;
     if (src === sol.from && tgt === sol.to) {
-      setPhase('success');
-      setFeedback('correct');
-      // Mark completed
-      const newProgress = { ...progress, [lesson.id]: true };
-      setProgress(newProgress);
-      saveProgress(newProgress);
-      setTimeout(() => setFeedback(null), 2000);
+      setSelectedSq(null);
+      const np = { ...progress, [lesson.id]: true };
+      setProgress(np); saveProgress(np);
+      showSmallToast('Correct ✓');
+      setTimeout(() => nextLesson(), 1200);
       return true;
     }
-    setFeedback('wrong');
-    setTimeout(() => setFeedback(null), 1500);
+    showSmallToast('Try again');
     return false;
   }, [phase, challenge, lesson, progress]);
 
   const nextStep = () => {
-    if (stepIdx < totalSteps - 1) setStepIdx(stepIdx + 1);
-    else { setPhase('challenge'); setShowHint(false); }
+    if (stepIdx < totalSteps - 1) { setStepIdx(stepIdx + 1); }
+    else { setPhase('challenge'); setShowHint(false); setSelectedSq(null); }
   };
   const prevStep = () => { if (stepIdx > 0) setStepIdx(stepIdx - 1); };
 
   const openLesson = (idx) => {
     setActiveLessonIdx(idx); setStepIdx(0); setPhase('steps');
-    setFeedback(null); setShowHint(false);
+    setToast(null); setShowHint(false); setSelectedSq(null);
   };
-  const closeLesson = () => { setActiveLessonIdx(null); setPhase('steps'); setStepIdx(0); };
-
+  const closeLesson = () => { setActiveLessonIdx(null); };
   const nextLesson = () => {
     if (activeLessonIdx < LESSONS.length - 1) openLesson(activeLessonIdx + 1);
     else closeLesson();
   };
 
-  // Onboarding
+  // ── Onboarding ──
   if (showOnboarding) {
     return (
       <div className="w-full bg-hero flex-1 flex items-center justify-center px-4 py-8">
-        <div className="bg-navy-800/60 border border-navy-700/30 rounded-2xl p-8 max-w-md w-full animate-scale-in text-center">
-          <div className="text-5xl mb-4">♟️</div>
-          <h2 className="text-xl font-black text-white mb-2">Welcome to Chess!</h2>
-          <p className="text-sm text-slate-400 mb-6">Do you know how to play chess?</p>
-          <div className="flex flex-col gap-3">
+        <div className="bg-navy-800/60 border border-navy-700/30 rounded-2xl p-6 max-w-sm w-full animate-scale-in text-center">
+          <div className="text-4xl mb-3">♟️</div>
+          <h2 className="text-lg font-black text-white mb-1">Welcome to Chess!</h2>
+          <p className="text-xs text-slate-400 mb-5">Do you know how to play?</p>
+          <div className="flex flex-col gap-2">
             <button onClick={() => { localStorage.setItem('chess-onboarding-done', '1'); setShowOnboarding(false); }}
-              className="w-full py-3 rounded-xl text-sm font-bold bg-gradient-to-r from-chess-green to-emerald-600 text-white hover:shadow-md hover:shadow-chess-green/15 transition-all">
-              🎓 No, teach me!
+              className="w-full py-2.5 rounded-xl text-sm font-bold bg-gradient-to-r from-chess-green to-emerald-600 text-white transition-all">
+              🎓 Teach me
             </button>
             <button onClick={() => { localStorage.setItem('chess-onboarding-done', '1'); setShowOnboarding(false); }}
-              className="w-full py-3 rounded-xl text-sm font-bold bg-white/5 text-slate-300 hover:bg-white/10 transition-all">
-              ✅ Yes, I know chess
+              className="w-full py-2.5 rounded-xl text-sm font-bold bg-white/5 text-slate-300 hover:bg-white/10 transition-all">
+              ✅ I know chess
             </button>
           </div>
-          {/* Language picker */}
-          <div className="flex justify-center gap-2 mt-5">
-            {Object.entries(LANGS).map(([code, label]) => (
-              <button key={code} onClick={() => setLang(code)}
-                className={`px-3 py-1 rounded-lg text-[10px] font-semibold transition-all ${lang === code ? 'bg-chess-green/15 text-chess-green' : 'bg-white/5 text-slate-500 hover:text-white'}`}>
-                {label}
-              </button>
+          <div className="flex justify-center gap-1.5 mt-4">
+            {Object.entries(LANGS).map(([c, l]) => (
+              <button key={c} onClick={() => setLang(c)}
+                className={`px-2 py-0.5 rounded text-[9px] font-bold transition-all ${lang === c ? 'bg-chess-green/15 text-chess-green' : 'bg-white/5 text-slate-600'}`}>{l}</button>
             ))}
           </div>
         </div>
@@ -143,193 +167,164 @@ export default function Learn() {
     );
   }
 
-  // Lesson View
+  // ── Lesson View ──
   if (lesson) {
+    const progressPct = phase === 'steps'
+      ? ((stepIdx + 1) / (totalSteps + 1)) * 100
+      : 100;
+
     return (
-      <div className="w-full bg-hero flex-1 px-3 py-4 md:px-6 md:py-6">
-        <div className="max-w-3xl mx-auto">
-          {/* Top bar */}
-          <div className="flex items-center justify-between mb-4 gap-2">
-            <button onClick={closeLesson} className="text-xs text-slate-400 hover:text-white transition-colors font-semibold">← Back</button>
-            <div className="flex items-center gap-2">
-              <span className="text-lg">{lesson.icon}</span>
-              <h2 className="text-sm font-bold text-white">{t(lesson.title)}</h2>
-            </div>
-            <div className="flex gap-1">
-              {Object.entries(LANGS).map(([code, label]) => (
-                <button key={code} onClick={() => setLang(code)}
-                  className={`px-2 py-0.5 rounded text-[9px] font-bold transition-all ${lang === code ? 'bg-chess-green/15 text-chess-green' : 'bg-white/5 text-slate-600'}`}>
-                  {code.toUpperCase()}
-                </button>
-              ))}
-            </div>
-          </div>
+      <div className="w-full bg-hero flex-1 flex flex-col overflow-hidden">
+        <div className="max-w-lg mx-auto w-full flex flex-col flex-1 px-3 py-3 md:px-4">
 
-          {/* Progress */}
-          <div className="flex items-center gap-2 mb-4">
-            <div className="flex-1 h-1.5 rounded-full bg-navy-700/50 overflow-hidden">
-              <div className="h-full rounded-full bg-chess-green/60 transition-all duration-300"
-                style={{ width: `${phase === 'steps' ? ((stepIdx + 1) / (totalSteps + 1)) * 100 : phase === 'challenge' ? (totalSteps / (totalSteps + 1)) * 100 : 100}%` }} />
-            </div>
-            <span className="text-[10px] text-slate-500 font-medium">
-              {phase === 'steps' ? `${stepIdx + 1}/${totalSteps + 1}` : phase === 'challenge' ? 'Challenge' : '✓ Done'}
-            </span>
-          </div>
-
-          {/* Info Steps */}
-          {phase === 'steps' && step && (
-            <div className="flex flex-col items-center gap-4 animate-fade-in">
-              <div className="bg-navy-800/30 rounded-xl p-4 w-full">
-                <p className="text-sm text-slate-200 leading-relaxed whitespace-pre-line">{t(step.text)}</p>
+          {/* ── Fixed-height top section ── */}
+          <div className="flex-shrink-0" style={{ minHeight: '90px' }}>
+            {/* Header row */}
+            <div className="flex items-center justify-between mb-2">
+              <button onClick={closeLesson} className="text-[10px] text-slate-500 hover:text-white transition-colors font-semibold">← Back</button>
+              <div className="flex items-center gap-1.5">
+                <span className="text-sm">{lesson.icon}</span>
+                <span className="text-xs font-bold text-white">{t(lesson.title)}</span>
               </div>
-              <div ref={containerRef} className="w-full max-w-[480px] aspect-square">
-                <Chessboard position={step.fen} boardWidth={boardSize} boardOrientation="white"
-                  arePiecesDraggable={false} customBoardStyle={{ borderRadius: '4px' }}
-                  customDarkSquareStyle={{ backgroundColor: BOARD_THEME.dark }}
-                  customLightSquareStyle={{ backgroundColor: BOARD_THEME.light }}
-                  customSquareStyles={highlightStyles} animationDuration={300} />
-              </div>
-              <div className="flex items-center gap-3">
-                <button onClick={prevStep} disabled={stepIdx === 0}
-                  className={`px-4 py-2 rounded-xl text-xs font-bold transition-all ${stepIdx === 0 ? 'bg-white/[0.02] text-slate-700 cursor-not-allowed' : 'bg-white/5 text-slate-300 hover:bg-white/10'}`}>
-                  ← Previous
-                </button>
-                <button onClick={nextStep}
-                  className="px-6 py-2 rounded-xl text-xs font-bold bg-chess-green/15 text-chess-green hover:bg-chess-green/25 transition-all">
-                  {stepIdx < totalSteps - 1 ? 'Next →' : '🎯 Try Challenge'}
-                </button>
+              <div className="flex gap-0.5">
+                {Object.entries(LANGS).map(([c, l]) => (
+                  <button key={c} onClick={() => setLang(c)}
+                    className={`px-1.5 py-0.5 rounded text-[8px] font-bold ${lang === c ? 'bg-chess-green/15 text-chess-green' : 'bg-white/5 text-slate-600'}`}>{l}</button>
+                ))}
               </div>
             </div>
-          )}
 
-          {/* Challenge */}
-          {phase === 'challenge' && challenge && (
-            <div className="flex flex-col items-center gap-4 animate-fade-in">
-              <div className="bg-gold-500/10 border border-gold-500/20 rounded-xl p-4 w-full">
-                <div className="flex items-center gap-2 mb-1">
-                  <span className="text-lg">🎯</span>
-                  <h3 className="text-sm font-bold text-gold-400">Challenge</h3>
-                </div>
-                <p className="text-sm text-slate-200">{t(challenge.text)}</p>
-              </div>
-              <div ref={containerRef} className="w-full max-w-[480px] aspect-square relative">
-                <Chessboard position={challenge.fen} boardWidth={boardSize} boardOrientation="white"
-                  arePiecesDraggable={true} onPieceDrop={onDrop} customBoardStyle={{ borderRadius: '4px' }}
-                  customDarkSquareStyle={{ backgroundColor: BOARD_THEME.dark }}
-                  customLightSquareStyle={{ backgroundColor: BOARD_THEME.light }}
-                  customSquareStyles={highlightStyles} animationDuration={200} />
-              </div>
-              {/* Feedback */}
-              {feedback === 'wrong' && (
-                <div className="bg-red-500/15 border border-red-500/30 text-red-400 text-xs font-bold px-4 py-2 rounded-xl animate-slide-down">
-                  ✗ Try again!
+            {/* Progress bar */}
+            <div className="h-1 rounded-full bg-navy-700/40 overflow-hidden mb-2">
+              <div className="h-full rounded-full bg-chess-green/60 transition-all duration-300" style={{ width: `${progressPct}%` }} />
+            </div>
+
+            {/* Lesson text — fixed height container to prevent board shift */}
+            <div className="min-h-[48px] flex items-start">
+              {phase === 'steps' && step && (
+                <p className="text-xs text-slate-300 leading-relaxed">{t(step.text)}</p>
+              )}
+              {phase === 'challenge' && (
+                <div className="flex items-start gap-1.5">
+                  <span className="text-xs">🎯</span>
+                  <p className="text-xs text-gold-400 font-medium">{t(challenge.text)}</p>
                 </div>
               )}
-              <div className="flex items-center gap-3">
-                <button onClick={() => setShowHint(!showHint)}
-                  className="px-4 py-2 rounded-xl text-xs font-bold bg-gold-500/10 text-gold-400 hover:bg-gold-500/20 transition-all">
-                  {showHint ? '🙈 Hide Hint' : '💡 Show Hint'}
-                </button>
-              </div>
             </div>
-          )}
+          </div>
 
-          {/* Success */}
-          {phase === 'success' && (
-            <div className="flex flex-col items-center gap-4 animate-scale-in text-center">
-              <div className="text-5xl mb-1">🎉</div>
-              <h3 className="text-xl font-black text-white">Correct!</h3>
-              <p className="text-sm text-chess-green font-semibold">+50 XP</p>
-              <div ref={containerRef} className="w-full max-w-[480px] aspect-square">
-                <Chessboard position={(() => { try { const c = new Chess(challenge.fen); c.move({ from: challenge.solution.from, to: challenge.solution.to, promotion: 'q' }); return c.fen(); } catch { return challenge.fen; } })()}
-                  boardWidth={boardSize} boardOrientation="white" arePiecesDraggable={false}
-                  customBoardStyle={{ borderRadius: '4px' }}
-                  customDarkSquareStyle={{ backgroundColor: BOARD_THEME.dark }}
-                  customLightSquareStyle={{ backgroundColor: BOARD_THEME.light }}
-                  customSquareStyles={highlightStyles} animationDuration={300} />
-              </div>
-              <div className="flex items-center gap-3">
-                <button onClick={closeLesson} className="px-5 py-2 rounded-xl text-xs font-bold bg-white/5 text-slate-300 hover:bg-white/10 transition-all">
-                  ← All Lessons
+          {/* ── Board — NEVER MOVES ── */}
+          <div ref={containerRef} className="w-full max-w-[480px] mx-auto aspect-square flex-shrink-0">
+            <Chessboard
+              position={displayFen}
+              boardWidth={boardSize}
+              boardOrientation="white"
+              arePiecesDraggable={phase === 'challenge'}
+              onPieceDrop={onDrop}
+              onSquareClick={onSquareClick}
+              customBoardStyle={{ borderRadius: '4px' }}
+              customDarkSquareStyle={{ backgroundColor: BOARD_THEME.dark }}
+              customLightSquareStyle={{ backgroundColor: BOARD_THEME.light }}
+              customSquareStyles={squareStyles}
+              animationDuration={250}
+            />
+          </div>
+
+          {/* ── Fixed controls below board ── */}
+          <div className="flex-shrink-0 mt-3 space-y-2">
+            {phase === 'steps' && (
+              <div className="flex items-center gap-2">
+                <button onClick={prevStep} disabled={stepIdx === 0}
+                  className={`flex-1 py-2 rounded-xl text-xs font-bold transition-all ${
+                    stepIdx === 0 ? 'bg-white/[0.02] text-slate-700 cursor-not-allowed' : 'bg-white/5 text-slate-300 hover:bg-white/10'
+                  }`}>← Prev</button>
+                <button onClick={nextStep}
+                  className="flex-1 py-2 rounded-xl text-xs font-bold bg-chess-green/15 text-chess-green hover:bg-chess-green/25 transition-all">
+                  {stepIdx < totalSteps - 1 ? 'Next →' : '🎯 Challenge'}
                 </button>
-                <button onClick={nextLesson} className="px-6 py-2 rounded-xl text-xs font-bold bg-gradient-to-r from-chess-green to-emerald-600 text-white hover:shadow-md hover:shadow-chess-green/15 transition-all">
-                  {activeLessonIdx < LESSONS.length - 1 ? 'Next Lesson →' : '🏆 All Done!'}
+              </div>
+            )}
+            {phase === 'challenge' && (
+              <div className="flex items-center gap-2">
+                <button onClick={() => setShowHint(!showHint)}
+                  className="flex-1 py-2 rounded-xl text-xs font-bold bg-gold-500/10 text-gold-400 hover:bg-gold-500/20 transition-all">
+                  {showHint ? '🙈 Hide' : '💡 Hint'}
+                </button>
+                <button onClick={() => { setPhase('steps'); setStepIdx(0); setSelectedSq(null); }}
+                  className="flex-1 py-2 rounded-xl text-xs font-bold bg-white/5 text-slate-400 hover:bg-white/10 transition-all">
+                  ↩ Review
+                </button>
+                <button onClick={nextLesson}
+                  className="flex-1 py-2 rounded-xl text-xs font-bold bg-white/5 text-slate-400 hover:bg-white/10 transition-all">
+                  Skip →
                 </button>
               </div>
-            </div>
-          )}
+            )}
+          </div>
         </div>
+
+        {/* ── Small floating toast ── */}
+        {toast && (
+          <div className={`fixed top-16 left-1/2 -translate-x-1/2 z-50 px-4 py-1.5 rounded-lg shadow-lg text-xs font-bold animate-slide-down ${
+            toast.includes('✓') ? 'bg-emerald-500/90 text-white' : 'bg-red-500/80 text-white'
+          }`}>
+            {toast}
+          </div>
+        )}
       </div>
     );
   }
 
-  // Lesson List (Home)
+  // ── Lesson List ──
   return (
-    <div className="w-full bg-hero flex-1 px-4 py-6">
-      <div className="max-w-3xl mx-auto">
+    <div className="w-full bg-hero flex-1 px-4 py-5">
+      <div className="max-w-lg mx-auto">
         {/* Header */}
-        <div className="flex items-center justify-between mb-6 flex-wrap gap-3">
+        <div className="flex items-center justify-between mb-4 flex-wrap gap-2">
           <div>
-            <h1 className="text-2xl font-black text-white mb-1">Learn Chess</h1>
-            <p className="text-xs text-slate-500">Master the basics in interactive lessons</p>
+            <h1 className="text-xl font-black text-white">Learn Chess</h1>
+            <p className="text-[10px] text-slate-500 mt-0.5">Interactive lessons for beginners</p>
           </div>
-          <div className="flex items-center gap-3">
-            <div className="flex gap-1">
-              {Object.entries(LANGS).map(([code, label]) => (
-                <button key={code} onClick={() => setLang(code)}
-                  className={`px-2.5 py-1 rounded-lg text-[10px] font-bold transition-all ${lang === code ? 'bg-chess-green/15 text-chess-green' : 'bg-white/5 text-slate-500 hover:text-white'}`}>
-                  {label}
-                </button>
-              ))}
-            </div>
+          <div className="flex gap-1">
+            {Object.entries(LANGS).map(([c, l]) => (
+              <button key={c} onClick={() => setLang(c)}
+                className={`px-2 py-1 rounded-lg text-[10px] font-bold transition-all ${lang === c ? 'bg-chess-green/15 text-chess-green' : 'bg-white/5 text-slate-500'}`}>{l}</button>
+            ))}
           </div>
         </div>
 
-        {/* Progress Overview */}
-        <div className="bg-navy-800/30 rounded-xl p-4 mb-6 flex items-center gap-4">
-          <div className="w-12 h-12 rounded-full bg-chess-green/15 flex items-center justify-center text-xl font-black text-chess-green">
+        {/* Progress bar */}
+        <div className="bg-navy-800/30 rounded-xl p-3 mb-4 flex items-center gap-3">
+          <div className="w-10 h-10 rounded-full bg-chess-green/15 flex items-center justify-center text-sm font-black text-chess-green flex-shrink-0">
             {completedCount}
           </div>
-          <div className="flex-1">
-            <p className="text-xs text-slate-400">Progress</p>
-            <p className="text-sm font-bold text-white">{completedCount}/{LESSONS.length} lessons completed</p>
-            <div className="mt-1.5 h-1.5 rounded-full bg-navy-700/50 overflow-hidden">
-              <div className="h-full rounded-full bg-chess-green/60 transition-all duration-500"
-                style={{ width: `${(completedCount / LESSONS.length) * 100}%` }} />
+          <div className="flex-1 min-w-0">
+            <p className="text-[10px] text-slate-500">{completedCount}/{LESSONS.length} completed</p>
+            <div className="mt-1 h-1 rounded-full bg-navy-700/50 overflow-hidden">
+              <div className="h-full rounded-full bg-chess-green/60 transition-all" style={{ width: `${(completedCount / LESSONS.length) * 100}%` }} />
             </div>
           </div>
-          <div className="text-right">
-            <p className="text-lg font-black text-gold-400">{totalXP}</p>
-            <p className="text-[9px] text-slate-500 font-semibold">XP</p>
-          </div>
+          <span className="text-sm font-black text-gold-400 flex-shrink-0">{completedCount * 50} XP</span>
         </div>
 
-        {/* Lesson Cards */}
-        <div className="space-y-2.5">
-          {LESSONS.map((lesson, idx) => {
-            const done = progress[lesson.id];
+        {/* Lessons */}
+        <div className="space-y-1.5">
+          {LESSONS.map((les, idx) => {
+            const done = progress[les.id];
             const isNext = !done && idx === LESSONS.findIndex(l => !progress[l.id]);
             return (
-              <button key={lesson.id} onClick={() => openLesson(idx)}
-                className={`w-full flex items-center gap-4 px-4 py-3.5 rounded-xl transition-all text-left ${
-                  done ? 'bg-chess-green/5 hover:bg-chess-green/10' : isNext ? 'bg-navy-800/40 hover:bg-navy-800/60 ring-1 ring-chess-green/30' : 'bg-navy-800/20 hover:bg-navy-800/40'
+              <button key={les.id} onClick={() => openLesson(idx)}
+                className={`w-full flex items-center gap-3 px-3 py-3 rounded-xl transition-all text-left ${
+                  done ? 'bg-chess-green/5 hover:bg-chess-green/10' : isNext ? 'bg-navy-800/40 hover:bg-navy-800/60 ring-1 ring-chess-green/20' : 'bg-navy-800/20 hover:bg-navy-800/30'
                 }`}>
-                <div className={`w-10 h-10 rounded-xl flex items-center justify-center text-lg flex-shrink-0 ${
+                <div className={`w-8 h-8 rounded-lg flex items-center justify-center text-sm flex-shrink-0 ${
                   done ? 'bg-chess-green/15' : isNext ? 'bg-gold-500/15' : 'bg-navy-700/30'
-                }`}>
-                  {done ? '✅' : lesson.icon}
-                </div>
+                }`}>{done ? '✅' : les.icon}</div>
                 <div className="flex-1 min-w-0">
-                  <p className={`text-sm font-bold truncate ${done ? 'text-chess-green' : 'text-white'}`}>
-                    {idx + 1}. {t(lesson.title)}
-                  </p>
-                  <p className="text-[10px] text-slate-500">{lesson.steps.length} steps + challenge</p>
+                  <p className={`text-xs font-bold truncate ${done ? 'text-chess-green' : 'text-white'}`}>{idx + 1}. {t(les.title)}</p>
+                  <p className="text-[9px] text-slate-600">{les.steps.length} steps + challenge</p>
                 </div>
-                <div className="flex items-center gap-2 flex-shrink-0">
-                  {done && <span className="text-[9px] text-chess-green font-bold bg-chess-green/10 px-2 py-0.5 rounded-full">+50 XP</span>}
-                  {isNext && <span className="text-[9px] text-gold-400 font-bold">START →</span>}
-                  {!done && !isNext && <span className="text-[9px] text-slate-600">●</span>}
-                </div>
+                {isNext && <span className="text-[9px] text-gold-400 font-bold flex-shrink-0">START →</span>}
               </button>
             );
           })}
