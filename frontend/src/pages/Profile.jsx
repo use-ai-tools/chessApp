@@ -57,57 +57,75 @@ export default function Profile() {
   const s = stats || {};
 
   return (
-    <div className="bg-hero px-4 py-8">
-      <div className="max-w-2xl mx-auto space-y-8">
-        <div className="flex items-center gap-5">
-          <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-purple-500 to-indigo-600 flex items-center justify-center text-3xl text-white">{profile.avatar || '♔'}</div>
-          <div className="flex-1">
-            <h1 className="text-2xl font-black text-white">{profile.username}</h1>
-            <p className="text-slate-600 text-xs mt-1">Joined {new Date(profile.createdAt).toLocaleDateString()}</p>
-            <span className="text-xs font-semibold px-2 py-0.5 rounded-md bg-sky-500/10 text-sky-400 mt-2 inline-block">ELO {profile.elo}</span>
+    <div className="bg-hero w-full overflow-x-hidden">
+      <div className="max-w-2xl mx-auto px-4 py-6 md:px-6 md:py-8 space-y-6">
+
+        {/* Profile Header */}
+        <div className="flex items-center gap-4">
+          <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-purple-500 to-indigo-600 flex items-center justify-center text-2xl text-white flex-shrink-0">{profile.avatar || '♔'}</div>
+          <div className="flex-1 min-w-0">
+            <h1 className="text-xl font-black text-white truncate">{profile.username}</h1>
+            <p className="text-slate-600 text-[10px] mt-0.5">Joined {new Date(profile.createdAt).toLocaleDateString()}</p>
+            <span className="text-[10px] font-semibold px-2 py-0.5 rounded-md bg-sky-500/10 text-sky-400 mt-1 inline-block">ELO {profile.elo}</span>
           </div>
         </div>
 
+        {/* Avatar Picker */}
         <div>
-          <h3 className="text-xs font-semibold text-slate-500 mb-3 uppercase tracking-wider">Choose Avatar</h3>
-          <div className="flex gap-3 mb-4">
-            {PIECES.map((piece) => (<button key={piece} onClick={() => setSelectedAvatar(piece)} className={`w-12 h-12 rounded-xl flex items-center justify-center text-2xl transition-all ${selectedAvatar === piece ? 'bg-chess-green/10 ring-2 ring-chess-green/30 scale-110' : 'bg-white/5 hover:bg-white/10 hover:scale-105'}`}>{piece}</button>))}
+          <h3 className="text-[10px] font-semibold text-slate-500 mb-2 uppercase tracking-wider">Choose Avatar</h3>
+          <div className="flex gap-2 overflow-x-auto pb-1" style={{ scrollbarWidth: 'none', WebkitOverflowScrolling: 'touch' }}>
+            {PIECES.map((piece) => (
+              <button key={piece} onClick={() => setSelectedAvatar(piece)}
+                className={`w-10 h-10 rounded-xl flex items-center justify-center text-xl transition-all flex-shrink-0 ${
+                  selectedAvatar === piece ? 'bg-chess-green/10 ring-2 ring-chess-green/30 scale-110' : 'bg-white/5 hover:bg-white/10'
+                }`}>{piece}</button>
+            ))}
           </div>
-          <div className="flex items-center gap-3">
-            <button onClick={handleAvatarSave} disabled={avatarSaving || selectedAvatar === profile.avatar} className={`btn-primary btn-sm ${selectedAvatar === profile.avatar ? 'opacity-40 cursor-not-allowed' : ''}`}>{avatarSaving ? 'Saving...' : 'Save Avatar'}</button>
-            {avatarMsg && <span className={`text-sm font-medium ${avatarMsg.includes('✓') ? 'text-emerald-400' : 'text-red-400'}`}>{avatarMsg}</span>}
+          <div className="flex items-center gap-3 mt-2">
+            <button onClick={handleAvatarSave} disabled={avatarSaving || selectedAvatar === profile.avatar}
+              className={`btn-primary btn-sm ${selectedAvatar === profile.avatar ? 'opacity-40 cursor-not-allowed' : ''}`}>
+              {avatarSaving ? 'Saving...' : 'Save Avatar'}
+            </button>
+            {avatarMsg && <span className={`text-xs font-medium ${avatarMsg.includes('✓') ? 'text-emerald-400' : 'text-red-400'}`}>{avatarMsg}</span>}
           </div>
         </div>
 
+        {/* Stats Grid */}
         <div>
-          <h3 className="text-xs font-semibold text-slate-500 mb-3 uppercase tracking-wider">Your Stats</h3>
-          <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+          <h3 className="text-[10px] font-semibold text-slate-500 mb-2 uppercase tracking-wider">Your Stats</h3>
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5">
             <StatBox label="Total Matches" value={s.totalMatches || 0} icon="🎮" color="sky" />
             <StatBox label="Wins" value={s.wins || 0} icon="🏆" color="emerald" />
             <StatBox label="Losses" value={s.losses || 0} icon="💔" color="red" />
             <StatBox label="Win Rate" value={`${s.winRate || 0}%`} icon="📊" color="purple" />
-            <StatBox label="Total Earnings" value={formatShort(s.totalEarnings || 0)} icon="💰" color="gold" />
-            <StatBox label="Best Streak" value={`🔥 ${s.winStreak || 0}`} icon="" color="orange" />
+            <StatBox label="Earnings" value={formatShort(s.totalEarnings || 0)} icon="💰" color="gold" />
+            <StatBox label="Best Streak" value={s.winStreak || 0} icon="🔥" color="orange" />
           </div>
         </div>
 
+        {/* Recent Form */}
         {s.recentResults && s.recentResults.length > 0 && (
           <div>
-            <h3 className="text-xs font-semibold text-slate-500 mb-3 uppercase tracking-wider">Recent Form</h3>
-            <div className="flex gap-2 flex-wrap">
-              {s.recentResults.map((r, i) => (<div key={i} className={`w-8 h-8 rounded-lg flex items-center justify-center font-bold text-xs ${r.result === 'W' ? 'bg-emerald-500/15 text-emerald-400' : r.result === 'L' ? 'bg-red-500/15 text-red-500' : 'bg-slate-500/15 text-slate-400'}`}>{r.result}</div>))}
+            <h3 className="text-[10px] font-semibold text-slate-500 mb-2 uppercase tracking-wider">Recent Form</h3>
+            <div className="flex gap-1.5 flex-wrap">
+              {s.recentResults.map((r, i) => (
+                <div key={i} className={`w-7 h-7 rounded-lg flex items-center justify-center font-bold text-[10px] ${
+                  r.result === 'W' ? 'bg-emerald-500/15 text-emerald-400' : r.result === 'L' ? 'bg-red-500/15 text-red-500' : 'bg-slate-500/15 text-slate-400'
+                }`}>{r.result}</div>
+              ))}
             </div>
           </div>
         )}
 
-        <div className="pt-6 border-t border-navy-800/30">
-          <h3 className="text-xs font-semibold text-slate-500 mb-4 uppercase tracking-wider">Change Password</h3>
-          <form onSubmit={handleChangePassword} className="space-y-3 max-w-sm">
+        {/* Change Password */}
+        <div className="pt-4 border-t border-navy-800/30">
+          <h3 className="text-[10px] font-semibold text-slate-500 mb-3 uppercase tracking-wider">Change Password</h3>
+          <form onSubmit={handleChangePassword} className="space-y-2.5">
             <input type="password" placeholder="Current Password" value={currentPassword} onChange={(e) => setCurrentPassword(e.target.value)} className="input-field w-full" required />
             <input type="password" placeholder="New Password" value={newPassword} onChange={(e) => setNewPassword(e.target.value)} className="input-field w-full" required minLength={4} />
             <input type="password" placeholder="Confirm New Password" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} className="input-field w-full" required />
-            {pwdError && <p className="text-sm text-red-400">{pwdError}</p>}
-            {pwdMsg && <p className="text-sm text-emerald-400">{pwdMsg}</p>}
+            {pwdError && <p className="text-xs text-red-400">{pwdError}</p>}
+            {pwdMsg && <p className="text-xs text-emerald-400">{pwdMsg}</p>}
             <button type="submit" disabled={pwdLoading} className="btn-primary w-full">{pwdLoading ? 'Changing...' : 'Change Password'}</button>
           </form>
         </div>
@@ -119,10 +137,10 @@ export default function Profile() {
 function StatBox({ label, value, icon, color }) {
   const c = { sky: 'bg-sky-500/8 text-sky-400', emerald: 'bg-emerald-500/8 text-emerald-400', red: 'bg-red-500/8 text-red-400', purple: 'bg-purple-500/8 text-purple-400', gold: 'bg-amber-500/8 text-amber-400', orange: 'bg-orange-500/8 text-orange-400' };
   return (
-    <div className={`p-4 rounded-xl ${c[color]}`}>
-      {icon && <span className="text-lg mb-1 block">{icon}</span>}
-      <p className="text-[10px] text-slate-600 font-medium uppercase tracking-wider mb-1">{label}</p>
-      <p className="text-xl font-black">{value}</p>
+    <div className={`p-3 rounded-xl ${c[color]}`}>
+      {icon && <span className="text-base mb-0.5 block">{icon}</span>}
+      <p className="text-[9px] text-slate-600 font-medium uppercase tracking-wider mb-0.5">{label}</p>
+      <p className="text-lg font-black">{value}</p>
     </div>
   );
 }
