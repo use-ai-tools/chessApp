@@ -723,10 +723,10 @@ export default function RoomPage() {
 
         {/* Right Panel (Desktop Only) */}
         <div className="hidden lg:flex match-right-panel w-full">
-          
-          {/* Match Info + Stats — merged flat panel */}
-          <div className="bg-navy-800/30 rounded-xl p-4">
-            <div className="flex gap-6 flex-wrap text-xs mb-3">
+
+          {/* Match Info — compact */}
+          <div className="bg-navy-800/40 border border-navy-700/20 rounded-xl p-3 flex-shrink-0">
+            <div className="flex gap-4 flex-wrap text-[11px] mb-2">
               {contestType && (
                 <>
                   <div><span className="text-slate-600">Type </span><span className="text-white font-semibold">{contestType.name}</span></div>
@@ -735,29 +735,14 @@ export default function RoomPage() {
                 </>
               )}
               <div><span className="text-slate-600">Moves </span><span className="text-white font-semibold">{moveHistory.length}</span></div>
-              {currentPlayerColor && (
-                <div><span className="text-slate-600">You play </span><span className="text-white font-semibold capitalize">{currentPlayerColor}</span></div>
-              )}
             </div>
-
-            {(whitePlayer || blackPlayer) && (
-              <div className="flex gap-2 pt-3 border-t border-navy-700/20">
-                {[whitePlayer, blackPlayer].filter(Boolean).map((p, i) => (
-                  <div key={i} className={`flex items-center gap-2 flex-1 p-2 rounded-lg ${
-                    p.id === user?.id ? 'bg-chess-green/5' : 'bg-navy-900/20'
-                  }`}>
-                    <div className={`w-3 h-3 flex-shrink-0 rounded-full ${i === 0 ? 'bg-white' : 'bg-slate-700'}`} />
-                    <span className="text-xs font-medium text-white truncate flex-1">{p.username}</span>
-                    {p.id === user?.id && <span className="text-[9px] text-chess-green font-semibold">YOU</span>}
-                  </div>
-                ))}
-              </div>
-            )}
           </div>
 
-          {/* Moves */}
+          {/* Moves — scrolls internally */}
           {matchDataRef.current && (
-            <MoveHistory moves={moveHistory} currentIndex={previewIndex} onClickMove={setPreviewIndex} mode="vertical" />
+            <div className="match-move-list bg-navy-800/40 border border-navy-700/20 rounded-xl overflow-hidden">
+              <MoveHistory moves={moveHistory} currentIndex={previewIndex} onClickMove={setPreviewIndex} mode="vertical" />
+            </div>
           )}
 
           {/* Chat */}

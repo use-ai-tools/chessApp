@@ -179,108 +179,110 @@ export default function BotGame() {
   const boardGameResult = pendingResult ? { winner: pendingResult.winner, isDraw: pendingResult.isDraw } : null;
 
   return (
-    <div className="flex-1 w-full bg-hero flex flex-col overflow-x-hidden relative">
-      <div className="flex-1 flex flex-col">
+    <div className="w-full bg-hero overflow-x-hidden relative lg:h-[100dvh] lg:overflow-hidden">
 
-        {/* ── Desktop Layout ── */}
-        <div className="hidden lg:flex flex-1 max-w-7xl mx-auto w-full px-6 py-4 gap-6 items-start justify-center">
-
-          {/* Left Panel */}
-          <div className="w-[200px] flex-shrink-0 flex flex-col gap-3 sticky top-20">
-            <div className="bg-navy-800/40 rounded-xl p-4 border border-navy-700/20">
-              <div className="flex items-center gap-2 mb-3">
-                <span className="text-lg">🤖</span>
-                <div>
-                  <h3 className="text-sm font-bold text-white">vs Stockfish</h3>
-                  <span className={`text-[10px] font-bold ${diffInfo.color}`}>{diffInfo.label} • Depth {depth}</span>
-                </div>
-              </div>
-              <div className="space-y-2 text-xs">
-                <div className="flex justify-between">
-                  <span className="text-slate-500">Moves</span>
-                  <span className="text-white font-semibold">{moveHistory.length}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-slate-500">Status</span>
-                  <span className={`font-semibold ${gameStatus === 'playing' ? 'text-emerald-400' : 'text-purple-400'}`}>
-                    {gameStatus === 'playing' ? '● Live' : 'Ended'}
-                  </span>
-                </div>
-                {botThinking && (
-                  <div className="flex items-center gap-1.5 text-purple-400 animate-pulse">
-                    <span className="w-2.5 h-2.5 border-2 border-purple-400 border-t-transparent rounded-full animate-spin" />
-                    <span className="text-[10px] font-semibold">Bot thinking...</span>
-                  </div>
-                )}
+      {/* ── Desktop Layout — 3-col grid, no page scroll ── */}
+      <div
+        className="hidden lg:grid h-[100dvh] w-full mx-auto gap-4 p-3 items-stretch"
+        style={{
+          gridTemplateColumns: '220px minmax(420px, 560px) minmax(300px, 380px)',
+          justifyContent: 'center',
+          maxWidth: '1400px',
+        }}
+      >
+        {/* Left — game info */}
+        <div className="flex flex-col gap-3 overflow-hidden">
+          <div className="bg-navy-800/40 rounded-xl p-3 border border-navy-700/20">
+            <div className="flex items-center gap-2 mb-2">
+              <span className="text-lg">🤖</span>
+              <div>
+                <h3 className="text-xs font-bold text-white">vs Stockfish</h3>
+                <span className={`text-[9px] font-bold ${diffInfo.color}`}>{diffInfo.label} • Depth {depth}</span>
               </div>
             </div>
-
-            {gameStatus === 'playing' && (
-              <div className="flex flex-col gap-2">
-                <button onClick={handleResign}
-                  className={`w-full py-2.5 rounded-xl text-xs font-bold transition-all ${
-                    confirmResign ? 'bg-red-600 text-white animate-pulse' : 'bg-white/5 text-slate-300 hover:bg-white/10'
-                  }`}
-                >🏳️ {confirmResign ? 'Confirm Resign?' : 'Resign'}</button>
-                {confirmResign && <button onClick={() => setConfirmResign(false)} className="w-full py-2 rounded-xl text-xs bg-navy-700/50 text-slate-400 font-medium">Cancel</button>}
-                <button onClick={handleNewGame} className="w-full py-2.5 rounded-xl text-xs font-bold bg-white/5 text-slate-300 hover:bg-white/10 transition-all">🔄 New Game</button>
+            <div className="space-y-1.5 text-[11px]">
+              <div className="flex justify-between"><span className="text-slate-500">Moves</span><span className="text-white font-semibold">{moveHistory.length}</span></div>
+              <div className="flex justify-between">
+                <span className="text-slate-500">Status</span>
+                <span className={`font-semibold ${gameStatus === 'playing' ? 'text-emerald-400' : 'text-purple-400'}`}>
+                  {gameStatus === 'playing' ? '● Live' : 'Ended'}
+                </span>
               </div>
-            )}
-            {gameStatus === 'finished' && !resultData && (
-              <div className="text-center text-xs text-slate-500 italic py-2">Match ended</div>
-            )}
-            {gameStatus === 'finished' && resultData && (
-              <div className="flex flex-col gap-2">
-                <button onClick={handleNewGame} className="w-full py-2.5 rounded-xl text-xs font-bold bg-gradient-to-r from-chess-green to-emerald-600 text-white hover:shadow-md hover:shadow-chess-green/15 transition-all">🔄 Play Again</button>
-                <button onClick={() => setShowGameReview(true)} className="w-full py-2.5 rounded-xl text-xs font-bold bg-white/5 text-slate-300 hover:bg-white/10 transition-all">📊 Game Review</button>
-              </div>
-            )}
-          </div>
-
-          {/* Center — Board */}
-          <div className="flex flex-col items-center flex-shrink-0 w-full max-w-[560px]">
-            <ChessBoard
-              roomId="bot-game"
-              matchId="bot-game"
-              fen={displayFen}
-              onMove={handleMove}
-              currentPlayer={previewIndex === -1 && gameStatus === 'playing' && !botThinking ? currentPlayer : null}
-              whitePlayer={{ ...currentPlayer, elo: user?.elo?.free || 1200 }}
-              blackPlayer={botPlayer}
-              isSpectator={previewIndex !== -1 || gameStatus === 'finished' || botThinking}
-              isReview={false}
-              gameStatus={gameStatus === 'finished' ? 'finished' : 'playing'}
-              boardOrientation={boardOrientation}
-              lastMove={lastMove}
-              settings={settings}
-              username={user?.username}
-              moveTimeoutMs={999999}
-              hideTimer={true}
-              gameResult={boardGameResult}
-              maxBoardSize={560}
-            />
-
-            {previewIndex !== -1 && (
-              <div className="w-full mt-1 px-3 py-1.5 bg-sky-500/10 border border-sky-500/20 rounded-lg flex items-center justify-between">
-                <p className="text-[10px] text-sky-400 font-bold">📖 Reviewing move {previewIndex + 1}/{moveHistory.length}</p>
-                <button onClick={() => setPreviewIndex(-1)} className="text-[10px] text-sky-400 font-black hover:text-sky-300 transition-colors">↩ LIVE</button>
-              </div>
-            )}
-          </div>
-
-          {/* Right Panel — Move History */}
-          <div className="w-[280px] flex-shrink-0 sticky top-20">
-            <div className="bg-navy-800/40 border border-navy-700/20 rounded-xl overflow-hidden flex flex-col" style={{ maxHeight: 'calc(100vh - 120px)' }}>
-              <div className="px-4 py-2.5 border-b border-navy-700/20 flex items-center justify-between">
-                <h3 className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Moves</h3>
-                <span className="text-[10px] text-slate-600">{moveHistory.length} moves</span>
-              </div>
-              <div className="flex-1 overflow-y-auto" style={{ scrollbarWidth: 'thin' }}>
-                <MoveHistory moves={moveHistory} currentIndex={previewIndex} onClickMove={setPreviewIndex} />
-              </div>
+              {botThinking && (
+                <div className="flex items-center gap-1.5 text-purple-400 animate-pulse">
+                  <span className="w-2 h-2 border-2 border-purple-400 border-t-transparent rounded-full animate-spin" />
+                  <span className="text-[10px] font-semibold">Bot thinking...</span>
+                </div>
+              )}
             </div>
           </div>
         </div>
+
+        {/* Center — board */}
+        <div className="flex flex-col items-center justify-center min-w-0 min-h-0">
+          <ChessBoard
+            roomId="bot-game"
+            matchId="bot-game"
+            fen={displayFen}
+            onMove={handleMove}
+            currentPlayer={previewIndex === -1 && gameStatus === 'playing' && !botThinking ? currentPlayer : null}
+            whitePlayer={{ ...currentPlayer, elo: user?.elo?.free || 1200 }}
+            blackPlayer={botPlayer}
+            isSpectator={previewIndex !== -1 || gameStatus === 'finished' || botThinking}
+            isReview={false}
+            gameStatus={gameStatus === 'finished' ? 'finished' : 'playing'}
+            boardOrientation={boardOrientation}
+            lastMove={lastMove}
+            settings={settings}
+            username={user?.username}
+            moveTimeoutMs={999999}
+            hideTimer={true}
+            gameResult={boardGameResult}
+            maxBoardSize={560}
+          />
+          {previewIndex !== -1 && (
+            <div className="w-full mt-1 px-3 py-1 bg-sky-500/10 border border-sky-500/20 rounded-lg flex items-center justify-between">
+              <p className="text-[10px] text-sky-400 font-bold">📖 Move {previewIndex + 1}/{moveHistory.length}</p>
+              <button onClick={() => setPreviewIndex(-1)} className="text-[10px] text-sky-400 font-black">↩ LIVE</button>
+            </div>
+          )}
+        </div>
+
+        {/* Right — controls + moves */}
+        <div className="flex flex-col gap-3 min-h-0 overflow-hidden">
+          {/* Controls */}
+          <div className="bg-navy-800/40 border border-navy-700/20 rounded-xl p-3 flex flex-col gap-2 flex-shrink-0">
+            {gameStatus === 'playing' && (
+              <>
+                <button onClick={handleResign}
+                  className={`w-full py-2 rounded-lg text-xs font-bold transition-all ${
+                    confirmResign ? 'bg-red-600 text-white animate-pulse' : 'bg-white/5 text-slate-300 hover:bg-white/10'
+                  }`}
+                >🏳️ {confirmResign ? 'Confirm Resign?' : 'Resign'}</button>
+                {confirmResign && <button onClick={() => setConfirmResign(false)} className="w-full py-1.5 rounded-lg text-[11px] bg-navy-700/50 text-slate-400">Cancel</button>}
+                <button onClick={handleNewGame} className="w-full py-2 rounded-lg text-xs font-bold bg-white/5 text-slate-300 hover:bg-white/10 transition-all">🔄 New Game</button>
+              </>
+            )}
+            {gameStatus === 'finished' && resultData && (
+              <>
+                <button onClick={handleNewGame} className="w-full py-2 rounded-lg text-xs font-bold bg-gradient-to-r from-chess-green to-emerald-600 text-white">🔄 Play Again</button>
+                <button onClick={() => setShowGameReview(true)} className="w-full py-2 rounded-lg text-xs font-bold bg-white/5 text-slate-300 hover:bg-white/10">📊 Game Review</button>
+              </>
+            )}
+          </div>
+
+          {/* Move list — scrolls internally only */}
+          <div className="bg-navy-800/40 border border-navy-700/20 rounded-xl overflow-hidden flex flex-col flex-1 min-h-0">
+            <div className="px-3 py-2 border-b border-navy-700/20 flex items-center justify-between flex-shrink-0">
+              <h3 className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Moves</h3>
+              <span className="text-[10px] text-slate-600">{moveHistory.length}</span>
+            </div>
+            <div className="flex-1 overflow-y-auto min-h-0" style={{ scrollbarWidth: 'thin' }}>
+              <MoveHistory moves={moveHistory} currentIndex={previewIndex} onClickMove={setPreviewIndex} />
+            </div>
+          </div>
+        </div>
+      </div>
 
         {/* ── Mobile Layout ── */}
         <div className="lg:hidden flex flex-col px-3 py-2 gap-2">
@@ -359,7 +361,6 @@ export default function BotGame() {
             </div>
           )}
         </div>
-      </div>
 
       {resultData && (
         <ResultModal
