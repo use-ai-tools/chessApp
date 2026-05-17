@@ -1,8 +1,10 @@
-import React from 'react';
+import React, { useContext } from 'react';
 import { Link, useLocation } from 'react-router-dom';
+import { AuthContext } from '../contexts/AuthContext';
 
 export default function Sidebar() {
   const location = useLocation();
+  const { user, logout } = useContext(AuthContext);
 
   const navLinks = [
     { to: '/play', label: 'Play', icon: '♟️' },
@@ -17,6 +19,10 @@ export default function Sidebar() {
       return true;
     }
     return location.pathname === path;
+  };
+
+  const handleLogout = () => {
+    if (window.confirm('Log out of ChessArena?')) logout();
   };
 
   return (
@@ -56,16 +62,31 @@ export default function Sidebar() {
         })}
       </nav>
 
-      <div className="p-3 border-t border-navy-800/30">
+      {/* Footer: Profile + Logout */}
+      <div className="p-3 border-t border-navy-800/30 space-y-1">
         <Link
           to="/profile"
           className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-all font-semibold ${
             location.pathname === '/profile' ? 'bg-white/[0.04] text-white' : 'text-slate-500 hover:bg-white/[0.04] hover:text-slate-200'
           }`}
         >
-          <span className="text-lg">👤</span>
-          <span className="text-sm">Profile</span>
+          <div className="w-7 h-7 rounded-full bg-gradient-to-br from-purple-500 to-indigo-600 flex items-center justify-center flex-shrink-0">
+            <span className="text-white text-[11px] font-bold">
+              {user?.avatar || user?.username?.charAt(0).toUpperCase() || '👤'}
+            </span>
+          </div>
+          <span className="text-sm truncate flex-1">{user?.username || 'Profile'}</span>
         </Link>
+
+        <button
+          onClick={handleLogout}
+          className="w-full flex items-center gap-3 px-4 py-2.5 rounded-xl font-semibold text-slate-500 hover:bg-red-500/10 hover:text-red-400 transition-all"
+        >
+          <svg className="w-5 h-5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+          </svg>
+          <span className="text-sm">Logout</span>
+        </button>
       </div>
     </aside>
   );
