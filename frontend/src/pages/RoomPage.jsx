@@ -55,6 +55,8 @@ export default function RoomPage() {
 
   const [bracket, setBracket] = useState(null);
   const [showBracket, setShowBracket] = useState(false);
+  const [pendingResult, setPendingResult] = useState(null);
+  const resultTimerRef = useRef(null);
   const isTournament = contestId?.startsWith('tournament-');
 
   const [settings, setSettings] = useState(() => {
@@ -206,7 +208,6 @@ export default function RoomPage() {
     socket.off('playerRole');
 
     socket.on('connect', () => {
-      console.log('[Socket] Connected!', socket.id);
       if (userId) {
         socket.emit('identify', { userId });
         socket.emit('joinRoom', { roomId: contestId, userId });
@@ -215,25 +216,21 @@ export default function RoomPage() {
     });
 
     if (socket.connected && userId) {
-      console.log('[Socket] Already connected, joining...', socket.id);
       socket.emit('identify', { userId });
       socket.emit('joinRoom', { roomId: contestId, userId });
       socket.emit('getMatchState', { contestId });
     }
 
     socket.on('joinedRoom', () => {
-      console.log('[Socket] joinedRoom received. Requesting state...');
       socket.emit('getMatchState', { contestId });
     });
 
     socket.on('playerRole', (role) => {
-      console.log('[Socket] playerRole:', role);
       setCurrentPlayerColor(role);
       setBoardOrientation(role);
     });
 
     socket.on('matchState', (data) => {
-      console.log('[Socket] matchState RECEIVED:', data);
       setGameStatus(data.status === 'playing' ? 'playing' : data.status === 'completed' ? 'finished' : 'waiting');
       if (data.status === 'playing') setStatus('Match in progress');
       setIsLoading(false);
@@ -275,7 +272,14 @@ export default function RoomPage() {
       setDrawOfferReceived(false);
 
       setReviewData(data.review || null);
-      setResultData({
+
+      const myColor = currentPlayerColor === 'white' ? 'w' : 'b';
+      let winner = null;
+      if (!data.isDraw) {
+        winner = data.isWinner ? (myColor === 'w' ? 'white' : 'black') : (myColor === 'w' ? 'black' : 'white');
+      }
+
+      const finalResult = {
         isWinner: data.isWinner,
         isDraw: data.isDraw,
         reason: data.reason || 'unknown',
@@ -284,10 +288,16 @@ export default function RoomPage() {
         newElo: data.newElo || null,
         newWallet: data.newWallet || null,
         review: data.review || null,
-        playerColor: currentPlayerColor === 'white' ? 'w' : 'b',
+        playerColor: myColor,
         contestType: data.contestType,
         prize: data.isWinner ? (data.payout || 0) : 0,
-      });
+        winner,
+      };
+
+      // Show board indicators immediately; defer modal by 1.2s
+      setPendingResult(finalResult);
+      clearTimeout(resultTimerRef.current);
+      resultTimerRef.current = setTimeout(() => setResultData(finalResult), 1200);
 
       setStatus(`Match ended — ${data.reason}`);
       refreshUser();
@@ -414,6 +424,7 @@ export default function RoomPage() {
 
   useEffect(() => {
     return () => {
+      clearTimeout(resultTimerRef.current);
       // Emit leaveRoom on component unmount if match hasn't started
       if (socketRef.current && (!matchDataRef.current || gameStatus === 'waiting')) {
         socketRef.current.emit('leaveRoom', { contestId, userId: user?.id });
@@ -504,7 +515,6 @@ export default function RoomPage() {
   useEffect(() => {
     if (currentPlayerColor || isSpectator || !contestId || !user?.id) return;
     const retryTimer = setTimeout(() => {
-      console.log(`[RoomPage] Retry #${retryCount + 1}: re-emitting joinRoom for ${contestId}`);
       if (socketRef.current?.connected) {
         socketRef.current.emit('joinRoom', { roomId: contestId, userId: user.id });
       }
@@ -620,6 +630,7 @@ export default function RoomPage() {
                 lastMove={lastMove}
                 settings={settings}
                 username={user?.username}
+                gameResult={pendingResult ? { winner: pendingResult.winner, isDraw: pendingResult.isDraw } : null}
               />
             ) : (
               <div className="flex items-center justify-center w-full aspect-square bg-navy-800/60">

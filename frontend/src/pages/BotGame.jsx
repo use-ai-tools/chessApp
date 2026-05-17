@@ -14,6 +14,8 @@ const DIFFICULTY = {
   15: { label: 'Hard', depth: 15, color: 'text-red-400', bg: 'bg-red-500/10' },
 };
 
+const RESULT_DELAY_MS = 1200;
+
 export default function BotGame() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
@@ -29,42 +31,49 @@ export default function BotGame() {
   const [lastMove, setLastMove] = useState(null);
   const [gameStatus, setGameStatus] = useState('playing');
   const [resultData, setResultData] = useState(null);
+  const [pendingResult, setPendingResult] = useState(null); // For showing board indicators before modal
   const [botThinking, setBotThinking] = useState(false);
   const [previewIndex, setPreviewIndex] = useState(-1);
   const [showGameReview, setShowGameReview] = useState(false);
   const [showMobileMoves, setShowMobileMoves] = useState(false);
 
-  // Eval tracking (computed silently, shown ONLY in review)
   const prevEvalRef = useRef({ type: 'cp', value: 0 });
   const [classifications, setClassifications] = useState([]);
   const [moveAnalysis, setMoveAnalysis] = useState([]);
+  const resultTimerRef = useRef(null);
 
   const [settings] = useState(() => {
     try { return JSON.parse(localStorage.getItem('chess-settings') || '{}'); } catch { return {}; }
   });
 
-  // Player is always white
   const boardOrientation = 'white';
   const currentPlayer = { color: 'white', username: user?.username || 'You', id: user?.id };
-  const botPlayer = { username: `Stockfish`, id: 'bot', elo: depth === 5 ? 800 : depth === 10 ? 1500 : 2200 };
+  const botPlayer = { username: 'Stockfish', id: 'bot', elo: depth === 5 ? 800 : depth === 10 ? 1500 : 2200 };
 
-  // Check game end
+  // Convert finishing state into pendingResult, defer modal by RESULT_DELAY_MS
+  const triggerGameEnd = useCallback((data) => {
+    setGameStatus('finished');
+    setBotThinking(false);
+    setPendingResult(data);
+    clearTimeout(resultTimerRef.current);
+    resultTimerRef.current = setTimeout(() => {
+      setResultData(data);
+    }, RESULT_DELAY_MS);
+  }, []);
+
   const checkGameEnd = useCallback((chess) => {
     if (chess.isCheckmate()) {
       const winner = chess.turn() === 'b' ? 'white' : 'black';
-      setGameStatus('finished');
-      setResultData({ isWinner: winner === 'white', isDraw: false, reason: 'checkmate', playerColor: 'w' });
+      triggerGameEnd({ isWinner: winner === 'white', isDraw: false, reason: 'checkmate', playerColor: 'w', winner });
       return true;
     }
     if (chess.isDraw() || chess.isStalemate() || chess.isThreefoldRepetition() || chess.isInsufficientMaterial()) {
-      setGameStatus('finished');
-      setResultData({ isWinner: false, isDraw: true, reason: chess.isStalemate() ? 'stalemate' : 'draw', playerColor: 'w' });
+      triggerGameEnd({ isWinner: false, isDraw: true, reason: chess.isStalemate() ? 'stalemate' : 'draw', playerColor: 'w', winner: null });
       return true;
     }
     return false;
-  }, []);
+  }, [triggerGameEnd]);
 
-  // Evaluate position and classify move (silent — no UI during play)
   const evaluateAndClassify = useCallback(async (newFen, moveSan) => {
     try {
       const result = await getEvalAndBestMove(newFen, Math.min(depth, 12));
@@ -80,12 +89,11 @@ export default function BotGame() {
     }
   }, [depth, getEvalAndBestMove]);
 
-  // Bot makes a move
   const botMove = useCallback(async (currentFen) => {
     if (gameStatus !== 'playing') return;
     setBotThinking(true);
     try {
-      await new Promise(r => setTimeout(r, 200 + Math.random() * 400));
+      await new Promise(r => setTimeout(r, 300 + Math.random() * 500));
       const result = await getEvalAndBestMove(currentFen, depth);
       const bestMove = result.bestMove;
       if (!bestMove || bestMove === '(none)') { setBotThinking(false); return; }
@@ -110,7 +118,6 @@ export default function BotGame() {
     }
   }, [depth, gameStatus, getEvalAndBestMove, evaluateAndClassify, checkGameEnd]);
 
-  // Handle player move
   const handleMove = useCallback(async ({ from, to, promotion }) => {
     if (gameStatus !== 'playing' || botThinking) return;
     if (previewIndex !== -1) { setPreviewIndex(-1); return; }
@@ -132,17 +139,18 @@ export default function BotGame() {
   const [confirmResign, setConfirmResign] = useState(false);
   const handleResign = () => {
     if (!confirmResign) { setConfirmResign(true); return; }
-    setGameStatus('finished');
-    setResultData({ isWinner: false, isDraw: false, reason: 'resigned', playerColor: 'w' });
+    triggerGameEnd({ isWinner: false, isDraw: false, reason: 'resigned', playerColor: 'w', winner: 'black' });
     setConfirmResign(false);
   };
 
   const handleNewGame = () => {
+    clearTimeout(resultTimerRef.current);
     const chess = new Chess();
     chessRef.current = chess;
     setFen(chess.fen());
     setMoveHistory([]); setLastMove(null); setGameStatus('playing');
-    setResultData(null); setBotThinking(false); setPreviewIndex(-1);
+    setResultData(null); setPendingResult(null);
+    setBotThinking(false); setPreviewIndex(-1);
     setClassifications([]); setMoveAnalysis([]);
     prevEvalRef.current = { type: 'cp', value: 0 };
     setConfirmResign(false); setShowGameReview(false);
@@ -165,18 +173,21 @@ export default function BotGame() {
     reviewData[side][c.classification] = (reviewData[side][c.classification] || 0) + 1;
   });
 
-  useEffect(() => { return () => terminate(); }, [terminate]);
+  useEffect(() => () => { terminate(); clearTimeout(resultTimerRef.current); }, [terminate]);
+
+  // gameResult prop for board overlay icons during 1.2s reveal phase
+  const boardGameResult = pendingResult ? { winner: pendingResult.winner, isDraw: pendingResult.isDraw } : null;
 
   return (
-    <div className="flex-1 w-full bg-hero flex flex-col overflow-visible relative">
+    <div className="flex-1 w-full bg-hero flex flex-col overflow-x-hidden relative">
       <div className="flex-1 flex flex-col">
 
         {/* ── Desktop Layout ── */}
         <div className="hidden lg:flex flex-1 max-w-7xl mx-auto w-full px-6 py-4 gap-6 items-start justify-center">
 
-          {/* Left Panel — Bot Info + Controls */}
+          {/* Left Panel */}
           <div className="w-[200px] flex-shrink-0 flex flex-col gap-3 sticky top-20">
-            <div className="bg-navy-800/30 rounded-xl p-4">
+            <div className="bg-navy-800/40 rounded-xl p-4 border border-navy-700/20">
               <div className="flex items-center gap-2 mb-3">
                 <span className="text-lg">🤖</span>
                 <div>
@@ -204,7 +215,6 @@ export default function BotGame() {
               </div>
             </div>
 
-            {/* Controls */}
             {gameStatus === 'playing' && (
               <div className="flex flex-col gap-2">
                 <button onClick={handleResign}
@@ -216,7 +226,10 @@ export default function BotGame() {
                 <button onClick={handleNewGame} className="w-full py-2.5 rounded-xl text-xs font-bold bg-white/5 text-slate-300 hover:bg-white/10 transition-all">🔄 New Game</button>
               </div>
             )}
-            {gameStatus === 'finished' && (
+            {gameStatus === 'finished' && !resultData && (
+              <div className="text-center text-xs text-slate-500 italic py-2">Match ended</div>
+            )}
+            {gameStatus === 'finished' && resultData && (
               <div className="flex flex-col gap-2">
                 <button onClick={handleNewGame} className="w-full py-2.5 rounded-xl text-xs font-bold bg-gradient-to-r from-chess-green to-emerald-600 text-white hover:shadow-md hover:shadow-chess-green/15 transition-all">🔄 Play Again</button>
                 <button onClick={() => setShowGameReview(true)} className="w-full py-2.5 rounded-xl text-xs font-bold bg-white/5 text-slate-300 hover:bg-white/10 transition-all">📊 Game Review</button>
@@ -226,96 +239,6 @@ export default function BotGame() {
 
           {/* Center — Board */}
           <div className="flex flex-col items-center flex-shrink-0 w-full max-w-[560px]">
-            {/* Top player — Bot */}
-            <div className="w-full flex items-center gap-2.5 px-3 py-2 bg-navy-800/30 rounded-t-xl mb-0">
-              <div className="w-7 h-7 rounded-full bg-slate-800 text-slate-200 border border-slate-600 flex items-center justify-center text-[10px] font-bold">🤖</div>
-              <div className="flex-1 min-w-0">
-                <p className="text-xs font-semibold text-white truncate">Stockfish <span className={`text-[9px] ${diffInfo.color}`}>({diffInfo.label})</span></p>
-                <p className="text-[9px] text-slate-500">ELO ~{botPlayer.elo}</p>
-              </div>
-            </div>
-
-            {/* Board */}
-            <div className="w-full">
-              <ChessBoard
-                roomId="bot-game"
-                matchId="bot-game"
-                fen={displayFen}
-                onMove={handleMove}
-                currentPlayer={previewIndex === -1 && gameStatus === 'playing' && !botThinking ? currentPlayer : null}
-                whitePlayer={{ ...currentPlayer, elo: user?.elo?.free || 1200 }}
-                blackPlayer={botPlayer}
-                isSpectator={previewIndex !== -1 || gameStatus === 'finished' || botThinking}
-                isReview={false}
-                gameStatus={gameStatus === 'finished' ? 'finished' : 'playing'}
-                boardOrientation={boardOrientation}
-                lastMove={lastMove}
-                settings={settings}
-                username={user?.username}
-                moveTimeoutMs={999999}
-                hideTimer={true}
-              />
-            </div>
-
-            {/* Bottom player — You */}
-            <div className="w-full flex items-center gap-2.5 px-3 py-2 bg-navy-800/30 rounded-b-xl mt-0">
-              <div className="w-7 h-7 rounded-full bg-white text-slate-800 flex items-center justify-center text-[10px] font-bold">
-                {(user?.username || 'Y').charAt(0).toUpperCase()}
-              </div>
-              <div className="flex-1 min-w-0">
-                <p className="text-xs font-semibold text-white truncate">{user?.username || 'You'} <span className="text-[9px] text-chess-green font-bold">YOU</span></p>
-                <p className="text-[9px] text-slate-500">ELO {user?.elo?.free || 1200}</p>
-              </div>
-            </div>
-
-            {/* Preview indicator */}
-            {previewIndex !== -1 && (
-              <div className="w-full mt-1 px-3 py-1.5 bg-sky-500/10 border border-sky-500/20 rounded-lg flex items-center justify-between">
-                <p className="text-[10px] text-sky-400 font-bold">📖 Reviewing move {previewIndex + 1}/{moveHistory.length}</p>
-                <button onClick={() => setPreviewIndex(-1)} className="text-[10px] text-sky-400 font-black hover:text-sky-300 transition-colors">↩ LIVE</button>
-              </div>
-            )}
-          </div>
-
-          {/* Right Panel — Move History */}
-          <div className="w-[280px] flex-shrink-0 sticky top-20">
-            <div className="bg-navy-800/30 rounded-xl overflow-hidden flex flex-col" style={{ maxHeight: 'calc(100vh - 120px)' }}>
-              <div className="px-4 py-2.5 border-b border-navy-700/20 flex items-center justify-between">
-                <h3 className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Moves</h3>
-                <span className="text-[10px] text-slate-600">{moveHistory.length} moves</span>
-              </div>
-              <div className="flex-1 overflow-y-auto" style={{ scrollbarWidth: 'thin' }}>
-                <MoveHistory moves={moveHistory} currentIndex={previewIndex} onClickMove={setPreviewIndex} />
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* ── Mobile Layout ── */}
-        <div className="lg:hidden flex flex-col px-3 py-2 gap-2">
-
-          {/* Header */}
-          <div className="flex items-center justify-between gap-2 flex-shrink-0">
-            <div className="flex items-center gap-2">
-              <h1 className="text-sm font-bold text-white">🤖 vs Bot</h1>
-              <span className={`text-[10px] font-bold px-2 py-0.5 rounded-md ${diffInfo.bg} ${diffInfo.color}`}>{diffInfo.label}</span>
-              {botThinking && (
-                <span className="flex items-center gap-1 text-[10px] text-purple-400 animate-pulse">
-                  <span className="w-2 h-2 border border-purple-400 border-t-transparent rounded-full animate-spin" />
-                  Thinking...
-                </span>
-              )}
-            </div>
-          </div>
-
-          {/* Top player — Bot */}
-          <div className="flex items-center gap-2 px-2.5 py-1.5 bg-navy-800/30 rounded-lg">
-            <div className="w-6 h-6 rounded-full bg-slate-800 text-slate-200 border border-slate-600 flex items-center justify-center text-[9px] font-bold">🤖</div>
-            <p className="text-[11px] font-semibold text-white truncate flex-1">Stockfish <span className={`text-[9px] ${diffInfo.color}`}>({diffInfo.label})</span></p>
-          </div>
-
-          {/* Board */}
-          <div className="w-full max-w-[100vw]">
             <ChessBoard
               roomId="bot-game"
               matchId="bot-game"
@@ -333,18 +256,70 @@ export default function BotGame() {
               username={user?.username}
               moveTimeoutMs={999999}
               hideTimer={true}
+              gameResult={boardGameResult}
+              maxBoardSize={560}
             />
+
+            {previewIndex !== -1 && (
+              <div className="w-full mt-1 px-3 py-1.5 bg-sky-500/10 border border-sky-500/20 rounded-lg flex items-center justify-between">
+                <p className="text-[10px] text-sky-400 font-bold">📖 Reviewing move {previewIndex + 1}/{moveHistory.length}</p>
+                <button onClick={() => setPreviewIndex(-1)} className="text-[10px] text-sky-400 font-black hover:text-sky-300 transition-colors">↩ LIVE</button>
+              </div>
+            )}
           </div>
 
-          {/* Bottom player — You */}
-          <div className="flex items-center gap-2 px-2.5 py-1.5 bg-navy-800/30 rounded-lg">
-            <div className="w-6 h-6 rounded-full bg-white text-slate-800 flex items-center justify-center text-[9px] font-bold">
-              {(user?.username || 'Y').charAt(0).toUpperCase()}
+          {/* Right Panel — Move History */}
+          <div className="w-[280px] flex-shrink-0 sticky top-20">
+            <div className="bg-navy-800/40 border border-navy-700/20 rounded-xl overflow-hidden flex flex-col" style={{ maxHeight: 'calc(100vh - 120px)' }}>
+              <div className="px-4 py-2.5 border-b border-navy-700/20 flex items-center justify-between">
+                <h3 className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Moves</h3>
+                <span className="text-[10px] text-slate-600">{moveHistory.length} moves</span>
+              </div>
+              <div className="flex-1 overflow-y-auto" style={{ scrollbarWidth: 'thin' }}>
+                <MoveHistory moves={moveHistory} currentIndex={previewIndex} onClickMove={setPreviewIndex} />
+              </div>
             </div>
-            <p className="text-[11px] font-semibold text-white truncate flex-1">{user?.username || 'You'} <span className="text-[9px] text-chess-green font-bold">YOU</span></p>
+          </div>
+        </div>
+
+        {/* ── Mobile Layout ── */}
+        <div className="lg:hidden flex flex-col px-3 py-2 gap-2">
+
+          <div className="flex items-center justify-between gap-2 flex-shrink-0">
+            <div className="flex items-center gap-2">
+              <h1 className="text-sm font-bold text-white">🤖 vs Bot</h1>
+              <span className={`text-[10px] font-bold px-2 py-0.5 rounded-md ${diffInfo.bg} ${diffInfo.color}`}>{diffInfo.label}</span>
+              {botThinking && (
+                <span className="flex items-center gap-1 text-[10px] text-purple-400 animate-pulse">
+                  <span className="w-2 h-2 border border-purple-400 border-t-transparent rounded-full animate-spin" />
+                  Thinking...
+                </span>
+              )}
+            </div>
           </div>
 
-          {/* Preview indicator */}
+          {/* Board with embedded player cards */}
+          <ChessBoard
+            roomId="bot-game"
+            matchId="bot-game"
+            fen={displayFen}
+            onMove={handleMove}
+            currentPlayer={previewIndex === -1 && gameStatus === 'playing' && !botThinking ? currentPlayer : null}
+            whitePlayer={{ ...currentPlayer, username: user?.username || 'You', elo: user?.elo?.free || 1200 }}
+            blackPlayer={botPlayer}
+            isSpectator={previewIndex !== -1 || gameStatus === 'finished' || botThinking}
+            isReview={false}
+            gameStatus={gameStatus === 'finished' ? 'finished' : 'playing'}
+            boardOrientation={boardOrientation}
+            lastMove={lastMove}
+            settings={settings}
+            username={user?.username}
+            moveTimeoutMs={999999}
+            hideTimer={true}
+            gameResult={boardGameResult}
+            maxBoardSize={520}
+          />
+
           {previewIndex !== -1 && (
             <div className="px-3 py-1.5 bg-sky-500/10 border border-sky-500/20 rounded-lg flex items-center justify-between">
               <p className="text-[10px] text-sky-400 font-bold">📖 Move {previewIndex + 1}/{moveHistory.length}</p>
@@ -352,7 +327,6 @@ export default function BotGame() {
             </div>
           )}
 
-          {/* Controls */}
           <div className="flex gap-2 w-full">
             {gameStatus === 'playing' && (
               <>
@@ -362,10 +336,10 @@ export default function BotGame() {
                   }`}
                 >🏳️ {confirmResign ? 'Confirm?' : 'Resign'}</button>
                 {confirmResign && <button onClick={() => setConfirmResign(false)} className="flex-1 py-2 rounded-xl text-xs bg-navy-700/50 text-slate-400">Cancel</button>}
-                <button onClick={handleNewGame} className="flex-1 py-2.5 rounded-xl text-xs font-bold bg-white/5 text-slate-300 hover:bg-white/10 transition-all">🔄 New Game</button>
+                <button onClick={handleNewGame} className="flex-1 py-2.5 rounded-xl text-xs font-bold bg-white/5 text-slate-300 hover:bg-white/10 transition-all">🔄 New</button>
               </>
             )}
-            {gameStatus === 'finished' && (
+            {gameStatus === 'finished' && resultData && (
               <>
                 <button onClick={handleNewGame} className="flex-1 py-2.5 rounded-xl text-xs font-bold bg-gradient-to-r from-chess-green to-emerald-600 text-white">🔄 Play Again</button>
                 <button onClick={() => setShowGameReview(true)} className="flex-1 py-2.5 rounded-xl text-xs font-bold bg-white/5 text-slate-300 hover:bg-white/10">📊 Review</button>
@@ -373,7 +347,6 @@ export default function BotGame() {
             )}
           </div>
 
-          {/* Mobile: Collapsible Move History */}
           <button
             onClick={() => setShowMobileMoves(!showMobileMoves)}
             className="w-full py-2 rounded-lg text-xs font-semibold bg-white/5 text-slate-400 hover:text-white hover:bg-white/10 transition-all"

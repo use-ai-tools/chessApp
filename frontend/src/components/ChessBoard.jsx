@@ -1,4 +1,4 @@
-import React, { useRef, useState, useEffect, useCallback } from 'react';
+import React, { useRef, useState, useEffect, useCallback, useMemo } from 'react';
 import { Chessboard } from 'react-chessboard';
 import { Chess } from 'chess.js';
 import PlayerTimer from './PlayerTimer';
@@ -85,6 +85,78 @@ const playSound = (type) => {
   } catch (e) {}
 };
 
+// ── Apply premoves visually to a FEN (no validation, just piece movement) ──
+function applyPremovesToFen(realFen, premoves) {
+  if (!premoves || premoves.length === 0) return realFen;
+  let game;
+  try { game = new Chess(realFen); } catch { return realFen; }
+  const board = game.board();
+  for (const pre of premoves) {
+    if (!pre?.from || !pre?.to) continue;
+    const fromCol = pre.from.charCodeAt(0) - 97;
+    const fromRow = 8 - parseInt(pre.from[1], 10);
+    const toCol = pre.to.charCodeAt(0) - 97;
+    const toRow = 8 - parseInt(pre.to[1], 10);
+    if (fromCol < 0 || fromCol > 7 || fromRow < 0 || fromRow > 7) continue;
+    if (toCol < 0 || toCol > 7 || toRow < 0 || toRow > 7) continue;
+    const piece = board[fromRow][fromCol];
+    if (!piece) continue;
+    board[toRow][toCol] = piece;
+    board[fromRow][fromCol] = null;
+  }
+  const rows = [];
+  for (let r = 0; r < 8; r++) {
+    let row = '';
+    let empty = 0;
+    for (let c = 0; c < 8; c++) {
+      const p = board[r][c];
+      if (!p) empty++;
+      else {
+        if (empty > 0) { row += empty; empty = 0; }
+        row += p.color === 'w' ? p.type.toUpperCase() : p.type.toLowerCase();
+      }
+    }
+    if (empty > 0) row += empty;
+    rows.push(row);
+  }
+  const parts = realFen.split(' ');
+  parts[0] = rows.join('/');
+  return parts.join(' ');
+}
+
+function virtualPieceAt(realFen, premoves, square) {
+  let game;
+  try { game = new Chess(applyPremovesToFen(realFen, premoves)); } catch { return null; }
+  return game.get(square);
+}
+
+// ── King-square locator ──
+function findKingSquare(fen, color) {
+  try {
+    const game = new Chess(fen);
+    const board = game.board();
+    for (let r = 0; r < 8; r++) {
+      for (let c = 0; c < 8; c++) {
+        const sq = board[r][c];
+        if (sq && sq.type === 'k' && sq.color === color) {
+          return `${'abcdefgh'[c]}${8 - r}`;
+        }
+      }
+    }
+  } catch {}
+  return null;
+}
+
+function squarePxPosition(square, boardSize, orientation) {
+  if (!square || !boardSize) return null;
+  const col = square.charCodeAt(0) - 97;
+  const row = 8 - parseInt(square[1], 10);
+  const sq = boardSize / 8;
+  const x = orientation === 'white' ? col * sq : (7 - col) * sq;
+  const y = orientation === 'white' ? row * sq : (7 - row) * sq;
+  return { x, y, sq };
+}
+
 export default function ChessBoard({
   roomId,
   matchId,
@@ -98,7 +170,7 @@ export default function ChessBoard({
   blackPlayer,
   boardOrientation = 'white',
   isSpectator = false,
-  isReview = false, // BUG 4 FIX: Win probability bar only in review mode
+  isReview = false,
   gameStatus,
   timerData,
   spectatorCount = 0,
@@ -106,13 +178,15 @@ export default function ChessBoard({
   lastMove,
   settings,
   moveTimeoutMs = 30000,
-  username, // FEATURE 5: Screenshot prevention watermark
+  username,
   hideTimer = false,
+  gameResult = null,           // { winner: 'white'|'black'|null, isDraw }
+  maxBoardSize = 640,
 }) {
   const gameRef = useRef(new Chess());
-  const containerRef = useRef(null);
+  const boardWrapRef = useRef(null);
   const readyEmitted = useRef(false);
-  const [boardSize, setBoardSize] = useState(360);
+  const [boardSize, setBoardSize] = useState(320);
   const [whiteTime, setWhiteTime] = useState(30);
   const [blackTime, setBlackTime] = useState(30);
   const [selectedSquare, setSelectedSquare] = useState(null);
@@ -126,13 +200,11 @@ export default function ChessBoard({
   const [whiteCaptured, setWhiteCaptured] = useState([]);
   const [blackCaptured, setBlackCaptured] = useState([]);
   const [inCheck, setInCheck] = useState(false);
-  
-  const [prequeue, setPrequeue] = useState([]); // array: {from, to, promotion}
+
+  const [prequeue, setPrequeue] = useState([]);
   const [activePremoveStart, setActivePremoveStart] = useState(null);
-  const prevFenRef = useRef(fen); // track FEN changes for premove execution
-  const premoveJustExecutedRef = useRef(false); // track if we just sent a premove (wait for opponent response)
-  
-  const [draggedSquare, setDraggedSquare] = useState(null); // FEATURE 7: Legal move dots on drag
+  const prevFenRef = useRef(fen);
+  const premoveJustExecutedRef = useRef(false);
 
   // Read settings
   const soundEnabled = settings?.moveSound !== false;
@@ -150,42 +222,37 @@ export default function ChessBoard({
     }
   }, [gameStatus, currentPlayer]);
 
-  // Reset ready flag when match changes
   useEffect(() => {
     readyEmitted.current = false;
   }, [matchId]);
 
-  // ── Play game start sound ──
   useEffect(() => {
-    if (gameStatus === 'playing' && soundEnabled) {
-      playSound('gameStart');
-    }
+    if (gameStatus === 'playing' && soundEnabled) playSound('gameStart');
   }, [gameStatus === 'playing']);
 
-  // ── FEATURE 5: Screenshot prevention ──
+  // ── STABLE board sizing — only on mount, window resize, orientation change.
+  // Critical: never recalculate after a move. This prevents zoom/shift loops.
   useEffect(() => {
-    if (gameStatus === 'playing') {
-      document.body.style.userSelect = 'none';
-    }
-    return () => {
-      document.body.style.userSelect = '';
-    };
-  }, [gameStatus]);
-
-  // ── Responsive board sizing via ResizeObserver ──
-  useEffect(() => {
-    if (!containerRef.current) return;
-    const ro = new ResizeObserver((entries) => {
-      for (const entry of entries) {
-        const w = entry.contentRect.width;
-        if (w > 0) setBoardSize(Math.floor(w));
+    const measure = () => {
+      if (!boardWrapRef.current) return;
+      const rect = boardWrapRef.current.getBoundingClientRect();
+      const w = rect.width;
+      if (w > 0) {
+        const next = Math.floor(Math.min(w, maxBoardSize));
+        setBoardSize(prev => (Math.abs(prev - next) < 2 ? prev : next));
       }
-    });
-    ro.observe(containerRef.current);
-    // Initial measurement
-    setBoardSize(Math.floor(containerRef.current.offsetWidth) || 360);
-    return () => ro.disconnect();
-  }, []);
+    };
+    measure();
+    let t;
+    const debounced = () => { clearTimeout(t); t = setTimeout(measure, 100); };
+    window.addEventListener('resize', debounced);
+    window.addEventListener('orientationchange', debounced);
+    return () => {
+      window.removeEventListener('resize', debounced);
+      window.removeEventListener('orientationchange', debounced);
+      clearTimeout(t);
+    };
+  }, [maxBoardSize]);
 
   // ── Update chess.js when fen changes ──
   useEffect(() => {
@@ -193,9 +260,7 @@ export default function ChessBoard({
       try {
         gameRef.current.load(fen);
         setInCheck(gameRef.current.isCheck());
-      } catch (e) {
-        console.error('Invalid FEN:', e);
-      }
+      } catch (e) {}
     }
     setSelectedSquare(null);
     setLegalMoveStyles({});
@@ -220,7 +285,6 @@ export default function ChessBoard({
     setBlackCaptured(bCaptured);
   }, [fen]);
 
-  // ── Material advantage ──
   const calcAdv = (captured) => {
     let val = 0;
     const reverseMap = {};
@@ -233,20 +297,15 @@ export default function ChessBoard({
   const blackAdv = Math.max(0, -whiteAdvRaw);
 
   // ── Chess Clock countdown ──
-  // timerData has: { turn, whiteTime, blackTime, startedAt }
-  // startedAt=null means clock is paused (before first move)
   useEffect(() => {
     if (!timerData || gameStatus !== 'playing') return;
     setWhiteTime(timerData.whiteTime || 600);
     setBlackTime(timerData.blackTime || 600);
-
-    // If startedAt is null, show static time but don't tick
     if (!timerData.startedAt) return;
 
     const serverStart = timerData.startedAt;
     const activeTurn = timerData.turn;
     let rafId;
-
     const tick = () => {
       const elapsed = (Date.now() - serverStart) / 1000;
       if (activeTurn === 'w') {
@@ -260,14 +319,10 @@ export default function ChessBoard({
     return () => cancelAnimationFrame(rafId);
   }, [timerData, gameStatus]);
 
-  // ── Auto-dismiss removed ──
-
-  // ── Sync board theme from settings ──
   useEffect(() => {
     if (settings?.boardTheme) setBoardTheme(settings.boardTheme);
   }, [settings?.boardTheme]);
 
-  // Only allow move if player color matches chess.turn()
   const canMakeMove = () => {
     if (isSpectator || isReview) return false;
     if (gameStatus !== 'playing') return false;
@@ -278,9 +333,17 @@ export default function ChessBoard({
 
   const isMyTurn = canMakeMove();
   const isOpponentTurn = !isSpectator && !isReview && gameStatus === 'playing' && currentPlayer && !isMyTurn;
-  const playerColor = currentPlayer?.color === 'white' ? 'w' : 'b';
+  const myColor = currentPlayer?.color === 'white' ? 'w' : 'b';
 
-  // ── Compute legal move hints ──
+  // ── Preview FEN with all queued premoves applied (visual only) ──
+  const previewFen = useMemo(() => {
+    if (prequeue.length === 0) return fen;
+    return applyPremovesToFen(fen, prequeue);
+  }, [fen, prequeue]);
+
+  // FEN to display: real FEN when it's my turn (no preview), preview FEN otherwise
+  const displayFen = (isOpponentTurn && prequeue.length > 0) ? previewFen : fen;
+
   const showLegalMoveHints = useCallback((square) => {
     if (!showLegalMoves) return {};
     const game = gameRef.current;
@@ -304,11 +367,9 @@ export default function ChessBoard({
     return styles;
   }, [showLegalMoves]);
 
-  // ── Click-to-move state machine ──
   const onSquareClick = (square) => {
     const game = gameRef.current;
 
-    // If it's opponent's turn and premoves enabled, handle premove
     if (isOpponentTurn && premovesEnabled) {
       handlePremoveClick(square);
       return;
@@ -317,23 +378,19 @@ export default function ChessBoard({
     if (!isMyTurn) return;
 
     if (selectedSquare) {
-      // STATE 2: Piece already selected
       const piece = game.get(square);
       if (square === selectedSquare) {
-        // Unselect if same square clicked
         setSelectedSquare(null);
         setLegalMoveStyles({});
         return;
       }
-      
       if (piece && piece.color === game.turn()) {
         setSelectedSquare(square);
         setLegalMoveStyles(showLegalMoveHints(square));
         return;
       }
 
-      // Try to make the move
-      const promo = autoQueen ? 'q' : 'q';
+      const promo = 'q';
       const moveCopy = new Chess(game.fen());
       try {
         const move = moveCopy.move({ from: selectedSquare, to: square, promotion: promo });
@@ -342,14 +399,11 @@ export default function ChessBoard({
           onMove({ from: selectedSquare, to: square, promotion: promo, san: move.san });
         }
       } catch(e) {}
-
-      // Silently fail if illegal
       setSelectedSquare(null);
       setLegalMoveStyles({});
       return;
     }
 
-    // STATE 1: No piece selected → select own piece
     const piece = game.get(square);
     if (piece && piece.color === game.turn()) {
       setSelectedSquare(square);
@@ -357,19 +411,16 @@ export default function ChessBoard({
     }
   };
 
-  // ── Premove click handler (Chess.com-like) ──
-  // No legality validation when setting premove — only check that source square has your piece
+  // ── Premove click handler — supports chained premoves on preview state ──
   const handlePremoveClick = (square) => {
-    const myColor = currentPlayer?.color === 'white' ? 'w' : 'b';
-    const game = gameRef.current;
+    // Check piece from the PREVIEW state so chained premoves can use already-moved pieces
+    const previewPiece = virtualPieceAt(fen, prequeue, square);
 
     if (!activePremoveStart) {
-      // Selecting a piece for premove — check if square has your piece
-      const piece = game.get(square);
-      if (piece && piece.color === myColor) {
+      if (previewPiece && previewPiece.color === myColor) {
         setActivePremoveStart(square);
       } else {
-        // Clicked empty or opponent piece — cancel all premoves
+        // Tapping empty/opponent square clears all premoves
         if (prequeue.length > 0) {
           setPrequeue([]);
           setActivePremoveStart(null);
@@ -378,22 +429,18 @@ export default function ChessBoard({
       return;
     }
 
-    // Clicking the same square again → deselect
     if (square === activePremoveStart) {
       setActivePremoveStart(null);
       return;
     }
 
-    // Clicking another own piece → switch selection
-    const piece = game.get(square);
-    if (piece && piece.color === myColor) {
+    // Switch selection to another own piece (from preview)
+    if (previewPiece && previewPiece.color === myColor) {
       setActivePremoveStart(square);
       return;
     }
 
-    // Setting the premove destination — allow any target square (even if currently occupied)
-    // Legality will be checked on execution. Allow up to 5 queued premoves.
-    if (prequeue.length < 5) {
+    if (prequeue.length < 6) {
       const promo = autoQueen ? 'q' : undefined;
       setPrequeue(prev => [...prev, { from: activePremoveStart, to: square, promotion: promo }]);
       setActivePremoveStart(null);
@@ -423,12 +470,11 @@ export default function ChessBoard({
     };
   }, [prequeue.length, activePremoveStart]);
 
-  // Execute premove INSTANTLY when it becomes our turn (FEN changed = opponent moved)
+  // Execute the first queued premove when it becomes our turn
   useEffect(() => {
     const fenChanged = fen !== prevFenRef.current;
     if (fenChanged) {
       prevFenRef.current = fen;
-      // If we just executed a premove, our own move FEN echo arrived — skip, wait for opponent's move
       if (premoveJustExecutedRef.current) {
         premoveJustExecutedRef.current = false;
         return;
@@ -440,7 +486,6 @@ export default function ChessBoard({
       return;
     }
 
-    // Execute the first premove in queue immediately (0ms)
     const game = gameRef.current;
     const nextPre = prequeue[0];
     const promo = nextPre.promotion || 'q';
@@ -449,22 +494,21 @@ export default function ChessBoard({
       const moveCopy = new Chess(game.fen());
       const move = moveCopy.move({ from: nextPre.from, to: nextPre.to, promotion: promo });
       if (move) {
-        // Premove is legal — execute instantly!
         if (soundEnabled) playSound(move.captured ? 'capture' : moveCopy.isCheck() ? 'check' : 'move');
         onMove({ from: nextPre.from, to: nextPre.to, promotion: promo, san: move.san });
         premoveJustExecutedRef.current = true;
         setPrequeue(q => q.slice(1));
       } else {
-        // This premove became illegal — remove only this one, keep the rest
-        setPrequeue(q => q.slice(1));
+        // Premove became illegal — clear ALL remaining premoves (chained logic depended on this move)
+        setPrequeue([]);
+        setActivePremoveStart(null);
       }
     } catch {
-      // Invalid premove — remove only the failed one
-      setPrequeue(q => q.slice(1));
+      setPrequeue([]);
+      setActivePremoveStart(null);
     }
   }, [isMyTurn, fen]);
 
-  // Clear premoves when game ends
   useEffect(() => {
     if (gameStatus !== 'playing') {
       setPrequeue([]);
@@ -472,22 +516,23 @@ export default function ChessBoard({
     }
   }, [gameStatus]);
 
-  // ── Drag-to-move handler (supports premove via drag) ──
   const onDrop = (sourceSquare, targetSquare) => {
     setSelectedSquare(null);
     setLegalMoveStyles({});
-    setDraggedSquare(null);
-    
+
     const promo = autoQueen ? 'q' : undefined;
 
-    // Premove via drag — opponent's turn
     if (!isMyTurn) {
-      if (premovesEnabled && isOpponentTurn && prequeue.length < 5) {
-        setPrequeue(prev => [...prev, { from: sourceSquare, to: targetSquare, promotion: promo }]);
+      if (premovesEnabled && isOpponentTurn && prequeue.length < 6) {
+        // Verify source has a virtual own piece (so drag of opponent piece is rejected)
+        const piece = virtualPieceAt(fen, prequeue, sourceSquare);
+        if (piece && piece.color === myColor) {
+          setPrequeue(prev => [...prev, { from: sourceSquare, to: targetSquare, promotion: promo }]);
+        }
       }
       return false;
     }
-    
+
     const game = gameRef.current;
     const moveCopy = new Chess(game.fen());
     try {
@@ -505,47 +550,29 @@ export default function ChessBoard({
     }
   };
 
-  // ── Show legal move dots when piece is picked up for dragging ──
   const onPieceDragBegin = (piece, sourceSquare) => {
-    // Allow drag for premove during opponent's turn
     if (isOpponentTurn && premovesEnabled) {
-      const myColor = currentPlayer?.color === 'white' ? 'w' : 'b';
-      const p = gameRef.current.get(sourceSquare);
-      if (p && p.color === myColor) {
-        setDraggedSquare(sourceSquare);
-        return true;
-      }
+      const p = virtualPieceAt(fen, prequeue, sourceSquare);
+      if (p && p.color === myColor) return true;
       return false;
     }
     if (!isMyTurn) return false;
-    setDraggedSquare(sourceSquare);
     setLegalMoveStyles(showLegalMoveHints(sourceSquare));
     return true;
   };
 
-  // ── Check highlight with FEATURE 6: king square pulses red ──
+  // ── Square style helpers ──
   const getCheckStyles = () => {
     if (!inCheck) return {};
-    const game = gameRef.current;
-    const board = game.board();
-    const turn = game.turn();
-    for (let r = 0; r < 8; r++) {
-      for (let c = 0; c < 8; c++) {
-        const sq = board[r][c];
-        if (sq && sq.type === 'k' && sq.color === turn) {
-          const squareName = `${'abcdefgh'[c]}${8 - r}`;
-          return { [squareName]: {
-            backgroundColor: 'rgba(239, 68, 68, 0.6)',
-            borderRadius: '0',
-            animation: 'checkPulse 1s ease-in-out infinite',
-          }};
-        }
-      }
-    }
-    return {};
+    const sq = findKingSquare(fen, gameRef.current.turn());
+    if (!sq) return {};
+    return { [sq]: {
+      backgroundColor: 'rgba(239, 68, 68, 0.6)',
+      borderRadius: '0',
+      animation: 'checkPulse 1s ease-in-out infinite',
+    }};
   };
 
-  // ── BUG 5 FIX: Last move highlight — always show including final checkmate ──
   const getLastMoveStyles = () => {
     if (!showLastMove || !lastMove) return {};
     return {
@@ -554,25 +581,18 @@ export default function ChessBoard({
     };
   };
 
-  // ── Premove highlight — subtle gold dots (no arrows) ──
   const getPremoveStyles = () => {
     const styles = {};
-    // Active premove start selection — soft amber glow
     if (activePremoveStart) {
-      styles[activePremoveStart] = { backgroundColor: 'rgba(245, 180, 60, 0.35)', boxShadow: 'inset 0 0 6px rgba(245, 180, 60, 0.2)' };
+      styles[activePremoveStart] = { backgroundColor: 'rgba(245, 180, 60, 0.45)', boxShadow: 'inset 0 0 6px rgba(245, 180, 60, 0.3)' };
     }
-    // Queued premoves — source = soft amber, destination = centered dot
     prequeue.forEach((p) => {
       styles[p.from] = { backgroundColor: 'rgba(245, 180, 60, 0.25)' };
-      styles[p.to] = {
-        background: 'radial-gradient(circle, rgba(245, 180, 60, 0.55) 22%, transparent 22%)',
-        borderRadius: '0',
-      };
+      styles[p.to] = { backgroundColor: 'rgba(245, 180, 60, 0.35)' };
     });
     return styles;
   };
 
-  // ── Combine all square styles ──
   const customSquareStyles = {
     ...getLastMoveStyles(),
     ...getPremoveStyles(),
@@ -595,8 +615,22 @@ export default function ChessBoard({
   const topAdv = boardOrientation === 'white' ? blackAdv : whiteAdv;
   const bottomAdv = boardOrientation === 'white' ? whiteAdv : blackAdv;
 
+  // ── Game-end indicators on board (crown/fallen king) ──
+  const endIndicators = useMemo(() => {
+    if (gameStatus !== 'finished' || !gameResult) return null;
+    if (gameResult.isDraw) return null;
+    const winnerColor = gameResult.winner === 'white' ? 'w' : gameResult.winner === 'black' ? 'b' : null;
+    if (!winnerColor) return null;
+    const loserColor = winnerColor === 'w' ? 'b' : 'w';
+    const winSq = findKingSquare(fen, winnerColor);
+    const loseSq = findKingSquare(fen, loserColor);
+    const winPos = squarePxPosition(winSq, boardSize, boardOrientation);
+    const losePos = squarePxPosition(loseSq, boardSize, boardOrientation);
+    return { winPos, losePos };
+  }, [gameStatus, gameResult, fen, boardSize, boardOrientation]);
+
   return (
-    <div ref={containerRef} className="w-full h-full flex flex-col items-center gap-1" style={{ margin: '0 auto', overflowX: 'hidden' }}>
+    <div className="w-full flex flex-col items-stretch gap-1" style={{ margin: '0 auto' }}>
       {floatingEmoji && (
         <div className="emoji-float" style={{ top: '40%', left: '50%' }}>{floatingEmoji}</div>
       )}
@@ -608,17 +642,19 @@ export default function ChessBoard({
       <div className="flex items-center justify-center gap-2 w-full">
         {isReview && <WinProbabilityBar fen={fen} height={boardSize} />}
 
-        <div className="w-full aspect-square shadow-2xl shadow-black/50 relative" style={{ touchAction: 'none', overflow: 'hidden', WebkitOverflowScrolling: 'auto' }}>
+        <div
+          ref={boardWrapRef}
+          className="w-full shadow-2xl shadow-black/50 relative"
+          style={{ touchAction: 'none', overflow: 'hidden', aspectRatio: '1 / 1', maxWidth: `${maxBoardSize}px`, margin: '0 auto' }}
+        >
           {gameStatus === 'playing' && username && (
             <div className="absolute inset-0 z-10 pointer-events-none flex items-center justify-center" style={{ opacity: 0.04 }}>
-              <p className="text-white text-2xl font-black rotate-[-30deg] select-none whitespace-nowrap">
-                {username}
-              </p>
+              <p className="text-white text-2xl font-black rotate-[-30deg] select-none whitespace-nowrap">{username}</p>
             </div>
           )}
 
           <Chessboard
-            position={fen}
+            position={displayFen}
             onPieceDrop={onDrop}
             onSquareClick={onSquareClick}
             onPieceDragBegin={onPieceDragBegin}
@@ -633,11 +669,47 @@ export default function ChessBoard({
             arePiecesDraggable={isMyTurn || (isOpponentTurn && premovesEnabled)}
             snapToCursor={false}
           />
+
+          {/* Game-end indicators */}
+          {endIndicators?.winPos && (
+            <div
+              className="absolute pointer-events-none z-20 flex items-center justify-center"
+              style={{
+                left: endIndicators.winPos.x,
+                top: endIndicators.winPos.y - 18,
+                width: endIndicators.winPos.sq,
+                height: 22,
+              }}
+            >
+              <span className="text-lg leading-none drop-shadow-[0_0_4px_rgba(0,0,0,0.8)]">👑</span>
+            </div>
+          )}
+          {endIndicators?.losePos && (
+            <div
+              className="absolute pointer-events-none z-20 flex items-center justify-center"
+              style={{
+                left: endIndicators.losePos.x,
+                top: endIndicators.losePos.y - 18,
+                width: endIndicators.losePos.sq,
+                height: 22,
+              }}
+            >
+              <span className="text-base leading-none drop-shadow-[0_0_4px_rgba(0,0,0,0.8)]">✖</span>
+            </div>
+          )}
         </div>
       </div>
 
-      {prequeue.length > 0 && <p className="text-[10px] text-red-400 font-bold">{prequeue.length} premove{prequeue.length > 1 ? 's' : ''} queued</p>}
-      {activePremoveStart && prequeue.length === 0 && <p className="text-[10px] text-red-400/70 font-medium">Select target square...</p>}
+      {/* Premove status — absolutely positioned overlay (does not push board) */}
+      {(prequeue.length > 0 || activePremoveStart) && (
+        <div className="relative">
+          <div className="absolute right-0 -top-7 pointer-events-none">
+            <span className="text-[9px] text-gold-400 font-bold bg-navy-900/70 px-2 py-0.5 rounded-md">
+              {prequeue.length > 0 ? `${prequeue.length} premove${prequeue.length > 1 ? 's' : ''}` : 'Select target...'}
+            </span>
+          </div>
+        </div>
+      )}
 
       {/* Bottom Player */}
       <PlayerTimer player={bottomPlayer} time={bottomTime} isActive={isBottomTurn && gameStatus === 'playing'} color={bottomColor} captured={bottomCaptured} materialAdvantage={bottomAdv} gameStatus={gameStatus} hideTimer={hideTimer} compact />

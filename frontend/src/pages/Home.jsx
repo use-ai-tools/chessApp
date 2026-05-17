@@ -13,7 +13,20 @@ export default function Home() {
         </h1>
         <p className="text-slate-500 text-sm mb-8">Choose how you want to play</p>
 
-        <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
+          {/* Learn Chess */}
+          <div
+            onClick={() => navigate('/learn')}
+            className="card-hover p-6 cursor-pointer flex flex-col"
+          >
+            <div className="text-3xl mb-4">🎓</div>
+            <h2 className="text-lg font-bold text-white mb-1">Learn Chess</h2>
+            <p className="text-slate-500 text-xs mb-4">Interactive lessons — from beginner to advanced.</p>
+            <button className="mt-auto w-full py-2.5 rounded-xl text-sm font-semibold bg-chess-green/10 text-chess-green hover:bg-chess-green/20 transition-all">
+              Start Learning
+            </button>
+          </div>
+
           {/* Play vs Bot */}
           <div className="card-hover p-6 cursor-pointer flex flex-col">
             <div className="text-3xl mb-4">🤖</div>

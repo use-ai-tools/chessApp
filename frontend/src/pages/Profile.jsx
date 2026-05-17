@@ -22,9 +22,9 @@ export default function Profile() {
   const [stats, setStats] = useState(null);
   const [loading, setLoading] = useState(true);
   const [profilePic, setProfilePic] = useState(() => localStorage.getItem(PFP_KEY) || null);
-  const [showAvatarModal, setShowAvatarModal] = useState(false);
+  const [showEditModal, setShowEditModal] = useState(false);
   const [selectedAvatar, setSelectedAvatar] = useState(null);
-  const [avatarSaving, setAvatarSaving] = useState(false);
+  const [editSaving, setEditSaving] = useState(false);
   const [currentPassword, setCurrentPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
@@ -38,13 +38,17 @@ export default function Profile() {
   const fetchProfile = async () => {
     try {
       const res = await fetch(`${API_URL}/api/profile/stats`, { headers: { Authorization: `Bearer ${token}` } });
-      if (res.ok) { const data = await res.json(); setProfile(data.user); setStats(data.stats); setSelectedAvatar(data.user.avatar || '♔'); }
-    } catch (err) { console.error('Failed to fetch profile', err); } finally { setLoading(false); }
+      if (res.ok) {
+        const data = await res.json();
+        setProfile(data.user);
+        setStats(data.stats);
+        setSelectedAvatar(data.user.avatar || '♔');
+      }
+    } catch (err) {} finally { setLoading(false); }
   };
 
   const showToast = (msg) => { setToast(msg); setTimeout(() => setToast(''), 2500); };
 
-  // Profile picture upload
   const handleFileUpload = (e) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -54,7 +58,7 @@ export default function Profile() {
       const dataUrl = ev.target.result;
       localStorage.setItem(PFP_KEY, dataUrl);
       setProfilePic(dataUrl);
-      showToast('✓ Profile picture updated!');
+      showToast('✓ Profile picture updated');
     };
     reader.readAsDataURL(file);
   };
@@ -65,36 +69,58 @@ export default function Profile() {
     showToast('Profile picture removed');
   };
 
-  // Avatar save
-  const handleAvatarSave = async () => {
-    if (!selectedAvatar || selectedAvatar === profile?.avatar) return;
-    setAvatarSaving(true);
+  const handleSaveProfile = async () => {
+    if (!selectedAvatar || selectedAvatar === profile?.avatar) {
+      setShowEditModal(false);
+      return;
+    }
+    setEditSaving(true);
     try {
-      const res = await fetch(`${API_URL}/api/profile/avatar`, { method: 'PUT', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` }, body: JSON.stringify({ avatar: selectedAvatar }) });
-      if (res.ok) { setProfile(p => ({ ...p, avatar: selectedAvatar })); refreshUser(); showToast('✓ Avatar updated!'); setShowAvatarModal(false); }
-    } catch {} finally { setAvatarSaving(false); }
+      const res = await fetch(`${API_URL}/api/profile/avatar`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ avatar: selectedAvatar })
+      });
+      if (res.ok) {
+        setProfile(p => ({ ...p, avatar: selectedAvatar }));
+        refreshUser();
+        showToast('✓ Profile updated');
+        setShowEditModal(false);
+      }
+    } catch {} finally { setEditSaving(false); }
   };
 
   const handleChangePassword = async (e) => {
-    e.preventDefault(); setPwdMsg(''); setPwdError('');
-    if (newPassword.length < 4) { setPwdError('Min 4 characters'); return; }
+    e.preventDefault();
+    setPwdMsg(''); setPwdError('');
+    if (!currentPassword) { setPwdError('Current password required'); return; }
+    if (newPassword.length < 4) { setPwdError('New password min 4 characters'); return; }
     if (newPassword !== confirmPassword) { setPwdError('Passwords do not match'); return; }
     setPwdLoading(true);
     try {
-      const res = await fetch(`${API_URL}/api/profile/password`, { method: 'PUT', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` }, body: JSON.stringify({ currentPassword, newPassword }) });
+      const res = await fetch(`${API_URL}/api/profile/password`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ currentPassword, newPassword })
+      });
       const data = await res.json();
-      if (res.ok) { setPwdMsg('✓ Password changed!'); setCurrentPassword(''); setNewPassword(''); setConfirmPassword(''); } else { setPwdError(data.message || 'Failed'); }
+      if (res.ok) {
+        setPwdMsg('✓ Password changed');
+        setCurrentPassword(''); setNewPassword(''); setConfirmPassword('');
+        showToast('✓ Password changed');
+      } else {
+        setPwdError(data.message || 'Failed');
+      }
     } catch { setPwdError('Network error'); } finally { setPwdLoading(false); }
   };
 
-  // Loading skeleton
   if (loading) return (
     <div className="bg-hero w-full overflow-x-hidden">
-      <div className="max-w-2xl mx-auto px-4 py-6 md:px-6 space-y-5">
+      <div className="max-w-2xl mx-auto px-4 py-6 space-y-4">
         <div className="flex items-center gap-4">
-          <div className="w-16 h-16 rounded-full bg-navy-700/50 animate-pulse" />
+          <div className="w-16 h-16 rounded-full bg-navy-700/40 animate-pulse" />
           <div className="flex-1 space-y-2">
-            <div className="h-5 w-32 bg-navy-700/50 rounded animate-pulse" />
+            <div className="h-5 w-32 bg-navy-700/40 rounded animate-pulse" />
             <div className="h-3 w-20 bg-navy-700/30 rounded animate-pulse" />
           </div>
         </div>
@@ -112,81 +138,63 @@ export default function Profile() {
 
   return (
     <div className="bg-hero w-full overflow-x-hidden">
-      <div className="max-w-2xl mx-auto px-4 py-5 md:px-6 md:py-6 space-y-5">
+      <div className="w-full max-w-2xl mx-auto px-4 py-5 space-y-4" style={{ boxSizing: 'border-box' }}>
 
         {/* ── Profile Header Card ── */}
-        <div className="bg-navy-800/40 rounded-2xl p-4 md:p-5">
+        <div className="bg-navy-800/40 border border-navy-700/20 rounded-2xl p-4 md:p-5">
           <div className="flex items-center gap-4">
-            {/* Profile Picture */}
-            <div className="relative flex-shrink-0 group">
-              <div className="w-16 h-16 md:w-18 md:h-18 rounded-full overflow-hidden ring-2 ring-navy-600/50 group-hover:ring-chess-green/40 transition-all">
+            <div className="relative flex-shrink-0">
+              <div className="w-16 h-16 md:w-20 md:h-20 rounded-full overflow-hidden ring-2 ring-navy-700/40">
                 {profilePic ? (
-                  <img src={profilePic} alt="Profile" className="w-full h-full object-cover" />
+                  <img src={profilePic} alt="" className="w-full h-full object-cover" />
                 ) : (
                   <div className="w-full h-full bg-gradient-to-br from-purple-600 to-indigo-700 flex items-center justify-center text-2xl text-white">
                     {profile.avatar || '♔'}
                   </div>
                 )}
               </div>
-              <button
-                onClick={() => fileInputRef.current?.click()}
-                className="absolute -bottom-0.5 -right-0.5 w-6 h-6 rounded-full bg-navy-800 border border-navy-600/50 flex items-center justify-center text-[10px] text-slate-400 hover:text-white hover:bg-navy-700 transition-all"
-                title="Change picture"
-              >📷</button>
-              <input ref={fileInputRef} type="file" accept="image/*" onChange={handleFileUpload} className="hidden" />
+              <span className="absolute -bottom-0 -right-0 w-3 h-3 rounded-full bg-emerald-500 border-2 border-navy-900" />
             </div>
 
-            {/* Info */}
             <div className="flex-1 min-w-0">
-              <div className="flex items-center gap-2 flex-wrap">
-                <h1 className="text-lg md:text-xl font-black text-white truncate">{profile.username}</h1>
-                <span className="w-2 h-2 rounded-full bg-emerald-500 flex-shrink-0" title="Online" />
-              </div>
+              <h1 className="text-lg md:text-xl font-black text-white truncate">{profile.username}</h1>
               <div className="flex items-center gap-2 mt-1 flex-wrap">
                 <span className="text-xs font-bold text-sky-400">{elo} ELO</span>
-                <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded-md ${rank.color}`}>{rank.icon} {rank.label}</span>
+                <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded-md ${rank.color}`}>{rank.icon} {rank.label}</span>
               </div>
-              <p className="text-[10px] text-slate-600 mt-1">Joined {new Date(profile.createdAt).toLocaleDateString()}</p>
+              <p className="text-[10px] text-slate-500 mt-1">Joined {new Date(profile.createdAt).toLocaleDateString()}</p>
             </div>
-          </div>
 
-          {/* Quick actions */}
-          <div className="flex gap-2 mt-3 pt-3 border-t border-navy-700/20">
-            <button onClick={() => fileInputRef.current?.click()} className="flex-1 py-2 rounded-lg text-[10px] font-semibold bg-white/5 text-slate-400 hover:text-white hover:bg-white/10 transition-all">
-              📷 Change Picture
+            <button onClick={() => setShowEditModal(true)}
+              className="flex-shrink-0 px-3 py-1.5 rounded-lg text-[10px] font-bold bg-white/5 text-slate-300 hover:bg-white/10 hover:text-white transition-all">
+              ✏️ Edit
             </button>
-            <button onClick={() => setShowAvatarModal(true)} className="flex-1 py-2 rounded-lg text-[10px] font-semibold bg-white/5 text-slate-400 hover:text-white hover:bg-white/10 transition-all">
-              ♔ Default Avatar
-            </button>
-            {profilePic && (
-              <button onClick={removePic} className="py-2 px-3 rounded-lg text-[10px] font-semibold bg-red-500/10 text-red-400 hover:bg-red-500/20 transition-all">
-                ✕
-              </button>
-            )}
           </div>
         </div>
 
         {/* ── Stats Grid ── */}
         <div>
-          <h3 className="text-[10px] font-bold text-slate-600 mb-2 uppercase tracking-wider">Statistics</h3>
+          <h3 className="text-[10px] font-bold text-slate-500 mb-2 uppercase tracking-wider">Statistics</h3>
           <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
             <StatCard icon="🎮" label="Matches" value={s.totalMatches || 0} />
             <StatCard icon="🏆" label="Wins" value={s.wins || 0} accent="emerald" />
             <StatCard icon="💔" label="Losses" value={s.losses || 0} accent="red" />
             <StatCard icon="📊" label="Win Rate" value={`${s.winRate || 0}%`} accent="purple" />
             <StatCard icon="💰" label="Earnings" value={formatShort(s.totalEarnings || 0)} accent="amber" />
-            <StatCard icon="🔥" label="Best Streak" value={s.winStreak || 0} accent="orange" />
+            <StatCard icon="🔥" label="Streak" value={s.winStreak || 0} accent="orange" />
           </div>
         </div>
 
         {/* ── Recent Form ── */}
         {s.recentResults && s.recentResults.length > 0 && (
           <div>
-            <h3 className="text-[10px] font-bold text-slate-600 mb-2 uppercase tracking-wider">Recent Form</h3>
+            <h3 className="text-[10px] font-bold text-slate-500 mb-2 uppercase tracking-wider">Recent Form</h3>
             <div className="flex gap-1 flex-wrap">
               {s.recentResults.map((r, i) => (
                 <div key={i} className={`w-7 h-7 rounded-lg flex items-center justify-center font-bold text-[10px] ${
-                  r.result === 'W' ? 'bg-emerald-500/15 text-emerald-400' : r.result === 'L' ? 'bg-red-500/15 text-red-400' : 'bg-slate-500/15 text-slate-400'
+                  r.result === 'W' ? 'bg-emerald-500/15 text-emerald-400' :
+                  r.result === 'L' ? 'bg-red-500/15 text-red-400' :
+                  'bg-slate-500/15 text-slate-400'
                 }`}>{r.result}</div>
               ))}
             </div>
@@ -194,50 +202,104 @@ export default function Profile() {
         )}
 
         {/* ── Change Password ── */}
-        <div className="bg-navy-800/30 rounded-xl p-4">
-          <h3 className="text-[10px] font-bold text-slate-600 mb-3 uppercase tracking-wider">Security</h3>
-          <form onSubmit={handleChangePassword} className="space-y-2">
-            <input type="password" placeholder="Current Password" value={currentPassword} onChange={(e) => setCurrentPassword(e.target.value)} className="input-field w-full text-xs" required />
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-              <input type="password" placeholder="New Password" value={newPassword} onChange={(e) => setNewPassword(e.target.value)} className="input-field w-full text-xs" required minLength={4} />
-              <input type="password" placeholder="Confirm Password" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} className="input-field w-full text-xs" required />
+        <div className="bg-navy-800/40 border border-navy-700/20 rounded-xl p-4">
+          <h3 className="text-[10px] font-bold text-slate-500 mb-3 uppercase tracking-wider">Security</h3>
+          <form onSubmit={handleChangePassword} className="space-y-2 w-full">
+            <input
+              type="password"
+              placeholder="Current Password"
+              value={currentPassword}
+              onChange={(e) => setCurrentPassword(e.target.value)}
+              className="input-field w-full text-xs"
+              autoComplete="current-password"
+              required
+            />
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 w-full">
+              <input
+                type="password"
+                placeholder="New Password"
+                value={newPassword}
+                onChange={(e) => setNewPassword(e.target.value)}
+                className="input-field w-full text-xs"
+                autoComplete="new-password"
+                required
+                minLength={4}
+              />
+              <input
+                type="password"
+                placeholder="Confirm Password"
+                value={confirmPassword}
+                onChange={(e) => setConfirmPassword(e.target.value)}
+                className="input-field w-full text-xs"
+                autoComplete="new-password"
+                required
+              />
             </div>
-            {pwdError && <p className="text-[10px] text-red-400">{pwdError}</p>}
-            {pwdMsg && <p className="text-[10px] text-emerald-400">{pwdMsg}</p>}
-            <button type="submit" disabled={pwdLoading} className="w-full py-2 rounded-xl text-xs font-bold bg-white/5 text-slate-300 hover:bg-white/10 transition-all">
+            {pwdError && <p className="text-[10px] text-red-400 px-1">{pwdError}</p>}
+            {pwdMsg && <p className="text-[10px] text-emerald-400 px-1">{pwdMsg}</p>}
+            <button type="submit" disabled={pwdLoading}
+              className="w-full py-2 rounded-xl text-xs font-bold bg-white/5 text-slate-300 hover:bg-white/10 transition-all disabled:opacity-50">
               {pwdLoading ? 'Changing...' : '🔒 Change Password'}
             </button>
           </form>
         </div>
       </div>
 
-      {/* ── Avatar Modal ── */}
-      {showAvatarModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm animate-fade-in" onClick={() => setShowAvatarModal(false)}>
+      {/* ── Edit Profile Modal ── */}
+      {showEditModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm animate-fade-in" onClick={() => setShowEditModal(false)}>
           <div className="bg-navy-800 border border-navy-700/30 rounded-2xl p-5 max-w-sm w-full animate-scale-in" onClick={e => e.stopPropagation()}>
             <div className="flex items-center justify-between mb-4">
-              <h3 className="text-sm font-bold text-white">Choose Default Avatar</h3>
-              <button onClick={() => setShowAvatarModal(false)} className="text-slate-500 hover:text-white text-lg">✕</button>
+              <h3 className="text-sm font-bold text-white">Edit Profile</h3>
+              <button onClick={() => setShowEditModal(false)} className="text-slate-500 hover:text-white text-lg">✕</button>
             </div>
-            <div className="grid grid-cols-3 gap-3 mb-4">
-              {AVATARS.map(piece => (
-                <button key={piece} onClick={() => setSelectedAvatar(piece)}
-                  className={`aspect-square rounded-xl flex items-center justify-center text-3xl transition-all ${
-                    selectedAvatar === piece ? 'bg-chess-green/15 ring-2 ring-chess-green/40 scale-105' : 'bg-navy-700/40 hover:bg-navy-700/60'
-                  }`}>{piece}</button>
-              ))}
+
+            {/* Profile Picture */}
+            <div className="mb-5">
+              <h4 className="text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-2">Profile Picture</h4>
+              <div className="flex items-center gap-3">
+                <div className="w-14 h-14 rounded-full overflow-hidden ring-2 ring-navy-700/40 flex-shrink-0">
+                  {profilePic ? (
+                    <img src={profilePic} alt="" className="w-full h-full object-cover" />
+                  ) : (
+                    <div className="w-full h-full bg-gradient-to-br from-purple-600 to-indigo-700 flex items-center justify-center text-xl text-white">
+                      {selectedAvatar || '♔'}
+                    </div>
+                  )}
+                </div>
+                <div className="flex gap-2 flex-1">
+                  <button onClick={() => fileInputRef.current?.click()}
+                    className="flex-1 py-1.5 rounded-lg text-[10px] font-bold bg-white/5 text-slate-300 hover:bg-white/10">📷 Upload</button>
+                  {profilePic && (
+                    <button onClick={removePic}
+                      className="px-3 py-1.5 rounded-lg text-[10px] font-bold bg-red-500/10 text-red-400 hover:bg-red-500/20">✕</button>
+                  )}
+                </div>
+                <input ref={fileInputRef} type="file" accept="image/*" onChange={handleFileUpload} className="hidden" />
+              </div>
             </div>
-            <button onClick={handleAvatarSave} disabled={avatarSaving || selectedAvatar === profile.avatar}
-              className={`w-full py-2.5 rounded-xl text-xs font-bold transition-all ${
-                selectedAvatar === profile.avatar ? 'bg-white/5 text-slate-600 cursor-not-allowed' : 'bg-gradient-to-r from-chess-green to-emerald-600 text-white hover:shadow-md hover:shadow-chess-green/15'
-              }`}>
-              {avatarSaving ? 'Saving...' : 'Save Avatar'}
+
+            {/* Default Avatar */}
+            <div className="mb-5">
+              <h4 className="text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-2">Fallback Avatar</h4>
+              <div className="grid grid-cols-6 gap-2">
+                {AVATARS.map(piece => (
+                  <button key={piece} onClick={() => setSelectedAvatar(piece)}
+                    className={`aspect-square rounded-lg flex items-center justify-center text-xl transition-all ${
+                      selectedAvatar === piece ? 'bg-chess-green/15 ring-2 ring-chess-green/40' : 'bg-navy-700/30 hover:bg-navy-700/50'
+                    }`}>{piece}</button>
+                ))}
+              </div>
+            </div>
+
+            <button onClick={handleSaveProfile} disabled={editSaving}
+              className="w-full py-2.5 rounded-xl text-xs font-bold bg-gradient-to-r from-chess-green to-emerald-600 text-white hover:shadow-md hover:shadow-chess-green/15 transition-all">
+              {editSaving ? 'Saving...' : 'Save Changes'}
             </button>
           </div>
         </div>
       )}
 
-      {/* Toast */}
       {toast && (
         <div className="fixed bottom-20 left-1/2 -translate-x-1/2 z-50 px-4 py-2 rounded-xl bg-navy-800 border border-navy-700/30 shadow-2xl text-xs font-semibold text-white animate-slide-up">
           {toast}
@@ -257,12 +319,12 @@ function StatCard({ icon, label, value, accent = 'sky' }) {
     purple: 'text-purple-400', amber: 'text-amber-400', orange: 'text-orange-400',
   };
   return (
-    <div className={`${accents[accent]} rounded-xl p-3 border border-navy-700/10`}>
+    <div className={`${accents[accent]} rounded-xl p-3 border border-navy-700/10 min-w-0`}>
       <div className="flex items-center gap-1.5 mb-1.5">
         <span className="text-sm">{icon}</span>
-        <span className="text-[9px] text-slate-600 font-semibold uppercase tracking-wider">{label}</span>
+        <span className="text-[9px] text-slate-500 font-semibold uppercase tracking-wider truncate">{label}</span>
       </div>
-      <p className={`text-lg font-black ${textColors[accent]}`}>{value}</p>
+      <p className={`text-lg font-black ${textColors[accent]} truncate`}>{value}</p>
     </div>
   );
 }

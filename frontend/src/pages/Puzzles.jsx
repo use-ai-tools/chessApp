@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useContext } from 'react';
+import React, { useState, useEffect, useRef, useContext, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Chessboard } from 'react-chessboard';
 import { Chess } from 'chess.js';
@@ -7,18 +7,30 @@ import { AuthContext } from '../contexts/AuthContext';
 
 const STAR_EMOJI = '⭐';
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001';
-const UNLOCK_COST_BY_MOVES = {
-  1: 2,
-  2: 5,
-  3: 10,
-  4: 20,
-};
+const UNLOCK_COST_BY_MOVES = { 1: 2, 2: 5, 3: 10, 4: 20 };
+
+// Filter only puzzles that are actually valid (loadable FEN, side-to-move not already in mate)
+function isPuzzleValid(p) {
+  try {
+    const g = new Chess(p.fen);
+    if (g.isCheckmate() || g.isStalemate() || g.isDraw()) return false;
+    // First solution move must be legal
+    if (p.solution && p.solution[0]) {
+      const testG = new Chess(p.fen);
+      const m = testG.move(p.solution[0]);
+      if (!m) return false;
+    }
+    return true;
+  } catch { return false; }
+}
 
 export default function Puzzles() {
   const navigate = useNavigate();
   const { token, user, updateWallet } = useContext(AuthContext);
-  
-  // Progress State
+
+  // Build validated puzzles once
+  const validPuzzles = useMemo(() => puzzles.filter(isPuzzleValid), []);
+
   const [progress, setProgress] = useState(() => {
     try {
       const saved = localStorage.getItem('puzzleProgress');
@@ -36,29 +48,46 @@ export default function Puzzles() {
     return { completed: [], current: 1, lastSolved: null, stars: {}, unlocked: [] };
   });
 
-  // UI State
   const [filter, setFilter] = useState('All');
-  const [activePuzzle, setActivePuzzle] = useState(null); // The puzzle object currently being played
-  
-  // Game State
+  const [activePuzzle, setActivePuzzle] = useState(null);
+
   const [game, setGame] = useState(new Chess());
-  const [moveCount, setMoveCount] = useState(0); // Number of player moves made in current puzzle
+  const [moveCount, setMoveCount] = useState(0);
   const [hintUsed, setHintUsed] = useState(false);
   const [attempts, setAttempts] = useState(0);
-  const [feedback, setFeedback] = useState({ type: '', text: '' }); // type: 'success', 'error', 'complete'
+  const [feedback, setFeedback] = useState({ type: '', text: '' });
   const [showHint, setShowHint] = useState(false);
   const [selectedSquare, setSelectedSquare] = useState(null);
   const [legalMoveStyles, setLegalMoveStyles] = useState({});
-  const [invalidMsg, setInvalidMsg] = useState('');
+  const [toast, setToast] = useState(null);
   const [walletNotice, setWalletNotice] = useState('');
   const [unlockingPuzzleId, setUnlockingPuzzleId] = useState(null);
   const [waitingForOpponent, setWaitingForOpponent] = useState(false);
+
+  // Stable board sizing
+  const boardWrapRef = useRef(null);
+  const [boardSize, setBoardSize] = useState(320);
+  useEffect(() => {
+    const measure = () => {
+      if (!boardWrapRef.current) return;
+      const w = boardWrapRef.current.getBoundingClientRect().width;
+      if (w > 0) setBoardSize(Math.floor(Math.min(w, 560)));
+    };
+    measure();
+    let t;
+    const debounced = () => { clearTimeout(t); t = setTimeout(measure, 100); };
+    window.addEventListener('resize', debounced);
+    window.addEventListener('orientationchange', debounced);
+    return () => {
+      window.removeEventListener('resize', debounced);
+      window.removeEventListener('orientationchange', debounced);
+      clearTimeout(t);
+    };
+  }, [activePuzzle]);
+
   const chess = useRef(new Chess());
 
-  // Sync progress to localStorage
-  useEffect(() => {
-    localStorage.setItem('puzzleProgress', JSON.stringify(progress));
-  }, [progress]);
+  useEffect(() => { localStorage.setItem('puzzleProgress', JSON.stringify(progress)); }, [progress]);
 
   useEffect(() => {
     if (!activePuzzle) return;
@@ -71,50 +100,15 @@ export default function Puzzles() {
     setShowHint(false);
     setSelectedSquare(null);
     setLegalMoveStyles({});
-    setInvalidMsg('');
+    setToast(null);
     setWaitingForOpponent(false);
   }, [activePuzzle?.id]);
 
-  // BUG 1 FIX: Validate FEN on puzzle load - skip if already in check/checkmate/stalemate
-  useEffect(() => {
-    if (!activePuzzle) return;
-    try {
-      const testGame = new Chess(activePuzzle.fen);
-      if (testGame.isCheckmate() || testGame.isStalemate() || testGame.isDraw() || testGame.isGameOver()) {
-        // Position is already game-over, skip to next puzzle
-        const nextPuzzle = puzzles.find(p => p.id === activePuzzle.id + 1);
-        if (nextPuzzle) {
-          setFeedback({ type: '', text: '' });
-          setActivePuzzle(nextPuzzle);
-        } else {
-          setActivePuzzle(null);
-          setFeedback({ type: 'error', text: 'No more valid puzzles available.' });
-        }
-        return;
-      }
-      // Also check if the position is already in check (king attacked before player moves)
-      if (testGame.isCheck()) {
-        const nextPuzzle = puzzles.find(p => p.id === activePuzzle.id + 1);
-        if (nextPuzzle) {
-          setFeedback({ type: '', text: '' });
-          setActivePuzzle(nextPuzzle);
-        } else {
-          setActivePuzzle(null);
-          setFeedback({ type: 'error', text: 'No more valid puzzles available.' });
-        }
-      }
-    } catch (e) {
-      // Invalid FEN, skip to next
-      const nextPuzzle = puzzles.find(p => p.id === activePuzzle.id + 1);
-      if (nextPuzzle) {
-        setActivePuzzle(nextPuzzle);
-      } else {
-        setActivePuzzle(null);
-      }
-    }
-  }, [activePuzzle?.id]);
+  const showToast = (text, type = 'info') => {
+    setToast({ text, type });
+    setTimeout(() => setToast(null), 1800);
+  };
 
-  // Load a puzzle into the board
   const loadPuzzle = (puzzle) => {
     if (!puzzle) return;
     setActivePuzzle(puzzle);
@@ -125,29 +119,20 @@ export default function Puzzles() {
 
   const handleUnlockPuzzle = async (puzzle) => {
     const amount = getUnlockCost(puzzle);
-    if (!token) {
-      setWalletNotice('Please login to unlock puzzles.');
-      return;
-    }
-
+    if (!token) { setWalletNotice('Please login to unlock puzzles.'); return; }
     if ((user?.wallet || 0) < amount) {
       setWalletNotice(`Insufficient balance. Need ₹${amount} to unlock.`);
       return;
     }
-
     setUnlockingPuzzleId(puzzle.id);
     try {
       const res = await fetch(`${API_URL}/api/user/deduct-balance`, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
-        },
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
         body: JSON.stringify({ amount }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.message || 'Failed to unlock puzzle');
-
       updateWallet(data.wallet);
       setProgress(prev => {
         const unlockedSet = new Set(prev.unlocked || []);
@@ -168,10 +153,7 @@ export default function Puzzles() {
     try {
       const res = await fetch(`${API_URL}/api/user/add-balance`, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
-        },
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
         body: JSON.stringify({ amount: 100 }),
       });
       const data = await res.json();
@@ -183,16 +165,13 @@ export default function Puzzles() {
     }
   };
 
-  // BUG 2 FIX: Play opponent's response move after player's correct intermediate move
   const playOpponentMove = (currentGame, currentMoveCount) => {
     if (!activePuzzle) return;
     const solution = activePuzzle.solution;
-    // The opponent's move is the next move in the solution array
     const opponentMoveStr = solution[currentMoveCount];
     if (!opponentMoveStr) return;
 
     setWaitingForOpponent(true);
-
     setTimeout(() => {
       try {
         const gameCopy = new Chess(currentGame.fen());
@@ -201,19 +180,15 @@ export default function Puzzles() {
           setGame(gameCopy);
           setMoveCount(currentMoveCount + 1);
         }
-      } catch (e) {
-        // If opponent move fails, just continue
-      }
+      } catch {}
       setWaitingForOpponent(false);
     }, 500);
   };
 
   const handleSquareClick = (square) => {
     if (feedback.type === 'complete' || !activePuzzle || waitingForOpponent) return;
-
-    // Is it player's turn? The player is the one whose turn it was initially.
     const initialTurn = activePuzzle.fen.split(' ')[1];
-    if (game.turn() !== initialTurn) return; // Opponent is moving.
+    if (game.turn() !== initialTurn) return;
 
     const piece = game.get(square);
     if (piece && piece.color === game.turn()) {
@@ -223,31 +198,18 @@ export default function Puzzles() {
       moves.forEach(m => {
         dots[m.to] = {
           background: game.get(m.to)
-            ? 'radial-gradient(circle, rgba(0,0,0,0.3) 60%, transparent 60%)'
+            ? 'radial-gradient(circle, transparent 55%, rgba(0,0,0,0.2) 55%)'
             : 'radial-gradient(circle, rgba(0,0,0,0.2) 25%, transparent 25%)',
-          borderRadius: '50%'
+          borderRadius: '0',
         };
       });
+      dots[square] = { backgroundColor: 'rgba(246, 246, 105, 0.4)' };
       setLegalMoveStyles(dots);
     } else if (selectedSquare) {
-      const moveCopy = new Chess(game.fen());
-      let isValidMove = false;
-      try {
-        isValidMove = !!moveCopy.move({ from: selectedSquare, to: square, promotion: 'q' });
-      } catch(e) {}
-
-      if (isValidMove) {
-        handlePuzzleMove(selectedSquare, square);
-      } else {
-        setInvalidMsg(`${square.toUpperCase()} is not a valid move`);
-        setTimeout(() => setInvalidMsg(''), 2000);
-        setSelectedSquare(null);
-        setLegalMoveStyles({});
-      }
+      handlePuzzleMove(selectedSquare, square);
     }
   };
 
-  // Handle move attempting
   const handlePuzzleMove = (sourceSquare, targetSquare, piece) => {
     if (feedback.type === 'complete' || !activePuzzle || waitingForOpponent) return false;
 
@@ -255,76 +217,93 @@ export default function Puzzles() {
     const promotionPiece = piece ? piece[1].toLowerCase() : 'q';
     let moveStr;
     try {
-      moveStr = moveCopy.move({
-        from: sourceSquare,
-        to: targetSquare,
-        promotion: promotionPiece,
-      });
-    } catch(e) { 
+      moveStr = moveCopy.move({ from: sourceSquare, to: targetSquare, promotion: promotionPiece });
+    } catch {
       setSelectedSquare(null);
       setLegalMoveStyles({});
-      return false; 
+      showToast('Illegal move', 'error');
+      return false;
     }
 
-    if (!moveStr) return false;
-    
+    if (!moveStr) {
+      setSelectedSquare(null);
+      setLegalMoveStyles({});
+      showToast('Illegal move', 'error');
+      return false;
+    }
+
+    // Compare with expected solution move (by SAN OR from-to-promotion)
+    const expectedSan = activePuzzle.solution[moveCount];
+    const expectedFromTo = parseSolutionToFromTo(activePuzzle.fen, activePuzzle.solution, moveCount);
+    const matchesSan = expectedSan && moveStr.san === expectedSan;
+    const matchesFromTo = expectedFromTo && moveStr.from === expectedFromTo.from && moveStr.to === expectedFromTo.to;
+
     setSelectedSquare(null);
     setLegalMoveStyles({});
 
-    setGame(moveCopy);
+    if (!matchesSan && !matchesFromTo) {
+      // Wrong move — DO NOT update board state
+      setAttempts(prev => prev + 1);
+      showToast('Try again', 'error');
+      return false;
+    }
 
+    setGame(moveCopy);
     const nextMoveCount = moveCount + 1;
     const totalMoves = activePuzzle.solution.length;
     const isFinalMove = nextMoveCount === totalMoves;
 
     if (isFinalMove) {
-      if (moveCopy.isCheckmate()) {
-        let finalStars = 3;
-        if (hintUsed) finalStars = 1;
-        else if (attempts > 0) finalStars = 2;
+      let finalStars = 3;
+      if (hintUsed) finalStars = 1;
+      else if (attempts > 0) finalStars = 2;
 
-        setFeedback({ type: 'complete', text: 'Puzzle Solved!' });
+      setFeedback({ type: 'complete', text: 'Puzzle Solved!' });
+      showToast('Solved ✓', 'success');
 
-        const hadSolvedPuzzle100 = progress.completed.includes(100);
-        setProgress(prev => {
-          const completedSet = new Set(prev.completed);
-          completedSet.add(activePuzzle.id);
-          const nextCurrent = prev.current === activePuzzle.id ? activePuzzle.id + 1 : prev.current;
-
-          const newStars = { ...prev.stars };
-          if (!newStars[activePuzzle.id] || newStars[activePuzzle.id] < finalStars) {
-            newStars[activePuzzle.id] = finalStars;
-          }
-
-          return {
-            ...prev,
-            completed: Array.from(completedSet),
-            current: Math.min(nextCurrent, 100),
-            lastSolved: Date.now(),
-            stars: newStars
-          };
-        });
-        if (activePuzzle.id === 100 && !hadSolvedPuzzle100) {
-          handleFinalPuzzleReward();
+      const hadSolvedPuzzle100 = progress.completed.includes(100);
+      setProgress(prev => {
+        const completedSet = new Set(prev.completed);
+        completedSet.add(activePuzzle.id);
+        const nextCurrent = prev.current === activePuzzle.id ? activePuzzle.id + 1 : prev.current;
+        const newStars = { ...prev.stars };
+        if (!newStars[activePuzzle.id] || newStars[activePuzzle.id] < finalStars) {
+          newStars[activePuzzle.id] = finalStars;
         }
-      } else {
-        setAttempts(prev => prev + 1);
-        setFeedback({ type: 'error', text: 'Failed! Try again' });
-      }
+        return {
+          ...prev,
+          completed: Array.from(completedSet),
+          current: Math.min(nextCurrent, 100),
+          lastSolved: Date.now(),
+          stars: newStars,
+        };
+      });
+      if (activePuzzle.id === 100 && !hadSolvedPuzzle100) handleFinalPuzzleReward();
       setMoveCount(nextMoveCount);
       return true;
     }
 
-    // Intermediate move: player made a correct move but puzzle is not over yet.
-    // Play opponent's response move after a short delay.
     setMoveCount(nextMoveCount);
-    setFeedback({ type: 'success', text: 'Correct! Opponent is responding...' });
+    showToast('Correct ✓', 'success');
     playOpponentMove(moveCopy, nextMoveCount);
     return true;
   };
 
+  // Translate the puzzle's SAN solution into from/to on demand
+  const parseSolutionToFromTo = (startFen, solution, idx) => {
+    try {
+      const g = new Chess(startFen);
+      for (let i = 0; i < idx; i++) g.move(solution[i]);
+      const trial = new Chess(g.fen());
+      const m = trial.move(solution[idx]);
+      if (m) return { from: m.from, to: m.to };
+    } catch {}
+    return null;
+  };
+
   const currentLevelColor = (diff) => {
-    switch (diff) {
+    const k = (diff || '').toLowerCase();
+    switch (k) {
       case 'easy': return 'text-green-400 border-green-400/30 bg-green-400/10';
       case 'medium': return 'text-yellow-400 border-yellow-400/30 bg-yellow-400/10';
       case 'hard': return 'text-orange-400 border-orange-400/30 bg-orange-400/10';
@@ -335,14 +314,14 @@ export default function Puzzles() {
   };
 
   const BOARD_THEMES = {
-    classic: { label: 'Classic', light: '#f0d9b5', dark: '#b58863' },
-    dark:    { label: 'Dark', light: '#334155', dark: '#1e293b' },
-    green:   { label: 'Green', light: '#eeeed2', dark: '#769656' },
-    ocean:   { label: 'Ocean', light: '#b8cce2', dark: '#5b7ea4' },
-    bw:      { label: 'Classic B&W', light: '#ffffff', dark: '#808080' },
+    classic: { light: '#f0d9b5', dark: '#b58863' },
+    dark:    { light: '#334155', dark: '#1e293b' },
+    green:   { light: '#eeeed2', dark: '#769656' },
+    ocean:   { light: '#b8cce2', dark: '#5b7ea4' },
+    bw:      { light: '#ffffff', dark: '#808080' },
   };
 
-  // 1. RENDER PUZZLE PLAY SCREEN
+  // ── PUZZLE PLAY SCREEN ──
   if (activePuzzle) {
     const isWhiteTurn = game.turn() === 'w';
     const boardOrientation = activePuzzle.fen.split(' ')[1] === 'w' ? 'white' : 'black';
@@ -355,67 +334,63 @@ export default function Puzzles() {
     const theme = BOARD_THEMES[boardTheme] || BOARD_THEMES.classic;
 
     return (
-      <div className="bg-hero px-4 py-6">
+      <div className="bg-hero w-full overflow-x-hidden px-3 py-4 md:px-6 md:py-6">
         <div className="max-w-3xl mx-auto animate-fade-in">
-          
-          <div className="flex items-center justify-between mb-6">
-            <button onClick={() => setActivePuzzle(null)} className="btn-secondary btn-sm">
-              ← Back to Puzzles
+
+          <div className="flex items-center justify-between mb-4">
+            <button onClick={() => setActivePuzzle(null)} className="text-xs text-slate-400 hover:text-white transition-colors font-semibold flex items-center gap-1">
+              ← Back
             </button>
             <div className="text-right">
-              <h2 className="text-white font-bold text-xl">Puzzle #{activePuzzle.id}</h2>
+              <h2 className="text-white font-bold text-base md:text-lg">Puzzle #{activePuzzle.id}</h2>
               <span className={`px-2 py-0.5 rounded text-[10px] uppercase font-bold border ${currentLevelColor(activePuzzle.difficulty)}`}>
-                {activePuzzle.difficulty} — {activePuzzle.moves} Move Mate
+                {activePuzzle.difficulty} — {activePuzzle.moves} move{activePuzzle.moves > 1 ? 's' : ''}
               </span>
             </div>
           </div>
 
-          <div className="grid md:grid-cols-12 gap-6">
+          <div className="grid md:grid-cols-12 gap-4 md:gap-6">
+            {/* Board */}
             <div className="md:col-span-8">
-              <div className="bg-navy-800/60 backdrop-blur-sm border border-navy-700/50 shadow-2xl relative p-0 overflow-hidden mx-auto md:mx-0" style={{ maxHeight: '70vh', maxWidth: '70vh', borderRadius: 0 }}>
-                <Chessboard 
-                  customBoardStyle={{ borderRadius: '0px' }}
+              <div
+                ref={boardWrapRef}
+                className="relative w-full mx-auto"
+                style={{ aspectRatio: '1 / 1', maxWidth: '560px', touchAction: 'none', overflow: 'hidden' }}
+              >
+                <Chessboard
+                  customBoardStyle={{ borderRadius: '4px' }}
                   position={game.fen()}
-                  arePiecesDraggable={!waitingForOpponent}
+                  boardWidth={boardSize}
+                  arePiecesDraggable={!waitingForOpponent && feedback.type !== 'complete'}
                   onPieceDrop={handlePuzzleMove}
                   onSquareClick={handleSquareClick}
                   boardOrientation={boardOrientation}
-                  animationDuration={200}
-                  customSquareStyles={{
-                    ...legalMoveStyles
-                  }}
+                  animationDuration={180}
+                  customSquareStyles={legalMoveStyles}
                   customLightSquareStyle={{ backgroundColor: theme.light }}
                   customDarkSquareStyle={{ backgroundColor: theme.dark }}
                   snapToCursor={false}
-                  showBoardNotation={true}
-                  customNotationStyle={{
-                    fontSize: '10px',
-                    fontWeight: '400',
-                    opacity: 0.7
-                  }}
+                  showBoardNotation
                 />
-                
-                {feedback.type === 'success' && (
-                  <div className="absolute inset-0 bg-chess-green/20 pointer-events-none animate-pulse-fast" />
-                )}
+
                 {feedback.type === 'complete' && (
-                  <div className="absolute inset-0 bg-black/60 flex items-center justify-center animate-fade-in z-20 backdrop-blur-sm">
+                  <div className="absolute inset-0 bg-black/65 backdrop-blur-sm flex items-center justify-center animate-fade-in z-20 rounded">
                     <div className="text-center animate-scale-in">
-                      <div className="text-6xl mb-4">🎉</div>
-                      <h2 className="text-3xl font-black text-white mb-2 tracking-tight">Puzzle Solved!</h2>
-                      <div className="flex justify-center gap-1 mb-6">
+                      <div className="text-5xl mb-3">🎉</div>
+                      <h2 className="text-2xl font-black text-white mb-2">Puzzle Solved!</h2>
+                      <div className="flex justify-center gap-1 mb-5">
                         {[1, 2, 3].map(s => (
-                          <span key={s} className={`text-2xl ${s <= (progress.stars[activePuzzle.id] || 3) ? '' : 'grayscale opacity-30 shadow-none'}`}>
+                          <span key={s} className={`text-xl ${s <= (progress.stars[activePuzzle.id] || 3) ? '' : 'grayscale opacity-30'}`}>
                             {STAR_EMOJI}
                           </span>
                         ))}
                       </div>
-                      <div className="flex gap-3 justify-center">
-                        <button onClick={() => setActivePuzzle(null)} className="btn-secondary">Grid</button>
+                      <div className="flex gap-2 justify-center">
+                        <button onClick={() => setActivePuzzle(null)} className="px-4 py-2 rounded-xl text-xs font-bold bg-white/10 text-slate-200 hover:bg-white/15">Grid</button>
                         {activePuzzle.id < 100 && (
-                          <button 
-                            onClick={() => loadPuzzle(puzzles.find(p => p.id === activePuzzle.id + 1))}
-                            className="btn-primary shadow-lg shadow-chess-green/20"
+                          <button
+                            onClick={() => loadPuzzle(validPuzzles.find(p => p.id === activePuzzle.id + 1) || validPuzzles[validPuzzles.indexOf(activePuzzle) + 1])}
+                            className="px-4 py-2 rounded-xl text-xs font-bold bg-gradient-to-r from-chess-green to-emerald-600 text-white shadow-lg shadow-chess-green/20"
                           >
                             Next Puzzle →
                           </button>
@@ -424,124 +399,109 @@ export default function Puzzles() {
                     </div>
                   </div>
                 )}
-              </div>
-              
-              {invalidMsg && (
-                <p className="text-red-400 text-sm font-bold text-center mt-3 animate-fade-in">{invalidMsg}</p>
-              )}
-            </div>
 
-            <div className="md:col-span-4 space-y-4">
-              <div className="card text-center">
-                <div className={`inline-block px-3 py-1 rounded-full text-xs font-bold mb-3 ${
-                  isWhiteTurn 
-                    ? 'bg-white text-black' 
-                    : 'bg-slate-800 text-white border border-slate-600'
-                }`}>
-                  {waitingForOpponent ? 'Opponent thinking...' : (isWhiteTurn ? 'White to Move' : 'Black to Move')}
-                </div>
-                
-                <h3 className="text-slate-300 text-sm mb-4">
-                  Find the best continuation.
-                </h3>
-
-                {feedback.text && feedback.type !== 'complete' && (
-                  <div className={`p-3 rounded-lg text-sm font-bold animate-fade-in ${
-                    feedback.type === 'error' ? 'bg-red-500/10 text-red-400 border border-red-500/20' : 
-                    'bg-chess-green/10 text-chess-green border border-chess-green/20'
-                  }`}>
-                    {feedback.text}
+                {/* Floating toast overlay — does NOT move board */}
+                {toast && (
+                  <div className={`absolute top-2 left-1/2 -translate-x-1/2 z-30 px-3 py-1 rounded-md text-xs font-bold shadow-md ${
+                    toast.type === 'success' ? 'bg-emerald-500/90 text-white' : toast.type === 'error' ? 'bg-red-500/90 text-white' : 'bg-navy-800/95 text-white'
+                  } animate-fade-in`}>
+                    {toast.text}
                   </div>
                 )}
               </div>
+            </div>
 
-              <div className="card space-y-3">
-                <button 
+            {/* Right Panel — Info & Controls */}
+            <div className="md:col-span-4 space-y-3">
+              <div className="bg-navy-800/40 border border-navy-700/20 rounded-xl p-3 text-center">
+                <div className={`inline-block px-2.5 py-0.5 rounded-full text-[10px] font-bold mb-2 ${
+                  isWhiteTurn ? 'bg-white text-black' : 'bg-slate-800 text-white border border-slate-600'
+                }`}>
+                  {waitingForOpponent ? 'Opponent moving...' : (isWhiteTurn ? 'White to Move' : 'Black to Move')}
+                </div>
+                <h3 className="text-slate-300 text-xs">Find the best continuation.</h3>
+              </div>
+
+              <div className="bg-navy-800/40 border border-navy-700/20 rounded-xl p-3 space-y-2">
+                <button
                   onClick={() => {
                     const resetGame = new Chess(activePuzzle.fen);
                     setGame(resetGame);
                     setMoveCount(0);
                     setFeedback({ type: '', text: '' });
                     setWaitingForOpponent(false);
+                    setSelectedSquare(null);
+                    setLegalMoveStyles({});
                   }}
-                  className="btn-secondary w-full flex items-center justify-center gap-2"
+                  className="w-full py-2 rounded-lg text-xs font-bold bg-white/5 text-slate-300 hover:bg-white/10 transition-all"
                 >
-                  <span>🔄</span> Retry Position
+                  🔄 Retry
                 </button>
-                
-                <button 
-                  onClick={() => {
-                    setHintUsed(true);
-                    setShowHint(true);
-                  }}
-                  className={`btn-secondary w-full flex items-center justify-center gap-2 ${hintUsed ? 'opacity-50 cursor-not-allowed' : ''}`}
+
+                <button
+                  onClick={() => { setHintUsed(true); setShowHint(true); }}
+                  className={`w-full py-2 rounded-lg text-xs font-bold transition-all ${hintUsed ? 'opacity-50 cursor-not-allowed bg-white/5 text-slate-500' : 'bg-gold-500/10 text-gold-400 hover:bg-gold-500/20'}`}
                   disabled={hintUsed}
                 >
-                  <span>💡</span> {hintUsed ? 'Hint Used (-1 ⭐)' : 'Get Hint (-1 ⭐)'}
+                  💡 {hintUsed ? 'Hint used (-1 ⭐)' : 'Hint (-1 ⭐)'}
                 </button>
-                
+
                 {showHint && (
-                  <div className="p-3 bg-navy-800 rounded-lg border border-navy-600/50 text-sm text-sky-300 animate-slide-up text-center font-medium">
-                    {activePuzzle.hint || 'Look closely at the king\'s defenses.'}
+                  <div className="p-2 bg-navy-900/60 rounded-md border border-navy-700/30 text-[11px] text-sky-300 text-center">
+                    {activePuzzle.hint || 'Look at threats and forcing moves.'}
                   </div>
                 )}
 
                 {walletNotice && (
-                  <div className="p-3 bg-amber-500/10 border border-amber-500/30 rounded-lg text-sm text-amber-300 text-center">
+                  <div className="p-2 bg-amber-500/10 border border-amber-500/30 rounded-md text-[10px] text-amber-300 text-center">
                     {walletNotice}
                   </div>
                 )}
               </div>
             </div>
           </div>
-          
         </div>
       </div>
     );
   }
 
-  // 2. RENDER PUZZLE SELECTION SCREEN
+  // ── PUZZLE SELECTION SCREEN ──
   const filters = ['All', 'Easy', 'Medium', 'Hard', 'Advanced', 'Master'];
-  const filteredPuzzles = puzzles.filter(p => filter === 'All' || p.difficulty.toLowerCase() === filter.toLowerCase());
+  const filteredPuzzles = validPuzzles.filter(p => filter === 'All' || (p.difficulty || '').toLowerCase() === filter.toLowerCase());
 
   const completedCount = progress.completed.length;
-  const completionPercent = Math.round((completedCount / 100) * 100);
+  const totalCount = validPuzzles.length || 1;
+  const completionPercent = Math.round((completedCount / totalCount) * 100);
 
   return (
-    <div className="bg-hero px-4 py-8">
+    <div className="bg-hero w-full overflow-x-hidden px-4 py-6">
       <div className="max-w-6xl mx-auto animate-fade-in">
-        
-        {/* Header & Progress */}
-        <div className="bg-navy-800/80 backdrop-blur border border-navy-700/50 rounded-2xl p-6 mb-8 flex flex-col md:flex-row items-center justify-between gap-6 shadow-xl">
+        <div className="bg-navy-800/40 backdrop-blur border border-navy-700/20 rounded-2xl p-5 md:p-6 mb-6 flex flex-col md:flex-row items-center justify-between gap-4 md:gap-6">
           <div>
-            <h1 className="text-3xl font-black text-white mb-2">Chess Puzzles</h1>
-            <p className="text-slate-400 max-w-md">Train your tactics. Solve puzzles. Become unbeatable.</p>
+            <h1 className="text-2xl md:text-3xl font-black text-white mb-1">Chess Puzzles</h1>
+            <p className="text-xs md:text-sm text-slate-400 max-w-md">Train tactics. Sharpen your edge.</p>
           </div>
-          
           <div className="w-full md:w-64">
-            <div className="flex justify-between text-sm font-bold mb-2">
-              <span className="text-white">{completedCount} / 100 Completed</span>
+            <div className="flex justify-between text-xs font-bold mb-2">
+              <span className="text-white">{completedCount} / {totalCount}</span>
               <span className="text-chess-green">{completionPercent}%</span>
             </div>
-            <div className="w-full h-3 bg-navy-900 rounded-full overflow-hidden border border-navy-700/50">
-              <div 
-                className="h-full bg-gradient-to-r from-chess-green to-emerald-400 transition-all duration-1000"
+            <div className="w-full h-2 bg-navy-900 rounded-full overflow-hidden">
+              <div
+                className="h-full bg-gradient-to-r from-chess-green to-emerald-400 transition-all duration-700"
                 style={{ width: `${completionPercent}%` }}
               />
             </div>
           </div>
         </div>
 
-        {/* Filters */}
-        <div className="flex flex-wrap gap-2 mb-6">
+        <div className="flex flex-wrap gap-2 mb-5">
           {filters.map(f => (
             <button
               key={f}
               onClick={() => setFilter(f)}
-              className={`px-4 py-2 rounded-xl text-sm font-bold transition-all ${
-                filter === f 
-                  ? 'bg-white text-navy-900 shadow-lg' 
-                  : 'bg-navy-800 text-slate-400 hover:bg-navy-700 hover:text-white border border-navy-700/50'
+              className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
+                filter === f ? 'bg-white text-navy-900' : 'bg-navy-800/40 text-slate-400 hover:bg-navy-800/70 hover:text-white border border-navy-700/30'
               }`}
             >
               {f}
@@ -549,35 +509,29 @@ export default function Puzzles() {
           ))}
         </div>
 
-        {/* Puzzle Grid */}
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3">
           {filteredPuzzles.map(puzzle => {
             const isCompleted = progress.completed.includes(puzzle.id);
             const isUnlocked = puzzle.id <= progress.current || progress.unlocked.includes(puzzle.id);
             const stars = progress.stars[puzzle.id] || 0;
             const unlockCost = getUnlockCost(puzzle);
 
-            let cardStyle = "bg-navy-800 border-navy-700 hover:border-navy-500 opacity-60"; // Locked style
-            if (isCompleted) cardStyle = "bg-chess-green/10 border-chess-green/30 hover:border-chess-green shadow-[0_0_15px_rgba(118,150,86,0.1)]"; // Completed
-            else if (isUnlocked) cardStyle = "bg-gradient-to-br from-gold-500/20 to-gold-700/5 border-gold-500/50 shadow-[0_0_20px_rgba(251,191,36,0.15)] ring-1 ring-gold-500/20"; // Current Unlocked
+            let cardStyle = 'bg-navy-800/30 border-navy-700/20 opacity-60';
+            if (isCompleted) cardStyle = 'bg-chess-green/8 border-chess-green/30';
+            else if (isUnlocked) cardStyle = 'bg-gradient-to-br from-gold-500/15 to-gold-700/5 border-gold-500/30';
 
             if (!isUnlocked) {
               return (
-                <div
-                  key={puzzle.id}
-                  className={`relative flex flex-col items-center justify-center p-5 rounded-2xl border-2 transition-all duration-300 group ${cardStyle}`}
-                >
-                  <div className="absolute top-3 right-3 text-lg">🔒</div>
-                  <div className="text-lg font-black text-white mb-1">#{puzzle.id}</div>
-                  <div className="text-[10px] uppercase font-bold text-slate-500 mb-3 tracking-wider">
-                    {puzzle.difficulty}
-                  </div>
+                <div key={puzzle.id} className={`relative flex flex-col items-center justify-center p-4 rounded-xl border transition-all ${cardStyle}`}>
+                  <div className="absolute top-2 right-2 text-sm">🔒</div>
+                  <div className="text-base font-black text-white mb-1">#{puzzle.id}</div>
+                  <div className="text-[9px] uppercase font-bold text-slate-500 mb-2 tracking-wider">{puzzle.difficulty}</div>
                   <button
                     onClick={() => handleUnlockPuzzle(puzzle)}
                     disabled={unlockingPuzzleId === puzzle.id}
-                    className="btn-secondary w-full text-xs"
+                    className="w-full py-1.5 rounded-md text-[10px] font-bold bg-white/5 text-slate-300 hover:bg-white/10"
                   >
-                    {unlockingPuzzleId === puzzle.id ? 'Unlocking...' : `Unlock for ₹${unlockCost}`}
+                    {unlockingPuzzleId === puzzle.id ? 'Unlocking...' : `Unlock ₹${unlockCost}`}
                   </button>
                 </div>
               );
@@ -587,45 +541,34 @@ export default function Puzzles() {
               <button
                 key={puzzle.id}
                 onClick={() => loadPuzzle(puzzle)}
-                className={`relative flex flex-col items-center justify-center p-5 rounded-2xl border-2 transition-all duration-300 group ${cardStyle} cursor-pointer hover:-translate-y-1`}
+                className={`relative flex flex-col items-center justify-center p-4 rounded-xl border transition-all ${cardStyle} cursor-pointer hover:-translate-y-0.5`}
               >
-                <div className="text-lg font-black text-white mb-1 group-hover:text-amber-300 transition-colors">
-                  #{puzzle.id}
-                </div>
-                
-                <div className="text-[10px] uppercase font-bold text-slate-500 mb-3 tracking-wider">
-                  {puzzle.difficulty}
-                </div>
+                <div className="text-base font-black text-white mb-1">#{puzzle.id}</div>
+                <div className="text-[9px] uppercase font-bold text-slate-500 mb-2 tracking-wider">{puzzle.difficulty}</div>
 
                 {isCompleted ? (
                   <div className="flex gap-0.5">
                     {[1, 2, 3].map(s => (
-                      <span key={s} className={`text-sm ${s <= stars ? '' : 'grayscale opacity-20'}`}>
-                        {STAR_EMOJI}
-                      </span>
+                      <span key={s} className={`text-xs ${s <= stars ? '' : 'grayscale opacity-20'}`}>{STAR_EMOJI}</span>
                     ))}
                   </div>
                 ) : (
-                  <div className="w-8 h-8 rounded-full bg-gold-500/20 text-gold-500 flex items-center justify-center text-sm ring-1 ring-gold-500/30">
-                    ▶
-                  </div>
+                  <div className="w-7 h-7 rounded-full bg-gold-500/15 text-gold-400 flex items-center justify-center text-xs">▶</div>
                 )}
               </button>
             );
           })}
         </div>
+
         {walletNotice && (
-          <div className="mt-4 p-3 bg-amber-500/10 border border-amber-500/30 rounded-lg text-sm text-amber-300 text-center">
+          <div className="mt-4 p-3 bg-amber-500/10 border border-amber-500/30 rounded-lg text-xs text-amber-300 text-center">
             {walletNotice}
           </div>
         )}
-        
-        {filteredPuzzles.length === 0 && (
-          <div className="text-center py-20 text-slate-500">
-            No puzzles found for this category.
-          </div>
-        )}
 
+        {filteredPuzzles.length === 0 && (
+          <div className="text-center py-16 text-slate-500 text-sm">No puzzles in this category.</div>
+        )}
       </div>
     </div>
   );

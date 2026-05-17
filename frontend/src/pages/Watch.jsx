@@ -69,18 +69,23 @@ export default function Watch() {
 
   const captured = getCaptured(fen);
 
-  // Responsive board sizing
+  // Stable board sizing — window resize only, no observer feedback loops
   useEffect(() => {
-    if (!containerRef.current) return;
-    const ro = new ResizeObserver((entries) => {
-      for (const entry of entries) {
-        const w = entry.contentRect.width;
-        if (w > 0) setBoardSize(Math.min(Math.floor(w), 640));
-      }
-    });
-    ro.observe(containerRef.current);
-    setBoardSize(Math.min(Math.floor(containerRef.current.offsetWidth), 640) || 400);
-    return () => ro.disconnect();
+    const measure = () => {
+      if (!containerRef.current) return;
+      const w = containerRef.current.getBoundingClientRect().width;
+      if (w > 0) setBoardSize(Math.min(Math.floor(w), 640));
+    };
+    measure();
+    let t;
+    const debounced = () => { clearTimeout(t); t = setTimeout(measure, 100); };
+    window.addEventListener('resize', debounced);
+    window.addEventListener('orientationchange', debounced);
+    return () => {
+      window.removeEventListener('resize', debounced);
+      window.removeEventListener('orientationchange', debounced);
+      clearTimeout(t);
+    };
   }, []);
 
   // Navigation functions
@@ -256,29 +261,31 @@ export default function Watch() {
               </div>
             </div>
 
-            {/* ── Navigation Controls ── */}
+            {/* ── Navigation Controls ── (review-first) */}
             <div className="flex items-center justify-center gap-2 mt-3">
               <NavButton onClick={goFirst} disabled={moveIndex <= -1} title="First move (Home)">⏮</NavButton>
               <NavButton onClick={goPrev} disabled={moveIndex <= -1} title="Previous (←)">◀</NavButton>
+              <NavButton onClick={goNext} disabled={gameEnded} title="Next (→)">▶</NavButton>
+              <NavButton onClick={goLast} disabled={gameEnded} title="Last move (End)">⏭</NavButton>
+            </div>
 
-              {/* Auto-play toggle — small */}
+            {/* Auto-play — small secondary control */}
+            <div className="flex items-center justify-center mt-2">
               <button
                 onClick={() => {
                   if (gameEnded) { goToMove(-1); setIsAutoPlaying(true); }
                   else setIsAutoPlaying(!isAutoPlaying);
                 }}
                 title={isAutoPlaying ? 'Pause auto-play' : 'Start auto-play'}
-                className={`flex items-center justify-center w-10 h-10 rounded-lg text-sm font-bold transition-all ${
+                className={`flex items-center justify-center gap-1.5 px-3 py-1 rounded-md text-[10px] font-semibold transition-all ${
                   isAutoPlaying
                     ? 'bg-chess-green/15 text-chess-green'
-                    : 'bg-white/5 text-slate-300 hover:bg-white/10 hover:text-white active:scale-95'
+                    : 'bg-white/5 text-slate-400 hover:bg-white/10 hover:text-slate-200'
                 }`}
               >
-                {isAutoPlaying ? '⏸' : '▶'}
+                <span>{isAutoPlaying ? '⏸' : '▶'}</span>
+                <span>{isAutoPlaying ? 'Pause' : 'Auto Play'}</span>
               </button>
-
-              <NavButton onClick={goNext} disabled={gameEnded} title="Next (→)">▶</NavButton>
-              <NavButton onClick={goLast} disabled={gameEnded} title="Last move (End)">⏭</NavButton>
             </div>
 
             {/* Move counter */}

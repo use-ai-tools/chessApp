@@ -22,10 +22,8 @@ export default function ResultModal({ result, onClose, onBackToLobby, onPlayAgai
     if (!result) return;
     playSound('gameEnd');
 
-    // Phase 1: Fade in result text
-    const t1 = setTimeout(() => setVisible(true), 100);
-    // Phase 2: Show action buttons after delay
-    const t2 = setTimeout(() => setPhase('actions'), 2500);
+    const t1 = setTimeout(() => setVisible(true), 80);
+    const t2 = setTimeout(() => setPhase('actions'), 1400);
 
     return () => { clearTimeout(t1); clearTimeout(t2); };
   }, [result]);
