@@ -18,6 +18,7 @@
     scroll-behavior: auto;
     touch-action: manipulation;
     -ms-touch-action: manipulation;
+    width: 100%;
   }
 
   body {
@@ -250,9 +251,14 @@
     @apply text-gold-400 text-sm;
   }
 
-  /* Background — subtle gradient */
+  /* Background — premium deep navy gradient */
   .bg-hero {
-    background: linear-gradient(135deg, #0a0a1a 0%, #0f172a 50%, #0a0a1a 100%);
+    background: radial-gradient(ellipse at top, #0f172a 0%, #0a0a1a 60%, #06060f 100%);
+  }
+
+  /* Safe area for iOS notch / nav bar */
+  .safe-area-bottom {
+    padding-bottom: env(safe-area-inset-bottom, 0);
   }
 
   /* ── Move History Panel ── */
