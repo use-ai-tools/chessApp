@@ -342,9 +342,11 @@ export default function Puzzles() {
               ← Back
             </button>
             <div className="text-right">
-              <h2 className="text-white font-bold text-base md:text-lg">Puzzle #{activePuzzle.id}</h2>
+              <h2 className="text-white font-bold text-base md:text-lg">
+                #{activePuzzle.id} · {activePuzzle.title || `${activePuzzle.moves}-move puzzle`}
+              </h2>
               <span className={`px-2 py-0.5 rounded text-[10px] uppercase font-bold border ${currentLevelColor(activePuzzle.difficulty)}`}>
-                {activePuzzle.difficulty} — {activePuzzle.moves} move{activePuzzle.moves > 1 ? 's' : ''}
+                {activePuzzle.difficulty}
               </span>
             </div>
           </div>
@@ -375,16 +377,19 @@ export default function Puzzles() {
 
                 {feedback.type === 'complete' && (
                   <div className="absolute inset-0 bg-black/65 backdrop-blur-sm flex items-center justify-center animate-fade-in z-20 rounded">
-                    <div className="text-center animate-scale-in">
+                    <div className="text-center animate-scale-in px-4">
                       <div className="text-5xl mb-3">🎉</div>
-                      <h2 className="text-2xl font-black text-white mb-2">Puzzle Solved!</h2>
-                      <div className="flex justify-center gap-1 mb-5">
+                      <h2 className="text-2xl font-black text-white mb-2">Correct!</h2>
+                      <div className="flex justify-center gap-1 mb-3">
                         {[1, 2, 3].map(s => (
                           <span key={s} className={`text-xl ${s <= (progress.stars[activePuzzle.id] || 3) ? '' : 'grayscale opacity-30'}`}>
                             {STAR_EMOJI}
                           </span>
                         ))}
                       </div>
+                      {activePuzzle.explanation && (
+                        <p className="text-[11px] text-slate-300 max-w-xs mx-auto mb-4 leading-relaxed">{activePuzzle.explanation}</p>
+                      )}
                       <div className="flex gap-2 justify-center">
                         <button onClick={() => setActivePuzzle(null)} className="px-4 py-2 rounded-xl text-xs font-bold bg-white/10 text-slate-200 hover:bg-white/15">Grid</button>
                         {activePuzzle.id < 100 && (
@@ -419,7 +424,9 @@ export default function Puzzles() {
                 }`}>
                   {waitingForOpponent ? 'Opponent moving...' : (isWhiteTurn ? 'White to Move' : 'Black to Move')}
                 </div>
-                <h3 className="text-slate-300 text-xs">Find the best continuation.</h3>
+                <h3 className="text-slate-300 text-xs leading-snug">
+                  {activePuzzle.objective || 'Find the best continuation.'}
+                </h3>
               </div>
 
               <div className="bg-navy-800/40 border border-navy-700/20 rounded-xl p-3 space-y-2">
@@ -447,8 +454,10 @@ export default function Puzzles() {
                 </button>
 
                 {showHint && (
-                  <div className="p-2 bg-navy-900/60 rounded-md border border-navy-700/30 text-[11px] text-sky-300 text-center">
-                    {activePuzzle.hint || 'Look at threats and forcing moves.'}
+                  <div className="p-2 bg-navy-900/60 rounded-md border border-navy-700/30 text-[11px] text-sky-300 text-center space-y-1">
+                    {(activePuzzle.hints && activePuzzle.hints.length > 0 ? activePuzzle.hints : ['Look at threats and forcing moves.']).map((h, i) => (
+                      <p key={i}>{h}</p>
+                    ))}
                   </div>
                 )}
 
