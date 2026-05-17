@@ -238,7 +238,11 @@ export default function ChessBoard({
       const rect = boardWrapRef.current.getBoundingClientRect();
       const w = rect.width;
       if (w > 0) {
-        const next = Math.floor(Math.min(w, maxBoardSize));
+        // Clamp by viewport height too — keeps board inside 100dvh on laptops
+        const isDesktop = window.innerWidth >= 1024;
+        const verticalReserved = isDesktop ? 180 : 220;
+        const heightCap = Math.max(260, window.innerHeight - verticalReserved);
+        const next = Math.floor(Math.min(w, heightCap, maxBoardSize));
         setBoardSize(prev => (Math.abs(prev - next) < 2 ? prev : next));
       }
     };
@@ -644,8 +648,14 @@ export default function ChessBoard({
 
         <div
           ref={boardWrapRef}
-          className="w-full shadow-2xl shadow-black/50 relative"
-          style={{ touchAction: 'none', overflow: 'hidden', aspectRatio: '1 / 1', maxWidth: `${maxBoardSize}px`, margin: '0 auto' }}
+          className="shadow-2xl shadow-black/50 relative"
+          style={{
+            touchAction: 'none',
+            overflow: 'hidden',
+            aspectRatio: '1 / 1',
+            width: `min(${maxBoardSize}px, calc(100dvh - 200px), 100%)`,
+            margin: '0 auto',
+          }}
         >
           {gameStatus === 'playing' && username && (
             <div className="absolute inset-0 z-10 pointer-events-none flex items-center justify-center" style={{ opacity: 0.04 }}>
