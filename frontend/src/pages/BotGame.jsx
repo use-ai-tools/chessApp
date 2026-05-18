@@ -14,7 +14,7 @@ const DIFFICULTY = {
   15: { label: 'Hard', depth: 15, color: 'text-red-400', bg: 'bg-red-500/10' },
 };
 
-const RESULT_DELAY_MS = 1200;
+const RESULT_DELAY_MS = 1500;
 
 export default function BotGame() {
   const navigate = useNavigate();

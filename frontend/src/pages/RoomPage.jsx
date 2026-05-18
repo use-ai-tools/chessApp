@@ -297,7 +297,7 @@ export default function RoomPage() {
       // Show board indicators immediately; defer modal by 1.2s
       setPendingResult(finalResult);
       clearTimeout(resultTimerRef.current);
-      resultTimerRef.current = setTimeout(() => setResultData(finalResult), 1200);
+      resultTimerRef.current = setTimeout(() => setResultData(finalResult), 1500);
 
       setStatus(`Match ended — ${data.reason}`);
       refreshUser();

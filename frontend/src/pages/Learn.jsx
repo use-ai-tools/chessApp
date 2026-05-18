@@ -35,6 +35,9 @@ export default function Learn() {
   const [showHint, setShowHint] = useState(false);
   const [selectedSq, setSelectedSq] = useState(null);
   const [legalDots, setLegalDots] = useState({});
+  // moveFen: when a correct move is made, hold the post-move FEN briefly
+  // so the user SEES the piece move before the next step advances.
+  const [moveFen, setMoveFen] = useState(null);
 
   const [progress, setProgress] = useState(getProgress);
   const [showOnboarding, setShowOnboarding] = useState(() => !localStorage.getItem(ONBOARD_KEY));
@@ -136,29 +139,40 @@ export default function Learn() {
   // ── Move validation (used by practice + puzzle) ──
   const tryMove = useCallback((from, to) => {
     if (!currentTask) return false;
-    const matched = currentTask.solutions.some(s => s.from === from && s.to === to);
+    const matched = currentTask.solutions.find(s => s.from === from && s.to === to);
     if (matched) {
+      // Apply the move via chess.js so the board actually animates the piece.
+      // Use the matched solution's promotion if specified, else default to queen.
+      let newFen = null;
+      try {
+        const chess = new Chess(currentTask.fen);
+        const promotion = matched.promotion || 'q';
+        const m = chess.move({ from, to, promotion });
+        if (m) newFen = chess.fen();
+      } catch {}
+      if (newFen) setMoveFen(newFen);
+
       showSmallToast(lang === 'hi' ? 'सही ✓' : lang === 'en' ? 'Correct ✓' : 'Sahi ✓', true);
-      // Advance after short delay
+      setSelectedSq(null);
+      setLegalDots({});
+
+      // Advance after delay — long enough to see the piece on its new square
       setTimeout(() => {
+        setMoveFen(null);
         if (phase === 'practice') {
           if (practiceStep + 1 < practiceCount) {
             setPracticeStep(practiceStep + 1);
             setShowHint(false);
-            setSelectedSq(null);
-            setLegalDots({});
           } else if (hasPuzzle) {
             setPhase('puzzle');
             setShowHint(false);
-            setSelectedSq(null);
-            setLegalDots({});
           } else {
             finishLesson();
           }
         } else if (phase === 'puzzle') {
           finishLesson();
         }
-      }, 700);
+      }, 1100);
       return true;
     } else {
       showSmallToast(lang === 'hi' ? 'फिर कोशिश' : lang === 'en' ? 'Try again' : 'Try again');
@@ -173,6 +187,7 @@ export default function Learn() {
   const onSquareClick = useCallback((sq) => {
     if (phase !== 'practice' && phase !== 'puzzle') return;
     if (!currentTask) return;
+    if (moveFen) return; // lock during post-move animation
     // Try via chess.js to validate legality + capture preview
     let chess;
     try { chess = new Chess(currentTask.fen); } catch { return; }
@@ -216,13 +231,14 @@ export default function Learn() {
 
     // Attempt the move
     tryMove(selectedSq, sq);
-  }, [phase, currentTask, selectedSq, tryMove]);
+  }, [phase, currentTask, selectedSq, tryMove, moveFen]);
 
   const onDrop = useCallback((src, tgt) => {
     if (phase !== 'practice' && phase !== 'puzzle') return false;
+    if (moveFen) return false; // lock during post-move animation
     if (!currentTask) return false;
     return tryMove(src, tgt);
-  }, [phase, currentTask, tryMove]);
+  }, [phase, currentTask, tryMove, moveFen]);
 
   // ── Navigation ──
   const finishLesson = () => {
@@ -243,6 +259,7 @@ export default function Learn() {
     setSelectedSq(null);
     setLegalDots({});
     setToast(null);
+    setMoveFen(null);
     // Record current lesson for "Continue Learning"
     const np = { ...progress, _current: idx };
     setProgress(np);
@@ -272,6 +289,7 @@ export default function Learn() {
     setShowHint(false);
     setSelectedSq(null);
     setLegalDots({});
+    setMoveFen(null);
     if (phase === 'intro') {
       if (introStep + 1 < introCount) { setIntroStep(introStep + 1); return; }
       // End of intro → summary if exists, else practice
@@ -296,6 +314,7 @@ export default function Learn() {
     setShowHint(false);
     setSelectedSq(null);
     setLegalDots({});
+    setMoveFen(null);
     if (phase === 'intro') {
       if (introStep > 0) setIntroStep(introStep - 1);
       return;
@@ -457,10 +476,10 @@ export default function Learn() {
             style={{ aspectRatio: '1 / 1', maxWidth: '460px', touchAction: 'none', overflow: 'hidden' }}
           >
             <Chessboard
-              position={phaseData.fen}
+              position={moveFen || phaseData.fen}
               boardWidth={boardSize}
               boardOrientation="white"
-              arePiecesDraggable={phase === 'practice' || phase === 'puzzle'}
+              arePiecesDraggable={(phase === 'practice' || phase === 'puzzle') && !moveFen}
               onPieceDrop={onDrop}
               onSquareClick={onSquareClick}
               customBoardStyle={{ borderRadius: '4px' }}

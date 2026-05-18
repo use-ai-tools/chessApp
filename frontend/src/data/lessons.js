@@ -438,63 +438,97 @@ const LESSONS = [
     intro: [
       {
         text: L(
-          'Pawns move FORWARD only — 1 square. From the starting rank, they may move 2.',
-          'प्यादा सिर्फ़ आगे चलता है — 1 खाना। पहली बार 2।',
-          'Pawn sirf aage chalta hai — 1 square. Starting rank se 2 squares allowed.'
+          'Pawns move FORWARD only — 1 square. From their starting rank, they may move 2 squares as a special first move.',
+          'प्यादा सिर्फ़ आगे चलता है — 1 खाना। पहली चाल में 2 खाने भी चल सकता है।',
+          'Pawn sirf aage chalta hai — 1 square. Starting rank se pehli chaal mein 2 squares allowed.'
         ),
-        fen: '8/8/8/8/8/8/4P3/8 w - - 0 1',
+        fen: '4k3/8/8/8/8/8/4P3/4K3 w - - 0 1',
         highlights: ['e3', 'e4'],
       },
       {
         text: L(
-          'Pawns CAPTURE diagonally — one square forward-left or forward-right.',
-          'प्यादा तिरछे मारता है।',
-          'Pawn diagonally capture karta hai — agle row ka left ya right.'
+          'Pawns CAPTURE diagonally — one square forward-left or forward-right. They CANNOT capture by moving straight forward.',
+          'प्यादा तिरछे मारता है। सीधे आगे मार नहीं सकता।',
+          'Pawn diagonally capture karta hai — left ya right diagonal. Seedha aage capture nahi kar sakta.'
         ),
-        fen: '8/8/8/3p1p2/4P3/8/8/8 w - - 0 1',
+        fen: '4k3/8/8/3p1p2/4P3/8/8/4K3 w - - 0 1',
         highlights: ['d5', 'f5'],
       },
       {
         text: L(
-          'When a pawn reaches the last rank, it PROMOTES — usually to a Queen.',
-          'अंतिम पंक्ति पर प्यादा रानी बन सकता है।',
-          'Last rank pe pawn promote ho jata hai — usually Queen banta hai.'
+          'When a pawn reaches the last rank, it must PROMOTE — usually to a Queen (strongest piece).',
+          'अंतिम पंक्ति पर पहुंचते ही प्यादा प्रमोट होता है — आमतौर पर रानी।',
+          'Last rank pe pahuchte hi pawn promote hota hai — usually Queen (sabse strong piece).'
         ),
-        fen: '4P3/8/8/8/8/8/8/8 w - - 0 1',
+        fen: '7k/4P3/8/8/8/8/8/4K3 w - - 0 1',
         highlights: ['e8'],
+      },
+      {
+        text: L(
+          'UNDERPROMOTION: sometimes you choose Rook, Bishop, or Knight instead of Queen — to avoid stalemate, or because a Knight gives a winning check or fork.',
+          'अंडरप्रमोशन: कभी रानी की जगह घोड़ा/हाथी/ऊंट चुनो — स्टेलमेट से बचने या नाइट से चेक/फोर्क पाने के लिए।',
+          'Underpromotion: kabhi Queen ki jagah Rook/Bishop/Knight choose karte hain — stalemate avoid karne ke liye ya Knight se check/fork ke liye.'
+        ),
+        fen: '7k/5P2/8/8/8/8/8/4K3 w - - 0 1',
+        highlights: ['f8'],
+      },
+      {
+        text: L(
+          'EN PASSANT: If your opponent pushes a pawn 2 squares past your pawn, you may capture as if they moved only 1. Your pawn must be on the 5th rank (4th for Black). It is a one-move-only chance — you lose it on the next move.',
+          'अन पासां: यदि विरोधी प्यादा आपके प्यादे के बगल में 2 खाने आगे आता है, तो आप उसे एक खाना पीछे जैसे मार सकते हैं। तुरंत करना ज़रूरी है।',
+          'En passant: Opponent ne pawn 2 squares push ki aapke pawn ke bagal mein — to use 1 square jaise capture kar sakte ho. Aapka pawn 5th rank (Black ke liye 4th) pe hona chahiye. Turant karna padega.'
+        ),
+        fen: '4k3/8/8/3pP3/8/8/8/4K3 w - d6 0 1',
+        highlights: ['d6', 'e5'],
       },
     ],
     summary: {
       movement: L('Forward 1 (or 2 from start). Never backward.', 'सिर्फ़ आगे। पीछे नहीं।', 'Sirf aage — peeche kabhi nahi.'),
-      capture:  L('Diagonally forward, 1 square.', 'तिरछा आगे।', 'Diagonal forward 1 square.'),
-      strong:   L('Pawn chains protect each other.', 'चेन बनाकर बढ़िया।', 'Pawn chains ek doosre ko protect karte hain.'),
+      capture:  L('Diagonally forward, 1 square. En passant when adjacent.', 'तिरछा आगे। अन पासां विशेष।', 'Diagonal forward 1. En passant special case.'),
+      strong:   L('Pawn chains protect each other. Promotion = new piece!', 'चेन बनाकर बढ़िया। प्रमोशन से जीत।', 'Pawn chains protect karte hain. Promotion = nayi piece!'),
       weak:     L('Cannot retreat — every push is permanent.', 'पीछे नहीं जा सकता।', 'Pawn peeche nahi ja sakta — soch ke chalna.'),
-      tip:      L('Promote a pawn to win the game.', 'प्रमोशन से जीतो।', 'Pawn promote karke game jeet sakte ho.'),
+      tip:      L('Promote to Queen usually. Use Knight for forks.', 'प्रमोशन से जीतो — फोर्क के लिए नाइट।', 'Promote to Queen usually. Knight for fork tactics.'),
       mistake:  L('Pushing too many pawns in the opening.', 'शुरू में बहुत प्यादे चलाना।', 'Opening mein bahut saare pawn push karna.'),
     },
     practice: [
       {
+        task: L('Push e2 → e4 (two squares from start).', 'e2 से e4 — दो खाने।', 'e2 se e4 — 2 squares jump.'),
+        fen: '4k3/8/8/8/8/8/4P3/4K3 w - - 0 1',
+        solutions: [{ from: 'e2', to: 'e4' }],
+        hint: L('First move can be 2.', 'पहली चाल में 2।', 'Pehli chaal mein 2 squares allowed.'),
+      },
+      {
         task: L('Capture diagonally: e4 takes d5.', 'e4 का प्यादा d5 पर ले जाओ।', 'e4 pawn d5 pe diagonal capture karo.'),
-        fen: '8/8/8/3p4/4P3/8/8/8 w - - 0 1',
+        fen: '4k3/8/8/3p4/4P3/8/8/4K3 w - - 0 1',
         solutions: [{ from: 'e4', to: 'd5' }],
         hint: L('Diagonal forward.', 'तिरछा।', 'Diagonal.'),
       },
       {
-        task: L('Push e2 → e4 (two squares from start).', 'e2 से e4 — दो खाने।', 'e2 se e4 — 2 squares jump.'),
-        fen: '8/8/8/8/8/8/4P3/8 w - - 0 1',
-        solutions: [{ from: 'e2', to: 'e4' }],
-        hint: L('First move can be 2.', 'पहली चाल में 2।', 'Pehli chaal mein 2 squares allowed.'),
+        task: L('Promote to Queen: push e7 → e8.', 'प्यादा प्रमोट करो: e7 → e8।', 'Pawn promote karo: e7 → e8.'),
+        fen: '7k/4P3/8/8/8/8/8/4K3 w - - 0 1',
+        solutions: [{ from: 'e7', to: 'e8', promotion: 'q' }],
+        hint: L('One square forward = Queen!', 'एक चाल आगे = रानी!', 'Ek square aage = Queen!'),
+      },
+      {
+        task: L(
+          'En passant: capture the black pawn (just played d7→d5). Play exd6.',
+          'अन पासां करो: काले प्यादे को d6 जैसे मारो — e5 से d6।',
+          'En passant karo: black pawn ko d6 ki tarah capture karo — e5 se d6.'
+        ),
+        fen: '4k3/8/8/3pP3/8/8/8/4K3 w - d6 0 1',
+        solutions: [{ from: 'e5', to: 'd6' }],
+        hint: L('Move e5 pawn to d6 — like the black pawn moved only 1.', 'e5 से d6 — काला प्यादा 1 खाना चला जैसा।', 'e5 se d6 — black pawn ne 1 square chala jaise.'),
       },
     ],
     puzzle: {
       task: L(
-        'Promote the pawn — march to the last rank!',
-        'प्यादा प्रमोट करो — आख़िरी रैंक तक।',
-        'Pawn ko promote karo — last rank tak le jao.'
+        'Underpromote to a KNIGHT — it checks the king AND attacks the queen!',
+        'नाइट में अंडरप्रमोट करो — चेक + रानी पर हमला!',
+        'Knight mein underpromote karo — check + Queen pe attack!'
       ),
-      fen: '4k3/4P3/8/8/8/8/8/4K3 w - - 0 1',
-      solutions: [{ from: 'e7', to: 'e8' }],
-      hint: L('One square forward = Queen!', 'एक चाल आगे = रानी!', 'Ek square aage = Queen!'),
+      fen: '8/5P1k/6q1/8/8/8/8/4K3 w - - 0 1',
+      solutions: [{ from: 'f7', to: 'f8', promotion: 'n' }],
+      hint: L('Knight on f8 attacks h7 and g6.', 'f8 से नाइट h7 और g6 पर।', 'f8 se Knight h7 (king) aur g6 (queen) dono attack karta hai.'),
     },
   },
 
